@@ -43,7 +43,7 @@ import java.util.Set;
 
 public class CellInventory implements ICellInventory
 {
-	public static final int cellItemType = 2097151;
+	public static final int cellItemType = 524288;
 	private static final String ITEM_TYPE_TAG = "it";
 	private static final String ITEM_COUNT_TAG = "ic";
 	private static final String ITEM_SLOT = "#";
