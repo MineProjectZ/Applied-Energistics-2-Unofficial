@@ -43,7 +43,7 @@ import java.util.Set;
 
 public class CellInventory implements ICellInventory
 {
-
+	public static final int cellItemType = 2097151;
 	private static final String ITEM_TYPE_TAG = "it";
 	private static final String ITEM_COUNT_TAG = "ic";
 	private static final String ITEM_SLOT = "#";
@@ -53,7 +53,7 @@ public class CellInventory implements ICellInventory
 	private static String[] itemSlotCount;
 	private final NBTTagCompound tagCompound;
 	private final ISaveProvider container;
-	private int maxItemTypes = 63;
+	private int maxItemTypes = cellItemType;
 	private short storedItems = 0;
 	private int storedItemCount = 0;
 	private IItemList<IAEItemStack> cellItems;
@@ -100,9 +100,9 @@ public class CellInventory implements ICellInventory
 			throw new AppEngException( "ItemStack was used as a cell, but was not a cell!" );
 		}
 
-		if( this.maxItemTypes > 63 )
+		if( this.maxItemTypes > cellItemType )
 		{
-			this.maxItemTypes = 63;
+			this.maxItemTypes = cellItemType;
 		}
 		if( this.maxItemTypes < 1 )
 		{
@@ -544,7 +544,7 @@ public class CellInventory implements ICellInventory
 	{
 		final long bytesForItemCount = ( this.getStoredItemCount() + this.getUnusedItemCount() ) / 8;
 
-		return this.getStoredItemTypes() * this.getBytesPerType() + bytesForItemCount;
+		return bytesForItemCount;
 	}
 
 	@Override

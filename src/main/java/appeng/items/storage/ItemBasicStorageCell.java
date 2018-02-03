@@ -49,6 +49,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.event.ForgeEventFactory;
+import appeng.me.storage.CellInventory;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -149,7 +150,7 @@ public final class ItemBasicStorageCell extends AEBaseItem implements IStorageCe
 	@Override
 	public int getTotalTypes( final ItemStack cellItem )
 	{
-		return 63;
+		return CellInventory.cellItemType;
 	}
 
 	@Override

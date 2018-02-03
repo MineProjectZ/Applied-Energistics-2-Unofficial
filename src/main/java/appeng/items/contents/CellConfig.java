@@ -19,6 +19,7 @@
 package appeng.items.contents;
 
 
+import appeng.me.storage.CellInventory;
 import appeng.tile.inventory.AppEngInternalInventory;
 import appeng.util.Platform;
 import net.minecraft.item.ItemStack;
@@ -31,7 +32,7 @@ public class CellConfig extends AppEngInternalInventory
 
 	public CellConfig( final ItemStack is )
 	{
-		super( null, 63 );
+		super( null, CellInventory.cellItemType );
 		this.is = is;
 		this.readFromNBT( Platform.openNbtData( is ), "list" );
 	}
