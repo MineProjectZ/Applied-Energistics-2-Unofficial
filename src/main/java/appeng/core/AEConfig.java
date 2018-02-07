@@ -99,6 +99,7 @@ public final class AEConfig extends Configuration implements IConfigurableObject
 	private double WirelessBaseRange = 16;
 	private double WirelessBoosterRangeMultiplier = 1;
 	private double WirelessBoosterExp = 1.5;
+	public int ItemTypeLimit = 65536;
 
 	public AEConfig( final File configFile )
 	{
@@ -158,6 +159,8 @@ public final class AEConfig extends Configuration implements IConfigurableObject
 		this.portableCellBattery = this.get( "battery", "portableCell", this.portableCellBattery ).getInt( this.portableCellBattery );
 		this.colorApplicatorBattery = this.get( "battery", "colorApplicator", this.colorApplicatorBattery ).getInt( this.colorApplicatorBattery );
 		this.matterCannonBattery = this.get( "battery", "matterCannon", this.matterCannonBattery ).getInt( this.matterCannonBattery );
+		
+		this.ItemTypeLimit = this.get( "storage", "typeLimit", this.ItemTypeLimit ).getInt( this.ItemTypeLimit );
 
 		this.clientSync();
 
