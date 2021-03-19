@@ -28,6 +28,7 @@ import appeng.api.networking.security.BaseActionSource;
 import appeng.api.storage.*;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IItemList;
+import appeng.core.AEConfig;
 import appeng.util.Platform;
 import appeng.util.item.AEItemStack;
 import net.minecraft.inventory.IInventory;
@@ -43,7 +44,7 @@ import java.util.Set;
 
 public class CellInventory implements ICellInventory
 {
-	public static final int cellItemType = 524288;
+	public static final int cellItemType = AEConfig.instance.ItemTypeLimit;
 	private static final String ITEM_TYPE_TAG = "it";
 	private static final String ITEM_COUNT_TAG = "ic";
 	private static final String ITEM_SLOT = "#";
