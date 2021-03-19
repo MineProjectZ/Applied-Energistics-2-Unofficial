@@ -83,7 +83,7 @@ public class PathGridCache implements IPathingGrid
 			this.updateNetwork = false;
 			this.setChannelsInUse( 0 );
 
-			if( !AEConfig.instance.isFeatureEnabled( AEFeature.Channels ) )
+			if( this.controllerState == ControllerState.CONTROLLER_INFINITE )
 			{
 				final int used = this.calculateRequiredChannels();
 
@@ -162,7 +162,7 @@ public class PathGridCache implements IPathingGrid
 
 			if( this.active.isEmpty() && this.ticksUntilReady <= 0 )
 			{
-				if( this.controllerState == ControllerState.CONTROLLER_ONLINE )
+				if( this.controllerState == ControllerState.CONTROLLER_ONLINE || this.controllerState == ControllerState.CONTROLLER_INFINITE)
 				{
 					final Iterator<TileController> controllerIterator = this.controllers.iterator();
 					if( controllerIterator.hasNext() )
@@ -273,7 +273,11 @@ public class PathGridCache implements IPathingGrid
 
 			if( cv.isValid() && cv.getFound() == this.controllers.size() )
 			{
-				this.controllerState = ControllerState.CONTROLLER_ONLINE;
+				if (AEConfig.instance.isFeatureEnabled( AEFeature.Channels )) {
+					this.controllerState = ControllerState.CONTROLLER_ONLINE;
+				} else {
+					this.controllerState = ControllerState.CONTROLLER_INFINITE;
+				}
 			}
 			else
 			{

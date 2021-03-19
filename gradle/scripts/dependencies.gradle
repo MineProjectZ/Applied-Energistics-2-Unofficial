@@ -33,11 +33,6 @@ repositories {
     }
 
     maven {
-        name "FireBall API Depot"
-        url "http://dl.tsr.me/artifactory/libs-release-local"
-    }
-
-    maven {
         name = "Player"
         url = "http://maven.ic2.player.to/"
     }
@@ -45,11 +40,6 @@ repositories {
     maven {
         name = "Tterrag"
         url = "http://maven.tterrag.com/"
-    }
-
-    maven  {
-        name = "RX14 Proxy"
-        url = "http://mvn.rx14.co.uk/repo/"
     }
 
     maven {
@@ -60,6 +50,11 @@ repositories {
     maven {
         name = "MM repo"
         url = "http://maven.k-4u.nl/"
+    }
+
+    maven {
+        name = "tilera"
+        url = "https://data.tilera.xyz/maven/"
     }
 
     ivy {
@@ -131,7 +126,7 @@ dependencies {
     compile "appeng:Waila:${waila_version}_${minecraft_version}:api"
     compile "appeng:RotaryCraft:${rotarycraft_version}:api"
     compile "appeng:mekanism:${minecraft_version}-${mekansim_version}:api"
-    compile "appeng:InventoryTweaks:${invtweaks_version}:api"
+    //compile "appeng:InventoryTweaks:${invtweaks_version}:api"
 
     // self compiled stubs
     compile(group: 'api', name: 'coloredlightscore', version: "${api_coloredlightscore_version}")
