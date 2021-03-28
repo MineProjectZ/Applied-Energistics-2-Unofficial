@@ -20,6 +20,7 @@ package appeng.parts.reporting;
 
 
 import appeng.client.texture.CableBusTextures;
+import appeng.core.api.ICraftingTerminal;
 import appeng.core.sync.GuiBridge;
 import appeng.helpers.Reflected;
 import appeng.tile.inventory.AppEngInternalInventory;
@@ -31,7 +32,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import java.util.List;
 
 
-public class PartCraftingTerminal extends AbstractPartTerminal
+public class PartCraftingTerminal extends AbstractPartTerminal implements ICraftingTerminal
 {
 	private static final CableBusTextures FRONT_BRIGHT_ICON = CableBusTextures.PartCraftingTerm_Bright;
 	private static final CableBusTextures FRONT_DARK_ICON = CableBusTextures.PartCraftingTerm_Dark;

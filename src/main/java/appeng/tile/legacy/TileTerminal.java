@@ -9,14 +9,10 @@ import appeng.api.storage.*;
 import appeng.api.storage.data.IAEFluidStack;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.util.IConfigManager;
-import appeng.core.sync.GuiBridge;
 import appeng.me.GridAccessException;
 import appeng.tile.grid.AENetworkTile;
-import appeng.tile.storage.TileChest;
 import appeng.util.ConfigManager;
 import appeng.util.IConfigManagerHost;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import java.util.EnumSet;

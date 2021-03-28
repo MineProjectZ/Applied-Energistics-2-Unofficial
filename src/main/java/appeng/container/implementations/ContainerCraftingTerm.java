@@ -23,8 +23,8 @@ import appeng.api.storage.ITerminalHost;
 import appeng.container.ContainerNull;
 import appeng.container.slot.SlotCraftingMatrix;
 import appeng.container.slot.SlotCraftingTerm;
+import appeng.core.api.ICraftingTerminal;
 import appeng.helpers.IContainerCraftingPacket;
-import appeng.parts.reporting.PartCraftingTerminal;
 import appeng.tile.inventory.AppEngInternalInventory;
 import appeng.tile.inventory.IAEAppEngInventory;
 import appeng.tile.inventory.InvOperation;
@@ -38,7 +38,7 @@ import net.minecraft.item.crafting.CraftingManager;
 public class ContainerCraftingTerm extends ContainerMEMonitorable implements IAEAppEngInventory, IContainerCraftingPacket
 {
 
-	private final PartCraftingTerminal ct;
+	private final ICraftingTerminal ct;
 	private final AppEngInternalInventory output = new AppEngInternalInventory( this, 1 );
 	private final SlotCraftingMatrix[] craftingSlots = new SlotCraftingMatrix[9];
 	private final SlotCraftingTerm outputSlot;
@@ -46,7 +46,7 @@ public class ContainerCraftingTerm extends ContainerMEMonitorable implements IAE
 	public ContainerCraftingTerm( final InventoryPlayer ip, final ITerminalHost monitorable )
 	{
 		super( ip, monitorable, false );
-		this.ct = (PartCraftingTerminal) monitorable;
+		this.ct = (ICraftingTerminal) monitorable;
 
 		final IInventory crafting = this.ct.getInventoryByName( "crafting" );
 

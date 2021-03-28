@@ -47,6 +47,7 @@ import appeng.core.sync.network.NetworkHandler;
 import appeng.core.sync.packets.PacketMEInventoryUpdate;
 import appeng.core.sync.packets.PacketValueConfig;
 import appeng.me.helpers.ChannelPowerSrc;
+import appeng.tile.legacy.TileTerminal;
 import appeng.util.ConfigManager;
 import appeng.util.IConfigManagerHost;
 import appeng.util.Platform;
@@ -402,6 +403,9 @@ public class ContainerMEMonitorable extends AEBaseContainer implements IConfigMa
 
 	public ItemStack[] getViewCells()
 	{
+		if (host instanceof TileTerminal) {
+			return new ItemStack[0];
+		}
 		final ItemStack[] list = new ItemStack[this.cellView.length];
 
 		for( int x = 0; x < this.cellView.length; x++ )

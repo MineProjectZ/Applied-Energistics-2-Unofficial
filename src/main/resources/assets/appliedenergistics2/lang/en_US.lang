@@ -53,6 +53,7 @@ tile.appliedenergistics2.BlockMolecularAssembler.name=Molecular Assembler
 
 #Legacy
 tile.appliedenergistics2.BlockTerminal.name=ME Access Terminal
+tile.appliedenergistics2.BlockCraftTerminal.name=ME Crafting Terminal
 
 item.appliedenergistics2.ItemMaterial.ConversionMatrix.name=Conversion Matrix
 
