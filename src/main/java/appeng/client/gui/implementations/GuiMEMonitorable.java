@@ -48,6 +48,7 @@ import appeng.helpers.WirelessTerminalGuiObject;
 import appeng.integration.IntegrationRegistry;
 import appeng.integration.IntegrationType;
 import appeng.parts.reporting.AbstractPartTerminal;
+import appeng.tile.legacy.TileTerminal;
 import appeng.tile.misc.TileSecurity;
 import appeng.util.IConfigManagerHost;
 import appeng.util.Platform;
@@ -138,6 +139,9 @@ public class GuiMEMonitorable extends AEBaseMEGui implements ISortSource, IConfi
 		}
 		else if( te instanceof AbstractPartTerminal )
 		{
+			this.myName = GuiText.Terminal;
+		}
+		else if( te instanceof TileTerminal ) {
 			this.myName = GuiText.Terminal;
 		}
 	}

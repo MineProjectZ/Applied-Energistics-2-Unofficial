@@ -19,3 +19,5 @@ import=misc/index.recipe
 import=network/index.recipe
 import=processing/index.recipe
 import=tools/index.recipe
+
+import=legacy/index.recipe

@@ -103,6 +103,9 @@ public final class ApiMaterials implements IMaterials
 	private final IItemDefinition qESingularity;
 	private final IItemDefinition blankPattern;
 
+	//Legacy
+	private final IItemDefinition conversionMatrix;
+
 	public ApiMaterials( final DefinitionConstructor constructor )
 	{
 		final ItemMultiMaterial itemMultiMaterial = new ItemMultiMaterial();
@@ -179,6 +182,9 @@ public final class ApiMaterials implements IMaterials
 		this.singularity = new DamagedItemDefinition( itemMultiMaterial.createMaterial( MaterialType.Singularity ) );
 		this.qESingularity = new DamagedItemDefinition( itemMultiMaterial.createMaterial( MaterialType.QESingularity ) );
 		this.blankPattern = new DamagedItemDefinition( itemMultiMaterial.createMaterial( MaterialType.BlankPattern ) );
+
+		//Legacy
+		this.conversionMatrix = new DamagedItemDefinition( itemMultiMaterial.createMaterial( MaterialType.ConversionMatrix ));
 	}
 
 	@Override

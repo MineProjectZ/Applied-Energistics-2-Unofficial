@@ -1,0 +1,17 @@
+shaped=
+    oredictionary:ingotIron netherCrystal oredictionary:ingotIron,
+    oreDictionary:dustFluix ae2:ItemMaterial.LogicProcessor oreDictionary:dustFluix,
+    oredictionary:ingotIron certusCrystal oredictionary:ingotIron
+    -> ae2:ItemMaterial.ConversionMatrix
+
+shaped=
+    oredictionary:ingotIron certusCrystal oredictionary:ingotIron,
+    oreDictionary:dustFluix ae2:ItemMaterial.LogicProcessor oreDictionary:dustFluix,
+    oredictionary:ingotIron netherCrystal oredictionary:ingotIron
+    -> ae2:ItemMaterial.ConversionMatrix
+
+shaped=
+    oredictionary:ingotIron oredictionary:ingotIron glass,
+    ae2:CableGlass.Fluix ae2:ItemMaterial.ConversionMatrix glass,
+    oredictionary:ingotIron oredictionary:ingotIron glass
+    -> ae2:BlockTerminal

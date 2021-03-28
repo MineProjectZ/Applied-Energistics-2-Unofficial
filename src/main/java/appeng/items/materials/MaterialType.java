@@ -105,6 +105,7 @@ public enum MaterialType
 
 	FormationCore( 43 ),
 	AnnihilationCore( 44 ),
+	ConversionMatrix(54, AEFeature.Legacy),
 
 	SkyDust( 45, AEFeature.Core ),
 

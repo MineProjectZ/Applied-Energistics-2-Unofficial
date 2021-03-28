@@ -24,12 +24,10 @@ import appeng.api.definitions.IBlocks;
 import appeng.api.definitions.ITileDefinition;
 import appeng.api.util.IOrientableBlock;
 import appeng.block.AEBaseSlabBlock;
-import appeng.block.crafting.BlockCraftingMonitor;
-import appeng.block.crafting.BlockCraftingStorage;
-import appeng.block.crafting.BlockCraftingUnit;
-import appeng.block.crafting.BlockMolecularAssembler;
+import appeng.block.crafting.*;
 import appeng.block.grindstone.BlockCrank;
 import appeng.block.grindstone.BlockGrinder;
+import appeng.block.legacy.BlockTerminal;
 import appeng.block.misc.*;
 import appeng.block.networking.*;
 import appeng.block.qnb.BlockQuantumLinkChamber;
@@ -132,6 +130,9 @@ public final class ApiBlocks implements IBlocks
 
 	private final Set<IOrientableBlock> orientables;
 
+	//Legacy
+	private final ITileDefinition terminal;
+
 	public ApiBlocks( final DefinitionConstructor constructor )
 	{
 		final BlockLightDetector lightDetector = new BlockLightDetector();
@@ -220,6 +221,10 @@ public final class ApiBlocks implements IBlocks
 		this.chunkLoader = constructor.registerBlockDefinition( new BlockChunkloader() );
 		this.phantomNode = constructor.registerBlockDefinition( new BlockPhantomNode() );
 		this.cubeGenerator = constructor.registerBlockDefinition( new BlockCubeGenerator() );
+
+		//Legacy
+		this.terminal = constructor.registerTileDefinition( new BlockTerminal() );
+
 	}
 
 	@Override
