@@ -94,23 +94,26 @@ public class PathGridCache implements IPathingGrid
 
 				this.myGrid.getPivot().beginVisit( new AdHocChannelUpdater( used ) );
 			}
-			else if( this.controllerState == ControllerState.NO_CONTROLLER )
-			{
-				final int requiredChannels = this.calculateRequiredChannels();
-				int used = requiredChannels;
-				if( requiredChannels > 8 )
-				{
-					used = 0;
+			else if( this.controllerState == ControllerState.NO_CONTROLLER ) {
+				if (AEConfig.instance.NeedController) {
+					this.ticksUntilReady = 20;
+					this.myGrid.getPivot().beginVisit( new AdHocChannelUpdater( 0 ) );
+				} else {
+					final int requiredChannels = this.calculateRequiredChannels();
+					int used = requiredChannels;
+					if (requiredChannels > 8) {
+						used = 0;
+					}
+
+					final int nodes = this.myGrid.getNodes().size();
+					this.setChannelsInUse(used);
+
+					this.ticksUntilReady = 20 + Math.max(0, nodes / 100 - 20);
+					this.setChannelsByBlocks(nodes * used);
+					this.setChannelPowerUsage(this.getChannelsByBlocks() / 128.0);
+
+					this.myGrid.getPivot().beginVisit(new AdHocChannelUpdater(used));
 				}
-
-				final int nodes = this.myGrid.getNodes().size();
-				this.setChannelsInUse( used );
-
-				this.ticksUntilReady = 20 + Math.max( 0, nodes / 100 - 20 );
-				this.setChannelsByBlocks( nodes * used );
-				this.setChannelPowerUsage( this.getChannelsByBlocks() / 128.0 );
-
-				this.myGrid.getPivot().beginVisit( new AdHocChannelUpdater( used ) );
 			}
 			else if( this.controllerState == ControllerState.CONTROLLER_CONFLICT )
 			{

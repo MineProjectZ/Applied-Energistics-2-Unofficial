@@ -100,6 +100,7 @@ public final class AEConfig extends Configuration implements IConfigurableObject
 	private double WirelessBoosterRangeMultiplier = 1;
 	private double WirelessBoosterExp = 1.5;
 	public int ItemTypeLimit = 63;
+	public boolean NeedController = false;
 
 	public AEConfig( final File configFile )
 	{
@@ -160,7 +161,8 @@ public final class AEConfig extends Configuration implements IConfigurableObject
 		this.colorApplicatorBattery = this.get( "battery", "colorApplicator", this.colorApplicatorBattery ).getInt( this.colorApplicatorBattery );
 		this.matterCannonBattery = this.get( "battery", "matterCannon", this.matterCannonBattery ).getInt( this.matterCannonBattery );
 		
-		this.ItemTypeLimit = this.get( "storage", "typeLimit", this.ItemTypeLimit ).getInt( this.ItemTypeLimit );
+		this.ItemTypeLimit = this.get( "tileraedition", "typeLimit", this.ItemTypeLimit ).getInt( this.ItemTypeLimit );
+		this.NeedController = this.get("tileraedition", "needController", this.NeedController).getBoolean( this.NeedController );
 
 		this.clientSync();
 
