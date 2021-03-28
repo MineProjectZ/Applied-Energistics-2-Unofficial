@@ -21,3 +21,9 @@ shaped=
     oredictionary:craftingTableWood ae2:ItemMaterial.Cell1kPart ae2:BlockTerminal,
     oredictionary:ingotIron oredictionary:ingotIron glass
     -> ae2:BlockCraftTerminal
+
+shaped=
+    oredictionary:ingotIron oredictionary:ingotIron glass,
+    ae2:CableGlass.Fluix ae2:ItemMaterial.LogicProcessor glass,
+    oredictionary:ingotIron oredictionary:ingotIron glass
+    -> ae2:BlockCraftMonitor

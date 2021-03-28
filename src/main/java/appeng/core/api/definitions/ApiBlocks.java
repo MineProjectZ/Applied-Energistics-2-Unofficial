@@ -27,6 +27,7 @@ import appeng.block.AEBaseSlabBlock;
 import appeng.block.crafting.*;
 import appeng.block.grindstone.BlockCrank;
 import appeng.block.grindstone.BlockGrinder;
+import appeng.block.legacy.BlockCraftMonitor;
 import appeng.block.legacy.BlockCraftTerminal;
 import appeng.block.legacy.BlockTerminal;
 import appeng.block.misc.*;
@@ -134,6 +135,7 @@ public final class ApiBlocks implements IBlocks
 	//Legacy
 	private final ITileDefinition terminal;
 	private final ITileDefinition craftTerminal;
+	private final ITileDefinition craftMonitor;
 
 	public ApiBlocks( final DefinitionConstructor constructor )
 	{
@@ -227,6 +229,7 @@ public final class ApiBlocks implements IBlocks
 		//Legacy
 		this.terminal = constructor.registerTileDefinition( new BlockTerminal() );
 		this.craftTerminal = constructor.registerTileDefinition( new BlockCraftTerminal() );
+		this.craftMonitor = constructor.registerTileDefinition( new BlockCraftMonitor());
 
 	}
 
