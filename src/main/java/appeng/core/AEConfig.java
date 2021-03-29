@@ -101,6 +101,7 @@ public final class AEConfig extends Configuration implements IConfigurableObject
 	private double WirelessBoosterExp = 1.5;
 	public int ItemTypeLimit = 63;
 	public boolean NeedController = false;
+	public boolean HardLegacyController = false;
 
 	public AEConfig( final File configFile )
 	{
@@ -163,6 +164,7 @@ public final class AEConfig extends Configuration implements IConfigurableObject
 		
 		this.ItemTypeLimit = this.get( "tileraedition", "typeLimit", this.ItemTypeLimit ).getInt( this.ItemTypeLimit );
 		this.NeedController = this.get("tileraedition", "needController", this.NeedController).getBoolean( this.NeedController );
+		this.HardLegacyController = this.get("tileraedition", "hardLegacyController", this.HardLegacyController).getBoolean( this.HardLegacyController );
 
 		this.clientSync();
 

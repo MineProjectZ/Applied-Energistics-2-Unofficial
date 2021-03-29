@@ -33,6 +33,7 @@ import appeng.core.stats.Achievements;
 import appeng.me.GridConnection;
 import appeng.me.GridNode;
 import appeng.me.pathfinding.*;
+import appeng.tile.legacy.TileLegacyController;
 import appeng.tile.networking.TileController;
 import appeng.util.Platform;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -45,6 +46,7 @@ public class PathGridCache implements IPathingGrid
 
 	private final LinkedList<PathSegment> active = new LinkedList<PathSegment>();
 	private final Set<TileController> controllers = new HashSet<TileController>();
+	private final Set<TileLegacyController> legacyControllers = new HashSet<TileLegacyController>();
 	private final Set<IGridNode> requireChannels = new HashSet<IGridNode>();
 	private final Set<IGridNode> blockDense = new HashSet<IGridNode>();
 	private final IGrid myGrid;
@@ -193,6 +195,10 @@ public class PathGridCache implements IPathingGrid
 			this.controllers.remove( machine );
 			this.recalculateControllerNextTick = true;
 		}
+		else if (machine instanceof  TileLegacyController) {
+			this.legacyControllers.remove(machine);
+			this.recalculateControllerNextTick = true;
+		}
 
 		final EnumSet<GridFlags> flags = gridNode.getGridBlock().getFlags();
 
@@ -215,6 +221,10 @@ public class PathGridCache implements IPathingGrid
 		if( machine instanceof TileController )
 		{
 			this.controllers.add( (TileController) machine );
+			this.recalculateControllerNextTick = true;
+		}
+		else if(machine instanceof TileLegacyController) {
+			this.legacyControllers.add((TileLegacyController) machine);
 			this.recalculateControllerNextTick = true;
 		}
 
@@ -256,12 +266,17 @@ public class PathGridCache implements IPathingGrid
 		this.recalculateControllerNextTick = false;
 		final ControllerState old = this.controllerState;
 
-		if( this.controllers.isEmpty() )
+		if (this.legacyControllers.size() > 1) {
+			this.controllerState = ControllerState.CONTROLLER_CONFLICT;
+		}
+		else if (this.legacyControllers.size() == 1 && !AEConfig.instance.HardLegacyController) {
+			this.controllerState = ControllerState.CONTROLLER_INFINITE;
+		}
+		else if( this.controllers.isEmpty() )
 		{
 			this.controllerState = ControllerState.NO_CONTROLLER;
 		}
-		else
-		{
+		else {
 			final IGridNode startingNode = this.controllers.iterator().next().getGridNode( ForgeDirection.UNKNOWN );
 			if( startingNode == null )
 			{
@@ -276,9 +291,11 @@ public class PathGridCache implements IPathingGrid
 
 			if( cv.isValid() && cv.getFound() == this.controllers.size() )
 			{
-				if (AEConfig.instance.isFeatureEnabled( AEFeature.Channels )) {
+				if (this.legacyControllers.size() == 1 && this.controllers.size() >= 68) {
+					this.controllerState = ControllerState.CONTROLLER_INFINITE;
+				} else if (AEConfig.instance.isFeatureEnabled( AEFeature.Channels )) {
 					this.controllerState = ControllerState.CONTROLLER_ONLINE;
-				} else {
+				} else  {
 					this.controllerState = ControllerState.CONTROLLER_INFINITE;
 				}
 			}

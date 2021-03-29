@@ -55,6 +55,7 @@ tile.appliedenergistics2.BlockMolecularAssembler.name=Molecular Assembler
 tile.appliedenergistics2.BlockTerminal.name=ME Access Terminal
 tile.appliedenergistics2.BlockCraftTerminal.name=ME Crafting Terminal
 tile.appliedenergistics2.BlockCraftMonitor.name=ME Crafting Monitor
+tile.appliedenergistics2.BlockLegacyController.name=ME Controller (W.I.P)
 
 item.appliedenergistics2.ItemMaterial.ConversionMatrix.name=Conversion Matrix
 
