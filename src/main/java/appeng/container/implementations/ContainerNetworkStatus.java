@@ -57,10 +57,14 @@ public class ContainerNetworkStatus extends AEBaseContainer
 	private IGrid network;
 	private int delay = 40;
 
-	public ContainerNetworkStatus( final InventoryPlayer ip, final INetworkTool te )
+    public ContainerNetworkStatus( final InventoryPlayer ip, final INetworkTool te ) {
+        this(ip, te.getGridHost());
+    }
+
+	public ContainerNetworkStatus( final InventoryPlayer ip, final IGridHost te )
 	{
 		super( ip, null, null );
-		final IGridHost host = te.getGridHost();
+		final IGridHost host = te;
 
 		if( host != null )
 		{
