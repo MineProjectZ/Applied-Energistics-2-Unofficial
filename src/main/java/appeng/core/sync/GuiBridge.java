@@ -57,6 +57,7 @@ import appeng.parts.reporting.PartPatternTerminal;
 import appeng.tile.crafting.TileCraftingTile;
 import appeng.tile.crafting.TileMolecularAssembler;
 import appeng.tile.grindstone.TileGrinder;
+import appeng.tile.legacy.TileLegacyController;
 import appeng.tile.misc.*;
 import appeng.tile.networking.TileWireless;
 import appeng.tile.qnb.TileQuantumBridge;
@@ -102,6 +103,8 @@ public enum GuiBridge implements IGuiHandler
 	GUI_WIRELESS_TERM( ContainerWirelessTerm.class, WirelessTerminalGuiObject.class, GuiHostType.ITEM, null ),
 
 	GUI_NETWORK_STATUS( ContainerNetworkStatus.class, INetworkTool.class, GuiHostType.ITEM, null ),
+
+    GUI_NETWORK_STATUS_BLOCK( ContainerNetworkStatus.class, TileLegacyController.class, GuiHostType.WORLD, null ),
 
 	GUI_CRAFTING_CPU( ContainerCraftingCPU.class, TileCraftingTile.class, GuiHostType.WORLD, SecurityPermissions.CRAFT ),
 

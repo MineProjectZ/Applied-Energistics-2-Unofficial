@@ -24,6 +24,7 @@ import appeng.api.config.SortDir;
 import appeng.api.config.SortOrder;
 import appeng.api.config.ViewItems;
 import appeng.api.implementations.guiobjects.INetworkTool;
+import appeng.api.networking.IGridHost;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.client.gui.AEBaseGui;
 import appeng.client.gui.widgets.GuiImgButton;
@@ -53,7 +54,11 @@ public class GuiNetworkStatus extends AEBaseGui implements ISortSource
 	private GuiImgButton units;
 	private int tooltip = -1;
 
-	public GuiNetworkStatus( final InventoryPlayer inventoryPlayer, final INetworkTool te )
+    public GuiNetworkStatus( final InventoryPlayer inventoryPlayer, final INetworkTool te ) {
+        this(inventoryPlayer, te.getGridHost());
+    }
+
+	public GuiNetworkStatus( final InventoryPlayer inventoryPlayer, final IGridHost te )
 	{
 		super( new ContainerNetworkStatus( inventoryPlayer, te ) );
 		final GuiScrollbar scrollbar = new GuiScrollbar();
