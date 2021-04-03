@@ -27,3 +27,9 @@ shaped=
     ae2:CableGlass.Fluix ae2:ItemMaterial.LogicProcessor glass,
     oredictionary:ingotIron oredictionary:ingotIron glass
     -> ae2:BlockCraftMonitor
+
+shaped=
+    oredictionary:ingotIron fluixCrystal oredictionary:ingotIron,
+    fluixCrystal ae2:ItemMaterial.EngProcessor fluixCrystal,
+    oredictionary:ingotIron fluixCrystal oredictionary:ingotIron
+    -> ae2:BlockLegacyController

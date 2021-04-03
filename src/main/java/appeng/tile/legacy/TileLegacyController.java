@@ -14,9 +14,10 @@ public class TileLegacyController extends AENetworkPowerTile {
     private static final IInventory NULL_INVENTORY = new AppEngInternalInventory( null, 0 );
     private static final int[] ACCESSIBLE_SLOTS_BY_SIDE = {};
 
-    public TileLegacyController() {
-        this.setInternalMaxPower( 8000 );
+    public TileLegacyController() { //TODO Fix power storage
+        this.setInternalMaxPower( 10000 );
         this.setInternalPublicPowerStorage( true );
+        this.getProxy().setIdlePowerUsage(6.0);
     }
 
     @Override
@@ -37,9 +38,10 @@ public class TileLegacyController extends AENetworkPowerTile {
     @Override
     protected double getFunnelPowerDemand( final double maxReceived )
     {
+        updateMeta();
         try
         {
-            return this.getProxy().getEnergy().getEnergyDemand( 8000 );
+            return this.getProxy().getEnergy().getEnergyDemand( 10000 );
         }
         catch( final GridAccessException e )
         {
@@ -51,6 +53,7 @@ public class TileLegacyController extends AENetworkPowerTile {
     @Override
     protected double funnelPowerIntoStorage( final double power, final Actionable mode )
     {
+        updateMeta();
         try
         {
             final double ret = this.getProxy().getEnergy().injectPower( power, mode );
@@ -66,5 +69,20 @@ public class TileLegacyController extends AENetworkPowerTile {
             return super.funnelPowerIntoStorage( power, mode );
         }
     }
+
+    public void updateMeta() {
+        int meta = (int) Math.ceil((5.0 * this.getInternalCurrentPower() / this.getInternalMaxPower()));
+        if (meta < 0) {
+            meta = 0;
+        } else if (meta > 5) {
+            meta = 5;
+        }
+        if (getProxy().isActive() && getInternalCurrentPower() == 0.0) {
+            meta = 6;
+        }
+        this.worldObj.setBlockMetadataWithNotify(this.xCoord, this.yCoord, this.zCoord, meta, 2);
+    }
+
+
 
 }

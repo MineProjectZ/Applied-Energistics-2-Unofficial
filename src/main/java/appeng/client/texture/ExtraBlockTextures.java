@@ -21,6 +21,7 @@ package appeng.client.texture;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import jdk.nashorn.internal.ir.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.IIcon;
@@ -85,7 +86,9 @@ public enum ExtraBlockTextures
 
 	BlockCraftingMonitorOuter( "BlockCraftingMonitorOuter" ), BlockCraftingFitSolid( "BlockCraftingFitSolid" ),
 
-	BlockPaint2( "BlockPaint2" ), BlockPaint3( "BlockPaint3" );
+	BlockPaint2( "BlockPaint2" ), BlockPaint3( "BlockPaint3" ),
+
+	Controller0("Controller0"), Controller1("Controller1"), Controller2("Controller2"), Controller3("Controller3"), Controller4("Controller4"), Controller5("BlockLegacyControllerFront"), ControllerLinked("ControllerLinked");
 
 	private final String name;
 	private IIcon IIcon;
