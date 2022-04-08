@@ -2,6 +2,8 @@ publishing {
     tasks.publish.dependsOn 'build'
     publications {
         mavenJava(MavenPublication) {
+            artifactId = project.archivesBaseName
+
             from components.java
 
             artifact devJar
