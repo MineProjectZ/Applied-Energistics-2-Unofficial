@@ -1,0 +1,3 @@
+- Added things from AE1
+- Added LogisticPipes integration
+- Added config to disably type limit
