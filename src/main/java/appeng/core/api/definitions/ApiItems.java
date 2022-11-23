@@ -65,6 +65,8 @@ public final class ApiItems implements IItems
 	private final IItemDefinition netherQuartzKnife;
 
 	private final IItemDefinition entropyManipulator;
+	private final IItemDefinition vibrationCatalyst;
+	private final IItemDefinition entropyAccelerator;
 	private final IItemDefinition wirelessTerminal;
 	private final IItemDefinition biometricCard;
 	private final IItemDefinition chargedStaff;
@@ -121,6 +123,9 @@ public final class ApiItems implements IItems
 		this.netherQuartzKnife = constructor.registerItemDefinition( new ToolQuartzCuttingKnife( AEFeature.NetherQuartzTools ) );
 
 		this.entropyManipulator = constructor.registerItemDefinition( new ToolEntropyManipulator() );
+		this.vibrationCatalyst = constructor.registerItemDefinition( new ToolVibrationCatalyst() );
+		this.entropyAccelerator = constructor.registerItemDefinition( new ToolEntropyAccelerator() );
+
 		this.wirelessTerminal = constructor.registerItemDefinition( new ToolWirelessTerminal() );
 		this.biometricCard = constructor.registerItemDefinition( new ToolBiometricCard() );
 		this.chargedStaff = constructor.registerItemDefinition( new ToolChargedStaff() );

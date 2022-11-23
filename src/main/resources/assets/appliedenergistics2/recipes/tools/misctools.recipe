@@ -9,3 +9,15 @@ shaped=
     ae2:ItemMaterial.EngProcessor oredictionary:ingotIron _,
     _ _ oredictionary:ingotIron
     -> ae2:ToolEntropyManipulator
+
+shaped=
+    ae2:ItemMaterial.ConversionMatrix minecraft:ice _,
+    _ ae2:BlockEnergyCell _,
+    _ _ oredictionary:ingotIron
+    -> ae2:ToolEntropyAccelerator
+
+shaped=
+    ae2:ItemMaterial.ConversionMatrix minecraft:lava_bucket _,
+    _ ae2:BlockEnergyCell _,
+    _ _ oredictionary:ingotIron
+    -> ae2:ToolVibrationCatalyst

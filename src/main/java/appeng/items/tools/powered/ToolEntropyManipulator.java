@@ -84,7 +84,7 @@ public class ToolEntropyManipulator extends AEBasePoweredItem implements IBlockT
 		this.heatUp.put( new InWorldToolOperationIngredient( Blocks.snow, OreDictionary.WILDCARD_VALUE ), new InWorldToolOperationResult( new ItemStack( Blocks.flowing_water ) ) );
 	}
 
-	private static final boolean breakBlockWithCheck( final World w, final EntityPlayer p, final int x, final int y, final int z )
+	protected static final boolean breakBlockWithCheck( final World w, final EntityPlayer p, final int x, final int y, final int z )
 	{
 		BlockEvent.BreakEvent event = new BlockEvent.BreakEvent( x, y, z, w, w.getBlock( x, y, z ), w.getBlockMetadata( x, y, z ), p );
 		MinecraftForge.EVENT_BUS.post( event );
@@ -98,7 +98,7 @@ public class ToolEntropyManipulator extends AEBasePoweredItem implements IBlockT
 		BlockDispenser.dispenseBehaviorRegistry.putObject( this, new DispenserBlockTool() );
 	}
 
-	private boolean heat( final Block blockID, final EntityPlayer p, final int metadata, final World w, final int x, final int y, final int z )
+	protected boolean heat( final Block blockID, final EntityPlayer p, final int metadata, final World w, final int x, final int y, final int z )
 	{
 		if( !breakBlockWithCheck( w, p, x, y, z ) )
 			return false;
@@ -124,7 +124,7 @@ public class ToolEntropyManipulator extends AEBasePoweredItem implements IBlockT
 		return true;
 	}
 
-	private boolean canHeat( final Block blockID, final int metadata )
+	protected boolean canHeat( final Block blockID, final int metadata )
 	{
 		InWorldToolOperationResult r = this.heatUp.get( new InWorldToolOperationIngredient( blockID, metadata ) );
 
@@ -136,7 +136,7 @@ public class ToolEntropyManipulator extends AEBasePoweredItem implements IBlockT
 		return r != null;
 	}
 
-	private boolean cool( final Block blockID, final EntityPlayer p, final int metadata, final World w, final int x, final int y, final int z )
+	protected boolean cool( final Block blockID, final EntityPlayer p, final int metadata, final World w, final int x, final int y, final int z )
 	{
 		if( !breakBlockWithCheck( w, p, x, y, z ) )
 			return false;
@@ -161,7 +161,7 @@ public class ToolEntropyManipulator extends AEBasePoweredItem implements IBlockT
 		return true;
 	}
 
-	private boolean canCool( final Block blockID, final int metadata )
+	protected boolean canCool( final Block blockID, final int metadata )
 	{
 		InWorldToolOperationResult r = this.coolDown.get( new InWorldToolOperationIngredient( blockID, metadata ) );
 
