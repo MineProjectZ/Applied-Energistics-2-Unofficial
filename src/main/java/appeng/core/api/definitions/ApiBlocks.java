@@ -31,6 +31,7 @@ import appeng.block.legacy.BlockCraftMonitor;
 import appeng.block.legacy.BlockCraftTerminal;
 import appeng.block.legacy.BlockLegacyController;
 import appeng.block.legacy.BlockTerminal;
+import appeng.block.legacy.BlockWirelessAccessPoint;
 import appeng.block.misc.*;
 import appeng.block.networking.*;
 import appeng.block.qnb.BlockQuantumLinkChamber;
@@ -133,11 +134,12 @@ public final class ApiBlocks implements IBlocks
 
 	private final Set<IOrientableBlock> orientables;
 
-	//Legacy
+	// Legacy
 	private final ITileDefinition terminal;
 	private final ITileDefinition craftTerminal;
 	private final ITileDefinition craftMonitor;
 	private final ITileDefinition legacyController;
+    private final ITileDefinition legacyWirelessAccessPoint;
 
 	public ApiBlocks( final DefinitionConstructor constructor )
 	{
@@ -228,12 +230,12 @@ public final class ApiBlocks implements IBlocks
 		this.phantomNode = constructor.registerBlockDefinition( new BlockPhantomNode() );
 		this.cubeGenerator = constructor.registerBlockDefinition( new BlockCubeGenerator() );
 
-		//Legacy
+		// Legacy
 		this.terminal = constructor.registerTileDefinition( new BlockTerminal() );
 		this.craftTerminal = constructor.registerTileDefinition( new BlockCraftTerminal() );
 		this.craftMonitor = constructor.registerTileDefinition( new BlockCraftMonitor() );
 		this.legacyController = constructor.registerTileDefinition( new BlockLegacyController() );
-
+        this.legacyWirelessAccessPoint = constructor.registerTileDefinition(new BlockWirelessAccessPoint());
 	}
 
 	@Override

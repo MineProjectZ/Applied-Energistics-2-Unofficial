@@ -33,3 +33,9 @@ shaped=
     fluixCrystal ae2:ItemMaterial.EngProcessor fluixCrystal,
     oredictionary:ingotIron fluixCrystal oredictionary:ingotIron
     -> ae2:BlockLegacyController
+
+shaped=
+    oredictionary:ingotIron glass oredictionary:ingotIron,
+    ae2:CableGlass.Fluix ae2:ItemMaterial.Wireless glass,
+    oredictionary:ingotIron glass oredictionary:ingotIron,
+    -> ae2:BlockWirelessAccessPoint

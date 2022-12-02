@@ -29,6 +29,7 @@ import appeng.api.networking.events.MENetworkEventSubscribe;
 import appeng.api.networking.events.MENetworkPowerStatusChange;
 import appeng.api.util.AECableType;
 import appeng.api.util.DimensionalCoord;
+import appeng.block.legacy.BlockWirelessAccessPoint;
 import appeng.core.AEConfig;
 import appeng.me.GridAccessException;
 import appeng.tile.TileEvent;
@@ -66,7 +67,11 @@ public class TileWireless extends AENetworkInvTile implements IWirelessAccessPoi
 	public void setOrientation( final ForgeDirection inForward, final ForgeDirection inUp )
 	{
 		super.setOrientation( inForward, inUp );
+        if (this.worldObj.getBlock(this.xCoord, this.yCoord, this.zCoord) instanceof BlockWirelessAccessPoint) {
+            this.getProxy().setValidSides( EnumSet.allOf(ForgeDirection.class) );
+        } else {
 		this.getProxy().setValidSides( EnumSet.of( this.getForward().getOpposite() ) );
+        }
 	}
 
 	@MENetworkEventSubscribe
