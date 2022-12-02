@@ -18,7 +18,6 @@
 
 package appeng.core.sync.packets;
 
-
 import appeng.core.sync.AppEngPacket;
 import appeng.core.sync.network.INetworkInfo;
 import appeng.hooks.CompassManager;
@@ -27,50 +26,54 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.minecraft.entity.player.EntityPlayer;
 
+public class PacketCompassResponse extends AppEngPacket {
+    private final long attunement;
+    private final int cx;
+    private final int cz;
+    private final int cdy;
 
-public class PacketCompassResponse extends AppEngPacket
-{
+    private CompassResult cr;
 
-	private final long attunement;
-	private final int cx;
-	private final int cz;
-	private final int cdy;
+    // automatic.
+    public PacketCompassResponse(final ByteBuf stream) {
+        this.attunement = stream.readLong();
+        this.cx = stream.readInt();
+        this.cz = stream.readInt();
+        this.cdy = stream.readInt();
 
-	private CompassResult cr;
+        this.cr = new CompassResult(
+            stream.readBoolean(), stream.readBoolean(), stream.readDouble()
+        );
+    }
 
-	// automatic.
-	public PacketCompassResponse( final ByteBuf stream )
-	{
-		this.attunement = stream.readLong();
-		this.cx = stream.readInt();
-		this.cz = stream.readInt();
-		this.cdy = stream.readInt();
+    // api
+    public PacketCompassResponse(
+        final PacketCompassRequest req,
+        final boolean hasResult,
+        final boolean spin,
+        final double radians
+    ) {
+        final ByteBuf data = Unpooled.buffer();
 
-		this.cr = new CompassResult( stream.readBoolean(), stream.readBoolean(), stream.readDouble() );
-	}
+        data.writeInt(this.getPacketID());
+        data.writeLong(this.attunement = req.attunement);
+        data.writeInt(this.cx = req.cx);
+        data.writeInt(this.cz = req.cz);
+        data.writeInt(this.cdy = req.cdy);
 
-	// api
-	public PacketCompassResponse( final PacketCompassRequest req, final boolean hasResult, final boolean spin, final double radians )
-	{
+        data.writeBoolean(hasResult);
+        data.writeBoolean(spin);
+        data.writeDouble(radians);
 
-		final ByteBuf data = Unpooled.buffer();
+        this.configureWrite(data);
+    }
 
-		data.writeInt( this.getPacketID() );
-		data.writeLong( this.attunement = req.attunement );
-		data.writeInt( this.cx = req.cx );
-		data.writeInt( this.cz = req.cz );
-		data.writeInt( this.cdy = req.cdy );
-
-		data.writeBoolean( hasResult );
-		data.writeBoolean( spin );
-		data.writeDouble( radians );
-
-		this.configureWrite( data );
-	}
-
-	@Override
-	public void clientPacketData( final INetworkInfo network, final AppEngPacket packet, final EntityPlayer player )
-	{
-		CompassManager.INSTANCE.postResult( this.attunement, this.cx << 4, this.cdy << 5, this.cz << 4, this.cr );
-	}
+    @Override
+    public void clientPacketData(
+        final INetworkInfo network, final AppEngPacket packet, final EntityPlayer player
+    ) {
+        CompassManager.INSTANCE.postResult(
+            this.attunement, this.cx << 4, this.cdy << 5, this.cz << 4, this.cr
+        );
+    }
 }

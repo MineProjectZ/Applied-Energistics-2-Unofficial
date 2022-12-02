@@ -18,6 +18,9 @@
 
 package appeng.recipes;
 
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import appeng.api.exceptions.MissingIngredientError;
 import appeng.api.exceptions.RecipeError;
@@ -27,134 +30,111 @@ import com.google.common.base.Preconditions;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+public class GroupIngredient implements IIngredient {
+    private final String name;
+    private final List<IIngredient> ingredients;
+    private final int qty;
+    private ItemStack[] baked;
+    private boolean isInside = false;
 
+    public GroupIngredient(
+        final String myName, final List<IIngredient> ingredients, final int qty
+    ) throws RecipeError {
+        Preconditions.checkNotNull(myName);
+        Preconditions.checkNotNull(ingredients);
+        Preconditions.checkState(!ingredients.isEmpty());
+        Preconditions.checkState(qty > 0);
 
-public class GroupIngredient implements IIngredient
-{
+        this.name = myName;
+        this.qty = qty;
 
-	private final String name;
-	private final List<IIngredient> ingredients;
-	private final int qty;
-	private ItemStack[] baked;
-	private boolean isInside = false;
+        for (final IIngredient ingredient : ingredients) {
+            if (ingredient.isAir()) {
+                throw new RecipeError("Cannot include air in a group.");
+            }
+        }
 
-	public GroupIngredient( final String myName, final List<IIngredient> ingredients, final int qty ) throws RecipeError
-	{
-		Preconditions.checkNotNull( myName );
-		Preconditions.checkNotNull( ingredients );
-		Preconditions.checkState( !ingredients.isEmpty() );
-		Preconditions.checkState( qty > 0 );
+        this.ingredients = ingredients;
+    }
 
-		this.name = myName;
-		this.qty = qty;
+    IIngredient copy(final int qty) throws RecipeError {
+        Preconditions.checkState(qty > 0);
+        return new GroupIngredient(this.name, this.ingredients, qty);
+    }
 
-		for( final IIngredient ingredient : ingredients )
-		{
-			if( ingredient.isAir() )
-			{
-				throw new RecipeError( "Cannot include air in a group." );
-			}
-		}
+    @Override
+    public ItemStack getItemStack() throws RegistrationError, MissingIngredientError {
+        throw new RegistrationError(
+            "Cannot pass group of items to a recipe which desires a single recipe item."
+        );
+    }
 
-		this.ingredients = ingredients;
-	}
+    @Override
+    public ItemStack[] getItemStackSet()
+        throws RegistrationError, MissingIngredientError {
+        if (this.baked != null) {
+            return this.baked;
+        }
 
-	IIngredient copy( final int qty ) throws RecipeError
-	{
-		Preconditions.checkState( qty > 0 );
-		return new GroupIngredient( this.name, this.ingredients, qty );
-	}
+        if (this.isInside) {
+            return new ItemStack[0];
+        }
 
-	@Override
-	public ItemStack getItemStack() throws RegistrationError, MissingIngredientError
-	{
-		throw new RegistrationError( "Cannot pass group of items to a recipe which desires a single recipe item." );
-	}
+        final List<ItemStack> out = new LinkedList<ItemStack>();
+        this.isInside = true;
+        try {
+            for (final IIngredient i : this.ingredients) {
+                try {
+                    out.addAll(Arrays.asList(i.getItemStackSet()));
+                } catch (final MissingIngredientError mir) {
+                    // oh well this is a group!
+                }
+            }
+        } finally {
+            this.isInside = false;
+        }
 
-	@Override
-	public ItemStack[] getItemStackSet() throws RegistrationError, MissingIngredientError
-	{
-		if( this.baked != null )
-		{
-			return this.baked;
-		}
+        if (out.isEmpty()) {
+            throw new MissingIngredientError(
+                this.toString() + " - group could not be resolved to any items."
+            );
+        }
 
-		if( this.isInside )
-		{
-			return new ItemStack[0];
-		}
+        for (final ItemStack is : out) {
+            is.stackSize = this.qty;
+        }
 
-		final List<ItemStack> out = new LinkedList<ItemStack>();
-		this.isInside = true;
-		try
-		{
-			for( final IIngredient i : this.ingredients )
-			{
-				try
-				{
-					out.addAll( Arrays.asList( i.getItemStackSet() ) );
-				}
-				catch( final MissingIngredientError mir )
-				{
-					// oh well this is a group!
-				}
-			}
-		}
-		finally
-		{
-			this.isInside = false;
-		}
+        return out.toArray(new ItemStack[out.size()]);
+    }
 
-		if( out.isEmpty() )
-		{
-			throw new MissingIngredientError( this.toString() + " - group could not be resolved to any items." );
-		}
+    @Override
+    public boolean isAir() {
+        return false;
+    }
 
-		for( final ItemStack is : out )
-		{
-			is.stackSize = this.qty;
-		}
+    @Override
+    public String getNameSpace() {
+        return "";
+    }
 
-		return out.toArray( new ItemStack[out.size()] );
-	}
+    @Override
+    public String getItemName() {
+        return this.name;
+    }
 
-	@Override
-	public boolean isAir()
-	{
-		return false;
-	}
+    @Override
+    public int getDamageValue() {
+        return OreDictionary.WILDCARD_VALUE;
+    }
 
-	@Override
-	public String getNameSpace()
-	{
-		return "";
-	}
+    @Override
+    public int getQty() {
+        return this.qty;
+    }
 
-	@Override
-	public String getItemName()
-	{
-		return this.name;
-	}
-
-	@Override
-	public int getDamageValue()
-	{
-		return OreDictionary.WILDCARD_VALUE;
-	}
-
-	@Override
-	public int getQty()
-	{
-		return this.qty;
-	}
-
-	@Override
-	public void bake() throws RegistrationError, MissingIngredientError
-	{
-		this.baked = null;
-		this.baked = this.getItemStackSet();
-	}
+    @Override
+    public void bake() throws RegistrationError, MissingIngredientError {
+        this.baked = null;
+        this.baked = this.getItemStackSet();
+    }
 }

@@ -18,7 +18,6 @@
 
 package appeng.me.cluster.implementations;
 
-
 import appeng.api.AEApi;
 import appeng.api.definitions.IBlockDefinition;
 import appeng.api.definitions.IBlocks;
@@ -32,141 +31,121 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
+public class QuantumCalculator extends MBCalculator {
+    private final TileQuantumBridge tqb;
 
-public class QuantumCalculator extends MBCalculator
-{
+    public QuantumCalculator(final IAEMultiBlock t) {
+        super(t);
+        this.tqb = (TileQuantumBridge) t;
+    }
 
-	private final TileQuantumBridge tqb;
+    @Override
+    public boolean checkMultiblockScale(final WorldCoord min, final WorldCoord max) {
+        if ((max.x - min.x + 1) * (max.y - min.y + 1) * (max.z - min.z + 1) == 9) {
+            final int ones = ((max.x - min.x) == 0 ? 1 : 0)
+                + ((max.y - min.y) == 0 ? 1 : 0) + ((max.z - min.z) == 0 ? 1 : 0);
 
-	public QuantumCalculator( final IAEMultiBlock t )
-	{
-		super( t );
-		this.tqb = (TileQuantumBridge) t;
-	}
+            final int threes = ((max.x - min.x) == 2 ? 1 : 0)
+                + ((max.y - min.y) == 2 ? 1 : 0) + ((max.z - min.z) == 2 ? 1 : 0);
 
-	@Override
-	public boolean checkMultiblockScale( final WorldCoord min, final WorldCoord max )
-	{
+            return ones == 1 && threes == 2;
+        }
+        return false;
+    }
 
-		if( ( max.x - min.x + 1 ) * ( max.y - min.y + 1 ) * ( max.z - min.z + 1 ) == 9 )
-		{
-			final int ones = ( ( max.x - min.x ) == 0 ? 1 : 0 ) + ( ( max.y - min.y ) == 0 ? 1 : 0 ) + ( ( max.z - min.z ) == 0 ? 1 : 0 );
+    @Override
+    public IAECluster
+    createCluster(final World w, final WorldCoord min, final WorldCoord max) {
+        return new QuantumCluster(min, max);
+    }
 
-			final int threes = ( ( max.x - min.x ) == 2 ? 1 : 0 ) + ( ( max.y - min.y ) == 2 ? 1 : 0 ) + ( ( max.z - min.z ) == 2 ? 1 : 0 );
+    @Override
+    public boolean
+    verifyInternalStructure(final World w, final WorldCoord min, final WorldCoord max) {
+        byte num = 0;
 
-			return ones == 1 && threes == 2;
-		}
-		return false;
-	}
+        for (int x = min.x; x <= max.x; x++) {
+            for (int y = min.y; y <= max.y; y++) {
+                for (int z = min.z; z <= max.z; z++) {
+                    final IAEMultiBlock te = (IAEMultiBlock) w.getTileEntity(x, y, z);
 
-	@Override
-	public IAECluster createCluster( final World w, final WorldCoord min, final WorldCoord max )
-	{
-		return new QuantumCluster( min, max );
-	}
+                    if (!te.isValid()) {
+                        return false;
+                    }
 
-	@Override
-	public boolean verifyInternalStructure( final World w, final WorldCoord min, final WorldCoord max )
-	{
+                    num++;
+                    final IBlocks blocks = AEApi.instance().definitions().blocks();
+                    if (num == 5) {
+                        if (!this.isBlockAtLocation(w, x, y, z, blocks.quantumLink())) {
+                            return false;
+                        }
+                    } else {
+                        if (!this.isBlockAtLocation(w, x, y, z, blocks.quantumRing())) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
 
-		byte num = 0;
+    @Override
+    public void disconnect() {
+        this.tqb.disconnect(true);
+    }
 
-		for( int x = min.x; x <= max.x; x++ )
-		{
-			for( int y = min.y; y <= max.y; y++ )
-			{
-				for( int z = min.z; z <= max.z; z++ )
-				{
-					final IAEMultiBlock te = (IAEMultiBlock) w.getTileEntity( x, y, z );
+    @Override
+    public void updateTiles(
+        final IAECluster cl, final World w, final WorldCoord min, final WorldCoord max
+    ) {
+        byte num = 0;
+        byte ringNum = 0;
+        final QuantumCluster c = (QuantumCluster) cl;
 
-					if( !te.isValid() )
-					{
-						return false;
-					}
+        for (int x = min.x; x <= max.x; x++) {
+            for (int y = min.y; y <= max.y; y++) {
+                for (int z = min.z; z <= max.z; z++) {
+                    final TileQuantumBridge te
+                        = (TileQuantumBridge) w.getTileEntity(x, y, z);
 
-					num++;
-					final IBlocks blocks = AEApi.instance().definitions().blocks();
-					if( num == 5 )
-					{
-						if( !this.isBlockAtLocation( w, x, y, z, blocks.quantumLink() ) )
-						{
-							return false;
-						}
-					}
-					else
-					{
-						if( !this.isBlockAtLocation( w, x, y, z, blocks.quantumRing() ) )
-						{
-							return false;
-						}
-					}
-				}
-			}
-		}
-		return true;
-	}
+                    num++;
+                    final byte flags;
+                    if (num == 5) {
+                        flags = num;
+                        c.setCenter(te);
+                    } else {
+                        if (num == 1 || num == 3 || num == 7 || num == 9) {
+                            flags = (byte) (this.tqb.getCorner() | num);
+                        } else {
+                            flags = num;
+                        }
+                        c.getRing()[ringNum] = te;
+                        ringNum++;
+                    }
 
-	@Override
-	public void disconnect()
-	{
-		this.tqb.disconnect( true );
-	}
+                    te.updateStatus(c, flags, true);
+                }
+            }
+        }
+    }
 
-	@Override
-	public void updateTiles( final IAECluster cl, final World w, final WorldCoord min, final WorldCoord max )
-	{
-		byte num = 0;
-		byte ringNum = 0;
-		final QuantumCluster c = (QuantumCluster) cl;
+    @Override
+    public boolean isValidTile(final TileEntity te) {
+        return te instanceof TileQuantumBridge;
+    }
 
-		for( int x = min.x; x <= max.x; x++ )
-		{
-			for( int y = min.y; y <= max.y; y++ )
-			{
-				for( int z = min.z; z <= max.z; z++ )
-				{
-					final TileQuantumBridge te = (TileQuantumBridge) w.getTileEntity( x, y, z );
+    private boolean isBlockAtLocation(
+        final IBlockAccess w,
+        final int x,
+        final int y,
+        final int z,
+        final IBlockDefinition def
+    ) {
+        for (final Block block : def.maybeBlock().asSet()) {
+            return block == w.getBlock(x, y, z);
+        }
 
-					num++;
-					final byte flags;
-					if( num == 5 )
-					{
-						flags = num;
-						c.setCenter( te );
-					}
-					else
-					{
-						if( num == 1 || num == 3 || num == 7 || num == 9 )
-						{
-							flags = (byte) ( this.tqb.getCorner() | num );
-						}
-						else
-						{
-							flags = num;
-						}
-						c.getRing()[ringNum] = te;
-						ringNum++;
-					}
-
-					te.updateStatus( c, flags, true );
-				}
-			}
-		}
-	}
-
-	@Override
-	public boolean isValidTile( final TileEntity te )
-	{
-		return te instanceof TileQuantumBridge;
-	}
-
-	private boolean isBlockAtLocation( final IBlockAccess w, final int x, final int y, final int z, final IBlockDefinition def )
-	{
-		for( final Block block : def.maybeBlock().asSet() )
-		{
-			return block == w.getBlock( x, y, z );
-		}
-
-		return false;
-	}
+        return false;
+    }
 }

@@ -18,6 +18,7 @@
 
 package appeng.client.render.blocks;
 
+import java.util.EnumSet;
 
 import appeng.api.util.AEColor;
 import appeng.block.misc.BlockSecurity;
@@ -32,71 +33,93 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.EnumSet;
+public class RendererSecurity extends BaseBlockRender<BlockSecurity, TileSecurity> {
+    public RendererSecurity() {
+        super(false, 0);
+    }
 
+    @Override
+    public void renderInventory(
+        final BlockSecurity block,
+        final ItemStack is,
+        final RenderBlocks renderer,
+        final ItemRenderType type,
+        final Object[] obj
+    ) {
+        renderer.overrideBlockTexture = ExtraBlockTextures.getMissing();
+        this.renderInvBlock(
+            EnumSet.of(ForgeDirection.SOUTH),
+            block,
+            is,
+            Tessellator.instance,
+            0x000000,
+            renderer
+        );
 
-public class RendererSecurity extends BaseBlockRender<BlockSecurity, TileSecurity>
-{
+        renderer.overrideBlockTexture = ExtraBlockTextures.MEChest.getIcon();
+        this.renderInvBlock(
+            EnumSet.of(ForgeDirection.UP),
+            block,
+            is,
+            Tessellator.instance,
+            this.adjustBrightness(AEColor.Transparent.whiteVariant, 0.7),
+            renderer
+        );
 
-	public RendererSecurity()
-	{
-		super( false, 0 );
-	}
+        renderer.overrideBlockTexture = null;
+        super.renderInventory(block, is, renderer, type, obj);
+    }
 
-	@Override
-	public void renderInventory( final BlockSecurity block, final ItemStack is, final RenderBlocks renderer, final ItemRenderType type, final Object[] obj )
-	{
-		renderer.overrideBlockTexture = ExtraBlockTextures.getMissing();
-		this.renderInvBlock( EnumSet.of( ForgeDirection.SOUTH ), block, is, Tessellator.instance, 0x000000, renderer );
+    @Override
+    public boolean renderInWorld(
+        final BlockSecurity imb,
+        final IBlockAccess world,
+        final int x,
+        final int y,
+        final int z,
+        final RenderBlocks renderer
+    ) {
+        final TileSecurity sp = imb.getTileEntity(world, x, y, z);
+        renderer.setRenderBounds(0, 0, 0, 1, 1, 1);
 
-		renderer.overrideBlockTexture = ExtraBlockTextures.MEChest.getIcon();
-		this.renderInvBlock( EnumSet.of( ForgeDirection.UP ), block, is, Tessellator.instance, this.adjustBrightness( AEColor.Transparent.whiteVariant, 0.7 ), renderer );
+        final ForgeDirection up = sp.getUp();
 
-		renderer.overrideBlockTexture = null;
-		super.renderInventory( block, is, renderer, type, obj );
-	}
+        this.preRenderInWorld(imb, world, x, y, z, renderer);
 
-	@Override
-	public boolean renderInWorld( final BlockSecurity imb, final IBlockAccess world, final int x, final int y, final int z, final RenderBlocks renderer )
-	{
-		final TileSecurity sp = imb.getTileEntity( world, x, y, z );
-		renderer.setRenderBounds( 0, 0, 0, 1, 1, 1 );
+        final boolean result = renderer.renderStandardBlock(imb, x, y, z);
 
-		final ForgeDirection up = sp.getUp();
+        int b = world.getLightBrightnessForSkyBlocks(
+            x + up.offsetX, y + up.offsetY, z + up.offsetZ, 0
+        );
 
-		this.preRenderInWorld( imb, world, x, y, z, renderer );
+        if (sp.isActive()) {
+            b = 15 << 20 | 15 << 4;
+        }
 
-		final boolean result = renderer.renderStandardBlock( imb, x, y, z );
+        Tessellator.instance.setBrightness(b);
+        Tessellator.instance.setColorOpaque_I(0xffffff);
+        renderer.setRenderBounds(0, 0, 0, 1, 1, 1);
 
-		int b = world.getLightBrightnessForSkyBlocks( x + up.offsetX, y + up.offsetY, z + up.offsetZ, 0 );
+        Tessellator.instance.setColorOpaque_I(sp.getColor().whiteVariant);
+        IIcon ico = sp.isActive() ? ExtraBlockTextures.BlockMESecurityOn_Light.getIcon()
+                                  : ExtraBlockTextures.MEChest.getIcon();
+        this.renderFace(x, y, z, imb, ico, renderer, up);
 
-		if( sp.isActive() )
-		{
-			b = 15 << 20 | 15 << 4;
-		}
+        if (sp.isActive()) {
+            Tessellator.instance.setColorOpaque_I(sp.getColor().mediumVariant);
+            ico = sp.isActive() ? ExtraBlockTextures.BlockMESecurityOn_Medium.getIcon()
+                                : ExtraBlockTextures.MEChest.getIcon();
+            this.renderFace(x, y, z, imb, ico, renderer, up);
 
-		Tessellator.instance.setBrightness( b );
-		Tessellator.instance.setColorOpaque_I( 0xffffff );
-		renderer.setRenderBounds( 0, 0, 0, 1, 1, 1 );
+            Tessellator.instance.setColorOpaque_I(sp.getColor().blackVariant);
+            ico = sp.isActive() ? ExtraBlockTextures.BlockMESecurityOn_Dark.getIcon()
+                                : ExtraBlockTextures.MEChest.getIcon();
+            this.renderFace(x, y, z, imb, ico, renderer, up);
+        }
 
-		Tessellator.instance.setColorOpaque_I( sp.getColor().whiteVariant );
-		IIcon ico = sp.isActive() ? ExtraBlockTextures.BlockMESecurityOn_Light.getIcon() : ExtraBlockTextures.MEChest.getIcon();
-		this.renderFace( x, y, z, imb, ico, renderer, up );
+        renderer.overrideBlockTexture = null;
+        this.postRenderInWorld(renderer);
 
-		if( sp.isActive() )
-		{
-			Tessellator.instance.setColorOpaque_I( sp.getColor().mediumVariant );
-			ico = sp.isActive() ? ExtraBlockTextures.BlockMESecurityOn_Medium.getIcon() : ExtraBlockTextures.MEChest.getIcon();
-			this.renderFace( x, y, z, imb, ico, renderer, up );
-
-			Tessellator.instance.setColorOpaque_I( sp.getColor().blackVariant );
-			ico = sp.isActive() ? ExtraBlockTextures.BlockMESecurityOn_Dark.getIcon() : ExtraBlockTextures.MEChest.getIcon();
-			this.renderFace( x, y, z, imb, ico, renderer, up );
-		}
-
-		renderer.overrideBlockTexture = null;
-		this.postRenderInWorld( renderer );
-
-		return result;
-	}
+        return result;
+    }
 }

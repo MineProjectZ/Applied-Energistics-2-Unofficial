@@ -1,5 +1,7 @@
 package appeng.tile.legacy;
 
+import java.util.EnumSet;
+
 import appeng.api.config.Settings;
 import appeng.api.config.SortDir;
 import appeng.api.config.SortOrder;
@@ -15,31 +17,25 @@ import appeng.util.ConfigManager;
 import appeng.util.IConfigManagerHost;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.EnumSet;
+public class TileTerminal
+    extends AENetworkTile implements ITerminalHost, IConfigManagerHost {
+    private final IConfigManager cm = new ConfigManager(this);
 
-public class TileTerminal extends AENetworkTile implements ITerminalHost, IConfigManagerHost {
+    public TileTerminal() {
+        this.getProxy().setFlags(GridFlags.REQUIRE_CHANNEL);
+        this.getProxy().setIdlePowerUsage(0.5);
+        this.getProxy().setValidSides(EnumSet.allOf(ForgeDirection.class));
 
-    private final IConfigManager cm = new ConfigManager( this );
-
-    public TileTerminal()
-    {
-        this.getProxy().setFlags( GridFlags.REQUIRE_CHANNEL );
-        this.getProxy().setIdlePowerUsage( 0.5 );
-        this.getProxy().setValidSides( EnumSet.allOf( ForgeDirection.class ) );
-
-        this.cm.registerSetting( Settings.SORT_BY, SortOrder.NAME );
-        this.cm.registerSetting( Settings.VIEW_MODE, ViewItems.ALL );
-        this.cm.registerSetting( Settings.SORT_DIRECTION, SortDir.ASCENDING );
+        this.cm.registerSetting(Settings.SORT_BY, SortOrder.NAME);
+        this.cm.registerSetting(Settings.VIEW_MODE, ViewItems.ALL);
+        this.cm.registerSetting(Settings.SORT_DIRECTION, SortDir.ASCENDING);
     }
 
     @Override
     public IMEMonitor<IAEItemStack> getItemInventory() {
-        try
-        {
+        try {
             return this.getProxy().getStorage().getItemInventory();
-        }
-        catch( final GridAccessException e )
-        {
+        } catch (final GridAccessException e) {
             // err nope?
         }
         return null;
@@ -47,12 +43,9 @@ public class TileTerminal extends AENetworkTile implements ITerminalHost, IConfi
 
     @Override
     public IMEMonitor<IAEFluidStack> getFluidInventory() {
-        try
-        {
+        try {
             return this.getProxy().getStorage().getFluidInventory();
-        }
-        catch( final GridAccessException e )
-        {
+        } catch (final GridAccessException e) {
             // err nope?
         }
         return null;
@@ -64,8 +57,5 @@ public class TileTerminal extends AENetworkTile implements ITerminalHost, IConfi
     }
 
     @Override
-    public void updateSetting(IConfigManager manager, Enum settingName, Enum newValue) {
-
-    }
-
+    public void updateSetting(IConfigManager manager, Enum settingName, Enum newValue) {}
 }

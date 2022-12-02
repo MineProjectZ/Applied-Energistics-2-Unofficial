@@ -18,6 +18,8 @@
 
 package appeng.container.slot;
 
+import java.util.ArrayList;
+import java.util.List;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.energy.IEnergySource;
@@ -41,240 +43,247 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 
-import java.util.ArrayList;
-import java.util.List;
+public class SlotCraftingTerm extends AppEngCraftingSlot {
+    private final IInventory craftInv;
+    private final IInventory pattern;
 
+    private final BaseActionSource mySrc;
+    private final IEnergySource energySrc;
+    private final IStorageMonitorable storage;
+    private final IContainerCraftingPacket container;
 
-public class SlotCraftingTerm extends AppEngCraftingSlot
-{
+    public SlotCraftingTerm(
+        final EntityPlayer player,
+        final BaseActionSource mySrc,
+        final IEnergySource energySrc,
+        final IStorageMonitorable storage,
+        final IInventory cMatrix,
+        final IInventory secondMatrix,
+        final IInventory output,
+        final int x,
+        final int y,
+        final IContainerCraftingPacket ccp
+    ) {
+        super(player, cMatrix, output, 0, x, y);
+        this.energySrc = energySrc;
+        this.storage = storage;
+        this.mySrc = mySrc;
+        this.pattern = cMatrix;
+        this.craftInv = secondMatrix;
+        this.container = ccp;
+    }
 
-	private final IInventory craftInv;
-	private final IInventory pattern;
+    public IInventory getCraftingMatrix() {
+        return this.craftInv;
+    }
 
-	private final BaseActionSource mySrc;
-	private final IEnergySource energySrc;
-	private final IStorageMonitorable storage;
-	private final IContainerCraftingPacket container;
+    @Override
+    public boolean canTakeStack(final EntityPlayer par1EntityPlayer) {
+        return false;
+    }
 
-	public SlotCraftingTerm( final EntityPlayer player, final BaseActionSource mySrc, final IEnergySource energySrc, final IStorageMonitorable storage, final IInventory cMatrix, final IInventory secondMatrix, final IInventory output, final int x, final int y, final IContainerCraftingPacket ccp )
-	{
-		super( player, cMatrix, output, 0, x, y );
-		this.energySrc = energySrc;
-		this.storage = storage;
-		this.mySrc = mySrc;
-		this.pattern = cMatrix;
-		this.craftInv = secondMatrix;
-		this.container = ccp;
-	}
+    @Override
+    public void onPickupFromSlot(final EntityPlayer p, final ItemStack is) {}
 
-	public IInventory getCraftingMatrix()
-	{
-		return this.craftInv;
-	}
+    public void doClick(final InventoryAction action, final EntityPlayer who) {
+        if (this.getStack() == null) {
+            return;
+        }
+        if (Platform.isClient()) {
+            return;
+        }
 
-	@Override
-	public boolean canTakeStack( final EntityPlayer par1EntityPlayer )
-	{
-		return false;
-	}
+        final IMEMonitor<IAEItemStack> inv = this.storage.getItemInventory();
+        final int howManyPerCraft = this.getStack().stackSize;
+        int maxTimesToCraft = 0;
 
-	@Override
-	public void onPickupFromSlot( final EntityPlayer p, final ItemStack is )
-	{
-	}
+        InventoryAdaptor ia = null;
+        if (action == InventoryAction.CRAFT_SHIFT) // craft into player inventory...
+        {
+            ia = InventoryAdaptor.getAdaptor(who, null);
+            maxTimesToCraft = (int) Math.floor(
+                (double) this.getStack().getMaxStackSize() / (double) howManyPerCraft
+            );
+        } else if (action == InventoryAction.CRAFT_STACK) // craft into hand, full stack
+        {
+            ia = new AdaptorPlayerHand(who);
+            maxTimesToCraft = (int) Math.floor(
+                (double) this.getStack().getMaxStackSize() / (double) howManyPerCraft
+            );
+        } else
+        // pick up what was crafted...
+        {
+            ia = new AdaptorPlayerHand(who);
+            maxTimesToCraft = 1;
+        }
 
-	public void doClick( final InventoryAction action, final EntityPlayer who )
-	{
-		if( this.getStack() == null )
-		{
-			return;
-		}
-		if( Platform.isClient() )
-		{
-			return;
-		}
+        maxTimesToCraft = this.capCraftingAttempts(maxTimesToCraft);
 
-		final IMEMonitor<IAEItemStack> inv = this.storage.getItemInventory();
-		final int howManyPerCraft = this.getStack().stackSize;
-		int maxTimesToCraft = 0;
+        if (ia == null) {
+            return;
+        }
 
-		InventoryAdaptor ia = null;
-		if( action == InventoryAction.CRAFT_SHIFT ) // craft into player inventory...
-		{
-			ia = InventoryAdaptor.getAdaptor( who, null );
-			maxTimesToCraft = (int) Math.floor( (double) this.getStack().getMaxStackSize() / (double) howManyPerCraft );
-		}
-		else if( action == InventoryAction.CRAFT_STACK ) // craft into hand, full stack
-		{
-			ia = new AdaptorPlayerHand( who );
-			maxTimesToCraft = (int) Math.floor( (double) this.getStack().getMaxStackSize() / (double) howManyPerCraft );
-		}
-		else
-		// pick up what was crafted...
-		{
-			ia = new AdaptorPlayerHand( who );
-			maxTimesToCraft = 1;
-		}
+        final ItemStack rs = Platform.cloneItemStack(this.getStack());
+        if (rs == null) {
+            return;
+        }
 
-		maxTimesToCraft = this.capCraftingAttempts( maxTimesToCraft );
+        for (int x = 0; x < maxTimesToCraft; x++) {
+            if (ia.simulateAdd(rs) == null) {
+                final IItemList<IAEItemStack> all = inv.getStorageList();
+                final ItemStack extra = ia.addItems(this.craftItem(who, rs, inv, all));
+                if (extra != null) {
+                    final List<ItemStack> drops = new ArrayList<ItemStack>();
+                    drops.add(extra);
+                    Platform.spawnDrops(
+                        who.worldObj,
+                        (int) who.posX,
+                        (int) who.posY,
+                        (int) who.posZ,
+                        drops
+                    );
+                    return;
+                }
+            }
+        }
+    }
 
-		if( ia == null )
-		{
-			return;
-		}
+    private int capCraftingAttempts(final int maxTimesToCraft) {
+        return maxTimesToCraft;
+    }
 
-		final ItemStack rs = Platform.cloneItemStack( this.getStack() );
-		if( rs == null )
-		{
-			return;
-		}
+    private ItemStack craftItem(
+        final EntityPlayer p,
+        final ItemStack request,
+        final IMEMonitor<IAEItemStack> inv,
+        final IItemList all
+    ) {
+        // update crafting matrix...
+        ItemStack is = this.getStack();
 
-		for( int x = 0; x < maxTimesToCraft; x++ )
-		{
-			if( ia.simulateAdd( rs ) == null )
-			{
-				final IItemList<IAEItemStack> all = inv.getStorageList();
-				final ItemStack extra = ia.addItems( this.craftItem( who, rs, inv, all ) );
-				if( extra != null )
-				{
-					final List<ItemStack> drops = new ArrayList<ItemStack>();
-					drops.add( extra );
-					Platform.spawnDrops( who.worldObj, (int) who.posX, (int) who.posY, (int) who.posZ, drops );
-					return;
-				}
-			}
-		}
-	}
+        if (is != null && Platform.isSameItem(request, is)) {
+            final ItemStack[] set = new ItemStack[this.getPattern().getSizeInventory()];
 
-	private int capCraftingAttempts( final int maxTimesToCraft )
-	{
-		return maxTimesToCraft;
-	}
+            // add one of each item to the items on the board...
+            if (Platform.isServer()) {
+                final InventoryCrafting ic
+                    = new InventoryCrafting(new ContainerNull(), 3, 3);
+                for (int x = 0; x < 9; x++) {
+                    ic.setInventorySlotContents(x, this.getPattern().getStackInSlot(x));
+                }
 
-	private ItemStack craftItem( final EntityPlayer p, final ItemStack request, final IMEMonitor<IAEItemStack> inv, final IItemList all )
-	{
-		// update crafting matrix...
-		ItemStack is = this.getStack();
+                final IRecipe r = Platform.findMatchingRecipe(ic, p.worldObj);
 
-		if( is != null && Platform.isSameItem( request, is ) )
-		{
-			final ItemStack[] set = new ItemStack[this.getPattern().getSizeInventory()];
+                if (r == null) {
+                    final Item target = request.getItem();
+                    if (target.isDamageable() && target.isRepairable()) {
+                        boolean isBad = false;
+                        for (int x = 0; x < ic.getSizeInventory(); x++) {
+                            final ItemStack pis = ic.getStackInSlot(x);
+                            if (pis == null) {
+                                continue;
+                            }
+                            if (pis.getItem() != target) {
+                                isBad = true;
+                            }
+                        }
+                        if (!isBad) {
+                            super.onPickupFromSlot(p, is);
+                            // actually necessary to cleanup this case...
+                            p.openContainer.onCraftMatrixChanged(this.craftInv);
+                            return request;
+                        }
+                    }
+                    return null;
+                }
 
-			// add one of each item to the items on the board...
-			if( Platform.isServer() )
-			{
-				final InventoryCrafting ic = new InventoryCrafting( new ContainerNull(), 3, 3 );
-				for( int x = 0; x < 9; x++ )
-				{
-					ic.setInventorySlotContents( x, this.getPattern().getStackInSlot( x ) );
-				}
+                is = r.getCraftingResult(ic);
 
-				final IRecipe r = Platform.findMatchingRecipe( ic, p.worldObj );
+                if (inv != null) {
+                    for (int x = 0; x < this.getPattern().getSizeInventory(); x++) {
+                        if (this.getPattern().getStackInSlot(x) != null) {
+                            set[x] = Platform.extractItemsByRecipe(
+                                this.energySrc,
+                                this.mySrc,
+                                inv,
+                                p.worldObj,
+                                r,
+                                is,
+                                ic,
+                                this.getPattern().getStackInSlot(x),
+                                x,
+                                all,
+                                Actionable.MODULATE,
+                                ItemViewCell.createFilter(this.container.getViewCells())
+                            );
+                            ic.setInventorySlotContents(x, set[x]);
+                        }
+                    }
+                }
+            }
 
-				if( r == null )
-				{
-					final Item target = request.getItem();
-					if( target.isDamageable() && target.isRepairable() )
-					{
-						boolean isBad = false;
-						for( int x = 0; x < ic.getSizeInventory(); x++ )
-						{
-							final ItemStack pis = ic.getStackInSlot( x );
-							if( pis == null )
-							{
-								continue;
-							}
-							if( pis.getItem() != target )
-							{
-								isBad = true;
-							}
-						}
-						if( !isBad )
-						{
-							super.onPickupFromSlot( p, is );
-							// actually necessary to cleanup this case...
-							p.openContainer.onCraftMatrixChanged( this.craftInv );
-							return request;
-						}
-					}
-					return null;
-				}
+            if (this.preCraft(p, inv, set, is)) {
+                this.makeItem(p, is);
 
-				is = r.getCraftingResult( ic );
+                this.postCraft(p, inv, set, is);
+            }
 
-				if( inv != null )
-				{
-					for( int x = 0; x < this.getPattern().getSizeInventory(); x++ )
-					{
-						if( this.getPattern().getStackInSlot( x ) != null )
-						{
-							set[x] = Platform.extractItemsByRecipe( this.energySrc, this.mySrc, inv, p.worldObj, r, is, ic, this.getPattern().getStackInSlot( x ), x, all, Actionable.MODULATE, ItemViewCell.createFilter( this.container.getViewCells() ) );
-							ic.setInventorySlotContents( x, set[x] );
-						}
-					}
-				}
-			}
+            // shouldn't be necessary...
+            p.openContainer.onCraftMatrixChanged(this.craftInv);
 
-			if( this.preCraft( p, inv, set, is ) )
-			{
-				this.makeItem( p, is );
+            return is;
+        }
 
-				this.postCraft( p, inv, set, is );
-			}
+        return null;
+    }
 
-			// shouldn't be necessary...
-			p.openContainer.onCraftMatrixChanged( this.craftInv );
+    private boolean preCraft(
+        final EntityPlayer p,
+        final IMEMonitor<IAEItemStack> inv,
+        final ItemStack[] set,
+        final ItemStack result
+    ) {
+        return true;
+    }
 
-			return is;
-		}
+    private void makeItem(final EntityPlayer p, final ItemStack is) {
+        super.onPickupFromSlot(p, is);
+    }
 
-		return null;
-	}
+    private void postCraft(
+        final EntityPlayer p,
+        final IMEMonitor<IAEItemStack> inv,
+        final ItemStack[] set,
+        final ItemStack result
+    ) {
+        final List<ItemStack> drops = new ArrayList<ItemStack>();
 
-	private boolean preCraft( final EntityPlayer p, final IMEMonitor<IAEItemStack> inv, final ItemStack[] set, final ItemStack result )
-	{
-		return true;
-	}
+        // add one of each item to the items on the board...
+        if (Platform.isServer()) {
+            // set new items onto the crafting table...
+            for (int x = 0; x < this.craftInv.getSizeInventory(); x++) {
+                if (this.craftInv.getStackInSlot(x) == null) {
+                    this.craftInv.setInventorySlotContents(x, set[x]);
+                } else if (set[x] != null) {
+                    // eek! put it back!
+                    final IAEItemStack fail = inv.injectItems(
+                        AEItemStack.create(set[x]), Actionable.MODULATE, this.mySrc
+                    );
+                    if (fail != null) {
+                        drops.add(fail.getItemStack());
+                    }
+                }
+            }
+        }
 
-	private void makeItem( final EntityPlayer p, final ItemStack is )
-	{
-		super.onPickupFromSlot( p, is );
-	}
+        if (drops.size() > 0) {
+            Platform.spawnDrops(
+                p.worldObj, (int) p.posX, (int) p.posY, (int) p.posZ, drops
+            );
+        }
+    }
 
-	private void postCraft( final EntityPlayer p, final IMEMonitor<IAEItemStack> inv, final ItemStack[] set, final ItemStack result )
-	{
-		final List<ItemStack> drops = new ArrayList<ItemStack>();
-
-		// add one of each item to the items on the board...
-		if( Platform.isServer() )
-		{
-			// set new items onto the crafting table...
-			for( int x = 0; x < this.craftInv.getSizeInventory(); x++ )
-			{
-				if( this.craftInv.getStackInSlot( x ) == null )
-				{
-					this.craftInv.setInventorySlotContents( x, set[x] );
-				}
-				else if( set[x] != null )
-				{
-					// eek! put it back!
-					final IAEItemStack fail = inv.injectItems( AEItemStack.create( set[x] ), Actionable.MODULATE, this.mySrc );
-					if( fail != null )
-					{
-						drops.add( fail.getItemStack() );
-					}
-				}
-			}
-		}
-
-		if( drops.size() > 0 )
-		{
-			Platform.spawnDrops( p.worldObj, (int) p.posX, (int) p.posY, (int) p.posZ, drops );
-		}
-	}
-
-	IInventory getPattern()
-	{
-		return this.pattern;
-	}
+    IInventory getPattern() {
+        return this.pattern;
+    }
 }

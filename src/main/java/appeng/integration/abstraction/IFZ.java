@@ -18,28 +18,24 @@
 
 package appeng.integration.abstraction;
 
-
 import appeng.api.storage.IMEInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 
+public interface IFZ {
+    ItemStack barrelGetItem(TileEntity te);
 
-public interface IFZ
-{
+    int barrelGetMaxItemCount(TileEntity te);
 
-	ItemStack barrelGetItem( TileEntity te );
+    int barrelGetItemCount(TileEntity te);
 
-	int barrelGetMaxItemCount( TileEntity te );
+    void setItemType(TileEntity te, ItemStack input);
 
-	int barrelGetItemCount( TileEntity te );
+    void barrelSetCount(TileEntity te, int max);
 
-	void setItemType( TileEntity te, ItemStack input );
+    IMEInventory getFactorizationBarrel(TileEntity te);
 
-	void barrelSetCount( TileEntity te, int max );
+    boolean isBarrel(TileEntity te);
 
-	IMEInventory getFactorizationBarrel( TileEntity te );
-
-	boolean isBarrel( TileEntity te );
-
-	void grinderRecipe( ItemStack is, ItemStack itemStack );
+    void grinderRecipe(ItemStack is, ItemStack itemStack);
 }

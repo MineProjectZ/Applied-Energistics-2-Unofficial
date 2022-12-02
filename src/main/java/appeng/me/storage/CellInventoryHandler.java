@@ -18,7 +18,6 @@
 
 package appeng.me.storage;
 
-
 import appeng.api.AEApi;
 import appeng.api.config.FuzzyMode;
 import appeng.api.config.IncludeExclude;
@@ -36,114 +35,100 @@ import appeng.util.prioitylist.PrecisePriorityList;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 
+public class CellInventoryHandler
+    extends MEInventoryHandler<IAEItemStack> implements ICellInventoryHandler {
+    CellInventoryHandler(final IMEInventory<IAEItemStack> c) {
+        super(c, StorageChannel.ITEMS);
 
-public class CellInventoryHandler extends MEInventoryHandler<IAEItemStack> implements ICellInventoryHandler
-{
+        final ICellInventory ci = this.getCellInv();
 
-	CellInventoryHandler( final IMEInventory<IAEItemStack> c )
-	{
-		super( c, StorageChannel.ITEMS );
+        if (ci != null) {
+            final IItemList<IAEItemStack> priorityList
+                = AEApi.instance().storage().createItemList();
 
-		final ICellInventory ci = this.getCellInv();
+            final IInventory upgrades = ci.getUpgradesInventory();
+            final IInventory config = ci.getConfigInventory();
+            final FuzzyMode fzMode = ci.getFuzzyMode();
 
-		if( ci != null )
-		{
-			final IItemList<IAEItemStack> priorityList = AEApi.instance().storage().createItemList();
+            boolean hasInverter = false;
+            boolean hasFuzzy = false;
 
-			final IInventory upgrades = ci.getUpgradesInventory();
-			final IInventory config = ci.getConfigInventory();
-			final FuzzyMode fzMode = ci.getFuzzyMode();
+            for (int x = 0; x < upgrades.getSizeInventory(); x++) {
+                final ItemStack is = upgrades.getStackInSlot(x);
+                if (is != null && is.getItem() instanceof IUpgradeModule) {
+                    final Upgrades u = ((IUpgradeModule) is.getItem()).getType(is);
+                    if (u != null) {
+                        switch (u) {
+                            case FUZZY:
+                                hasFuzzy = true;
+                                break;
+                            case INVERTER:
+                                hasInverter = true;
+                                break;
+                            default:
+                        }
+                    }
+                }
+            }
 
-			boolean hasInverter = false;
-			boolean hasFuzzy = false;
+            for (int x = 0; x < config.getSizeInventory(); x++) {
+                final ItemStack is = config.getStackInSlot(x);
+                if (is != null) {
+                    priorityList.add(AEItemStack.create(is));
+                }
+            }
 
-			for( int x = 0; x < upgrades.getSizeInventory(); x++ )
-			{
-				final ItemStack is = upgrades.getStackInSlot( x );
-				if( is != null && is.getItem() instanceof IUpgradeModule )
-				{
-					final Upgrades u = ( (IUpgradeModule) is.getItem() ).getType( is );
-					if( u != null )
-					{
-						switch( u )
-						{
-							case FUZZY:
-								hasFuzzy = true;
-								break;
-							case INVERTER:
-								hasInverter = true;
-								break;
-							default:
-						}
-					}
-				}
-			}
+            this.setWhitelist(
+                hasInverter ? IncludeExclude.BLACKLIST : IncludeExclude.WHITELIST
+            );
 
-			for( int x = 0; x < config.getSizeInventory(); x++ )
-			{
-				final ItemStack is = config.getStackInSlot( x );
-				if( is != null )
-				{
-					priorityList.add( AEItemStack.create( is ) );
-				}
-			}
+            if (!priorityList.isEmpty()) {
+                if (hasFuzzy) {
+                    this.setPartitionList(
+                        new FuzzyPriorityList<IAEItemStack>(priorityList, fzMode)
+                    );
+                } else {
+                    this.setPartitionList(
+                        new PrecisePriorityList<IAEItemStack>(priorityList)
+                    );
+                }
+            }
+        }
+    }
 
-			this.setWhitelist( hasInverter ? IncludeExclude.BLACKLIST : IncludeExclude.WHITELIST );
+    @Override
+    public ICellInventory getCellInv() {
+        Object o = this.getInternal();
 
-			if( !priorityList.isEmpty() )
-			{
-				if( hasFuzzy )
-				{
-					this.setPartitionList( new FuzzyPriorityList<IAEItemStack>( priorityList, fzMode ) );
-				}
-				else
-				{
-					this.setPartitionList( new PrecisePriorityList<IAEItemStack>( priorityList ) );
-				}
-			}
-		}
-	}
+        if (o instanceof MEPassThrough) {
+            o = ((MEPassThrough) o).getInternal();
+        }
 
-	@Override
-	public ICellInventory getCellInv()
-	{
-		Object o = this.getInternal();
+        return (ICellInventory) (o instanceof ICellInventory ? o : null);
+    }
 
-		if( o instanceof MEPassThrough )
-		{
-			o = ( (MEPassThrough) o ).getInternal();
-		}
+    @Override
+    public boolean isPreformatted() {
+        return !this.getPartitionList().isEmpty();
+    }
 
-		return (ICellInventory) ( o instanceof ICellInventory ? o : null );
-	}
+    @Override
+    public boolean isFuzzy() {
+        return this.getPartitionList() instanceof FuzzyPriorityList;
+    }
 
-	@Override
-	public boolean isPreformatted()
-	{
-		return !this.getPartitionList().isEmpty();
-	}
+    @Override
+    public IncludeExclude getIncludeExcludeMode() {
+        return this.getWhitelist();
+    }
 
-	@Override
-	public boolean isFuzzy()
-	{
-		return this.getPartitionList() instanceof FuzzyPriorityList;
-	}
+    public int getStatusForCell() {
+        int val = this.getCellInv().getStatusForCell();
 
-	@Override
-	public IncludeExclude getIncludeExcludeMode()
-	{
-		return this.getWhitelist();
-	}
+        if (val == 1 && this.isPreformatted()) {
+            val = 2;
+        }
 
-	public int getStatusForCell()
-	{
-		int val = this.getCellInv().getStatusForCell();
-
-		if( val == 1 && this.isPreformatted() )
-		{
-			val = 2;
-		}
-
-		return val;
-	}
+        return val;
+    }
 }

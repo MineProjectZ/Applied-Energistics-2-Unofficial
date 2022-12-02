@@ -18,6 +18,8 @@
 
 package appeng.tile.grindstone;
 
+import java.util.ArrayList;
+import java.util.List;
 
 import appeng.api.AEApi;
 import appeng.api.features.IGrinderEntry;
@@ -33,168 +35,152 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.ArrayList;
-import java.util.List;
+public class TileGrinder extends AEBaseInvTile implements ICrankable {
+    private final int[] inputs = { 0, 1, 2 };
+    private final int[] sides = { 0, 1, 2, 3, 4, 5 };
+    private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 7);
+    private int points;
 
+    @Override
+    public void
+    setOrientation(final ForgeDirection inForward, final ForgeDirection inUp) {
+        super.setOrientation(inForward, inUp);
+        this.getBlockType().onNeighborBlockChange(
+            this.worldObj, this.xCoord, this.yCoord, this.zCoord, Platform.AIR_BLOCK
+        );
+    }
 
-public class TileGrinder extends AEBaseInvTile implements ICrankable
-{
+    @Override
+    public IInventory getInternalInventory() {
+        return this.inv;
+    }
 
-	private final int[] inputs = { 0, 1, 2 };
-	private final int[] sides = { 0, 1, 2, 3, 4, 5 };
-	private final AppEngInternalInventory inv = new AppEngInternalInventory( this, 7 );
-	private int points;
+    @Override
+    public void onChangeInventory(
+        final IInventory inv,
+        final int slot,
+        final InvOperation mc,
+        final ItemStack removed,
+        final ItemStack added
+    ) {}
 
-	@Override
-	public void setOrientation( final ForgeDirection inForward, final ForgeDirection inUp )
-	{
-		super.setOrientation( inForward, inUp );
-		this.getBlockType().onNeighborBlockChange( this.worldObj, this.xCoord, this.yCoord, this.zCoord, Platform.AIR_BLOCK );
-	}
+    @Override
+    public boolean
+    canInsertItem(final int slotIndex, final ItemStack insertingItem, final int side) {
+        if (AEApi.instance().registries().grinder().getRecipeForInput(insertingItem)
+            == null) {
+            return false;
+        }
 
-	@Override
-	public IInventory getInternalInventory()
-	{
-		return this.inv;
-	}
+        return slotIndex >= 0 && slotIndex <= 2;
+    }
 
-	@Override
-	public void onChangeInventory( final IInventory inv, final int slot, final InvOperation mc, final ItemStack removed, final ItemStack added )
-	{
+    @Override
+    public boolean
+    canExtractItem(final int slotIndex, final ItemStack extractedItem, final int side) {
+        return slotIndex >= 3 && slotIndex <= 5;
+    }
 
-	}
+    @Override
+    public int[] getAccessibleSlotsBySide(final ForgeDirection side) {
+        return this.sides;
+    }
 
-	@Override
-	public boolean canInsertItem( final int slotIndex, final ItemStack insertingItem, final int side )
-	{
-		if( AEApi.instance().registries().grinder().getRecipeForInput( insertingItem ) == null )
-		{
-			return false;
-		}
+    @Override
+    public boolean canTurn() {
+        if (Platform.isClient()) {
+            return false;
+        }
 
-		return slotIndex >= 0 && slotIndex <= 2;
-	}
+        if (null == this.getStackInSlot(6)) // Add if there isn't one...
+        {
+            final IInventory src = new WrapperInventoryRange(this, this.inputs, true);
+            for (int x = 0; x < src.getSizeInventory(); x++) {
+                ItemStack item = src.getStackInSlot(x);
+                if (item == null) {
+                    continue;
+                }
 
-	@Override
-	public boolean canExtractItem( final int slotIndex, final ItemStack extractedItem, final int side )
-	{
-		return slotIndex >= 3 && slotIndex <= 5;
-	}
+                final IGrinderEntry r
+                    = AEApi.instance().registries().grinder().getRecipeForInput(item);
+                if (r != null) {
+                    if (item.stackSize >= r.getInput().stackSize) {
+                        item.stackSize -= r.getInput().stackSize;
+                        final ItemStack ais = item.copy();
+                        ais.stackSize = r.getInput().stackSize;
 
-	@Override
-	public int[] getAccessibleSlotsBySide( final ForgeDirection side )
-	{
-		return this.sides;
-	}
+                        if (item.stackSize <= 0) {
+                            item = null;
+                        }
 
-	@Override
-	public boolean canTurn()
-	{
-		if( Platform.isClient() )
-		{
-			return false;
-		}
+                        src.setInventorySlotContents(x, item);
+                        this.setInventorySlotContents(6, ais);
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        return true;
+    }
 
-		if( null == this.getStackInSlot( 6 ) ) // Add if there isn't one...
-		{
-			final IInventory src = new WrapperInventoryRange( this, this.inputs, true );
-			for( int x = 0; x < src.getSizeInventory(); x++ )
-			{
-				ItemStack item = src.getStackInSlot( x );
-				if( item == null )
-				{
-					continue;
-				}
+    @Override
+    public void applyTurn() {
+        if (Platform.isClient()) {
+            return;
+        }
 
-				final IGrinderEntry r = AEApi.instance().registries().grinder().getRecipeForInput( item );
-				if( r != null )
-				{
-					if( item.stackSize >= r.getInput().stackSize )
-					{
-						item.stackSize -= r.getInput().stackSize;
-						final ItemStack ais = item.copy();
-						ais.stackSize = r.getInput().stackSize;
+        this.points++;
 
-						if( item.stackSize <= 0 )
-						{
-							item = null;
-						}
+        final ItemStack processing = this.getStackInSlot(6);
+        final IGrinderEntry r
+            = AEApi.instance().registries().grinder().getRecipeForInput(processing);
+        if (r != null) {
+            if (r.getEnergyCost() > this.points) {
+                return;
+            }
 
-						src.setInventorySlotContents( x, item );
-						this.setInventorySlotContents( 6, ais );
-						return true;
-					}
-				}
-			}
-			return false;
-		}
-		return true;
-	}
+            this.points = 0;
+            final InventoryAdaptor sia = InventoryAdaptor.getAdaptor(
+                new WrapperInventoryRange(this, 3, 3, true), ForgeDirection.EAST
+            );
 
-	@Override
-	public void applyTurn()
-	{
-		if( Platform.isClient() )
-		{
-			return;
-		}
+            this.addItem(sia, r.getOutput());
 
-		this.points++;
+            float chance = (Platform.getRandomInt() % 2000) / 2000.0f;
+            if (chance <= r.getOptionalChance()) {
+                this.addItem(sia, r.getOptionalOutput());
+            }
 
-		final ItemStack processing = this.getStackInSlot( 6 );
-		final IGrinderEntry r = AEApi.instance().registries().grinder().getRecipeForInput( processing );
-		if( r != null )
-		{
-			if( r.getEnergyCost() > this.points )
-			{
-				return;
-			}
+            chance = (Platform.getRandomInt() % 2000) / 2000.0f;
+            if (chance <= r.getSecondOptionalChance()) {
+                this.addItem(sia, r.getSecondOptionalOutput());
+            }
 
-			this.points = 0;
-			final InventoryAdaptor sia = InventoryAdaptor.getAdaptor( new WrapperInventoryRange( this, 3, 3, true ), ForgeDirection.EAST );
+            this.setInventorySlotContents(6, null);
+        }
+    }
 
-			this.addItem( sia, r.getOutput() );
+    private void addItem(final InventoryAdaptor sia, final ItemStack output) {
+        if (output == null) {
+            return;
+        }
 
-			float chance = ( Platform.getRandomInt() % 2000 ) / 2000.0f;
-			if( chance <= r.getOptionalChance() )
-			{
-				this.addItem( sia, r.getOptionalOutput() );
-			}
+        final ItemStack notAdded = sia.addItems(output);
+        if (notAdded != null) {
+            final WorldCoord wc = new WorldCoord(this.xCoord, this.yCoord, this.zCoord);
 
-			chance = ( Platform.getRandomInt() % 2000 ) / 2000.0f;
-			if( chance <= r.getSecondOptionalChance() )
-			{
-				this.addItem( sia, r.getSecondOptionalOutput() );
-			}
+            wc.add(this.getForward(), 1);
 
-			this.setInventorySlotContents( 6, null );
-		}
-	}
+            final List<ItemStack> out = new ArrayList<ItemStack>();
+            out.add(notAdded);
 
-	private void addItem( final InventoryAdaptor sia, final ItemStack output )
-	{
-		if( output == null )
-		{
-			return;
-		}
+            Platform.spawnDrops(this.worldObj, wc.x, wc.y, wc.z, out);
+        }
+    }
 
-		final ItemStack notAdded = sia.addItems( output );
-		if( notAdded != null )
-		{
-			final WorldCoord wc = new WorldCoord( this.xCoord, this.yCoord, this.zCoord );
-
-			wc.add( this.getForward(), 1 );
-
-			final List<ItemStack> out = new ArrayList<ItemStack>();
-			out.add( notAdded );
-
-			Platform.spawnDrops( this.worldObj, wc.x, wc.y, wc.z, out );
-		}
-	}
-
-	@Override
-	public boolean canCrankAttach( final ForgeDirection directionToCrank )
-	{
-		return this.getUp() == directionToCrank;
-	}
+    @Override
+    public boolean canCrankAttach(final ForgeDirection directionToCrank) {
+        return this.getUp() == directionToCrank;
+    }
 }

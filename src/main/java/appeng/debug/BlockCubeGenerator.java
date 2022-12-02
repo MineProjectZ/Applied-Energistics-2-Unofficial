@@ -18,6 +18,7 @@
 
 package appeng.debug;
 
+import java.util.EnumSet;
 
 import appeng.block.AEBaseTileBlock;
 import appeng.core.features.AEFeature;
@@ -26,34 +27,37 @@ import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 
-import java.util.EnumSet;
+public class BlockCubeGenerator extends AEBaseTileBlock {
+    public BlockCubeGenerator() {
+        super(Material.iron);
+        this.setTileEntity(TileCubeGenerator.class);
+        this.setFeature(
+            EnumSet.of(AEFeature.UnsupportedDeveloperTools, AEFeature.Creative)
+        );
+    }
 
+    @Override
+    public boolean onActivated(
+        final World w,
+        final int x,
+        final int y,
+        final int z,
+        final EntityPlayer player,
+        final int side,
+        final float hitX,
+        final float hitY,
+        final float hitZ
+    ) {
+        final TileCubeGenerator tcg = this.getTileEntity(w, x, y, z);
+        if (tcg != null) {
+            tcg.click(player);
+        }
 
-public class BlockCubeGenerator extends AEBaseTileBlock
-{
+        return true;
+    }
 
-	public BlockCubeGenerator()
-	{
-		super( Material.iron );
-		this.setTileEntity( TileCubeGenerator.class );
-		this.setFeature( EnumSet.of( AEFeature.UnsupportedDeveloperTools, AEFeature.Creative ) );
-	}
-
-	@Override
-	public boolean onActivated( final World w, final int x, final int y, final int z, final EntityPlayer player, final int side, final float hitX, final float hitY, final float hitZ )
-	{
-		final TileCubeGenerator tcg = this.getTileEntity( w, x, y, z );
-		if( tcg != null )
-		{
-			tcg.click( player );
-		}
-
-		return true;
-	}
-
-	@Override
-	public void registerBlockIcons( final IIconRegister iconRegistry )
-	{
-		this.registerNoIcons();
-	}
+    @Override
+    public void registerBlockIcons(final IIconRegister iconRegistry) {
+        this.registerNoIcons();
+    }
 }

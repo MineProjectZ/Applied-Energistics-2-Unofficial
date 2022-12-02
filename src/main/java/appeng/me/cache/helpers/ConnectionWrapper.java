@@ -18,27 +18,20 @@
 
 package appeng.me.cache.helpers;
 
-
 import appeng.api.networking.IGridConnection;
 
+public class ConnectionWrapper {
+    private IGridConnection connection;
 
-public class ConnectionWrapper
-{
+    public ConnectionWrapper(final IGridConnection gc) {
+        this.setConnection(gc);
+    }
 
-	private IGridConnection connection;
+    public IGridConnection getConnection() {
+        return this.connection;
+    }
 
-	public ConnectionWrapper( final IGridConnection gc )
-	{
-		this.setConnection( gc );
-	}
-
-	public IGridConnection getConnection()
-	{
-		return this.connection;
-	}
-
-	public void setConnection( final IGridConnection connection )
-	{
-		this.connection = connection;
-	}
+    public void setConnection(final IGridConnection connection) {
+        this.connection = connection;
+    }
 }

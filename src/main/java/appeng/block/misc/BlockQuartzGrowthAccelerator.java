@@ -18,6 +18,8 @@
 
 package appeng.block.misc;
 
+import java.util.EnumSet;
+import java.util.Random;
 
 import appeng.api.util.IOrientableBlock;
 import appeng.block.AEBaseTileBlock;
@@ -36,116 +38,128 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.EnumSet;
-import java.util.Random;
+public class BlockQuartzGrowthAccelerator
+    extends AEBaseTileBlock implements IOrientableBlock {
+    public BlockQuartzGrowthAccelerator() {
+        super(Material.rock);
+        this.setStepSound(Block.soundTypeMetal);
+        this.setTileEntity(TileQuartzGrowthAccelerator.class);
+        this.setFeature(EnumSet.of(AEFeature.Core));
+    }
 
+    @Override
+    @SideOnly(Side.CLIENT)
+    protected RenderBlockQuartzAccelerator getRenderer() {
+        return new RenderBlockQuartzAccelerator();
+    }
 
-public class BlockQuartzGrowthAccelerator extends AEBaseTileBlock implements IOrientableBlock
-{
+    @Override
+    @SideOnly(Side.CLIENT)
+    public void randomDisplayTick(
+        final World w, final int x, final int y, final int z, final Random r
+    ) {
+        if (!AEConfig.instance.enableEffects) {
+            return;
+        }
 
-	public BlockQuartzGrowthAccelerator()
-	{
-		super( Material.rock );
-		this.setStepSound( Block.soundTypeMetal );
-		this.setTileEntity( TileQuartzGrowthAccelerator.class );
-		this.setFeature( EnumSet.of( AEFeature.Core ) );
-	}
+        final TileQuartzGrowthAccelerator cga = this.getTileEntity(w, x, y, z);
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	protected RenderBlockQuartzAccelerator getRenderer()
-	{
-		return new RenderBlockQuartzAccelerator();
-	}
+        if (cga != null && cga.isPowered() && CommonHelper.proxy.shouldAddParticles(r)) {
+            final double d0 = r.nextFloat() - 0.5F;
+            final double d1 = r.nextFloat() - 0.5F;
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	public void randomDisplayTick( final World w, final int x, final int y, final int z, final Random r )
-	{
-		if( !AEConfig.instance.enableEffects )
-		{
-			return;
-		}
+            final ForgeDirection up = cga.getUp();
+            final ForgeDirection forward = cga.getForward();
+            final ForgeDirection west = Platform.crossProduct(forward, up);
 
-		final TileQuartzGrowthAccelerator cga = this.getTileEntity( w, x, y, z );
+            double rx = 0.5 + x;
+            double ry = 0.5 + y;
+            double rz = 0.5 + z;
 
-		if( cga != null && cga.isPowered() && CommonHelper.proxy.shouldAddParticles( r ) )
-		{
-			final double d0 = r.nextFloat() - 0.5F;
-			final double d1 = r.nextFloat() - 0.5F;
+            rx += up.offsetX * d0;
+            ry += up.offsetY * d0;
+            rz += up.offsetZ * d0;
 
-			final ForgeDirection up = cga.getUp();
-			final ForgeDirection forward = cga.getForward();
-			final ForgeDirection west = Platform.crossProduct( forward, up );
+            double dz = 0;
+            double dx = 0;
+            switch (r.nextInt(4)) {
+                case 0:
+                    dx = 0.6;
+                    dz = d1;
+                    if (!w.getBlock(x + west.offsetX, y + west.offsetY, z + west.offsetZ)
+                             .isAir(
+                                 w, x + west.offsetX, y + west.offsetY, z + west.offsetZ
+                             )) {
+                        return;
+                    }
+                    break;
+                case 1:
+                    dx = d1;
+                    dz += 0.6;
+                    if (!w.getBlock(
+                              x + forward.offsetX,
+                              y + forward.offsetY,
+                              z + forward.offsetZ
+                        )
+                             .isAir(
+                                 w,
+                                 x + forward.offsetX,
+                                 y + forward.offsetY,
+                                 z + forward.offsetZ
+                             )) {
+                        return;
+                    }
+                    break;
+                case 2:
+                    dx = d1;
+                    dz = -0.6;
+                    if (!w.getBlock(
+                              x - forward.offsetX,
+                              y - forward.offsetY,
+                              z - forward.offsetZ
+                        )
+                             .isAir(
+                                 w,
+                                 x - forward.offsetX,
+                                 y - forward.offsetY,
+                                 z - forward.offsetZ
+                             )) {
+                        return;
+                    }
+                    break;
+                case 3:
+                    dx = -0.6;
+                    dz = d1;
+                    if (!w.getBlock(x - west.offsetX, y - west.offsetY, z - west.offsetZ)
+                             .isAir(
+                                 w, x - west.offsetX, y - west.offsetY, z - west.offsetZ
+                             )) {
+                        return;
+                    }
+                    break;
+            }
 
-			double rx = 0.5 + x;
-			double ry = 0.5 + y;
-			double rz = 0.5 + z;
+            rx += dx * west.offsetX;
+            ry += dx * west.offsetY;
+            rz += dx * west.offsetZ;
 
-			rx += up.offsetX * d0;
-			ry += up.offsetY * d0;
-			rz += up.offsetZ * d0;
+            rx += dz * forward.offsetX;
+            ry += dz * forward.offsetY;
+            rz += dz * forward.offsetZ;
 
-			double dz = 0;
-			double dx = 0;
-			switch( r.nextInt( 4 ) )
-			{
-				case 0:
-					dx = 0.6;
-					dz = d1;
-					if( !w.getBlock( x + west.offsetX, y + west.offsetY, z + west.offsetZ ).isAir( w, x + west.offsetX, y + west.offsetY, z + west.offsetZ ) )
-					{
-						return;
-					}
-					break;
-				case 1:
-					dx = d1;
-					dz += 0.6;
-					if( !w.getBlock( x + forward.offsetX, y + forward.offsetY, z + forward.offsetZ ).isAir( w, x + forward.offsetX, y + forward.offsetY, z + forward.offsetZ ) )
-					{
-						return;
-					}
-					break;
-				case 2:
-					dx = d1;
-					dz = -0.6;
-					if( !w.getBlock( x - forward.offsetX, y - forward.offsetY, z - forward.offsetZ ).isAir( w, x - forward.offsetX, y - forward.offsetY, z - forward.offsetZ ) )
-					{
-						return;
-					}
-					break;
-				case 3:
-					dx = -0.6;
-					dz = d1;
-					if( !w.getBlock( x - west.offsetX, y - west.offsetY, z - west.offsetZ ).isAir( w, x - west.offsetX, y - west.offsetY, z - west.offsetZ ) )
-					{
-						return;
-					}
-					break;
-			}
+            final LightningFX fx = new LightningFX(w, rx, ry, rz, 0.0D, 0.0D, 0.0D);
+            Minecraft.getMinecraft().effectRenderer.addEffect(fx);
+        }
+    }
 
-			rx += dx * west.offsetX;
-			ry += dx * west.offsetY;
-			rz += dx * west.offsetZ;
-
-			rx += dz * forward.offsetX;
-			ry += dz * forward.offsetY;
-			rz += dz * forward.offsetZ;
-
-			final LightningFX fx = new LightningFX( w, rx, ry, rz, 0.0D, 0.0D, 0.0D );
-			Minecraft.getMinecraft().effectRenderer.addEffect( fx );
-		}
-	}
-
-	@Override
-	/**
-	 * TODO: remove with 1.8 or later
-	 *
-	 * @Deprecated no longer true, only kept to prevent missing blocks.
-	 */
-	@Deprecated
-	public boolean usesMetadata()
-	{
-		return true;
-	}
+    @Override
+    /**
+     * TODO: remove with 1.8 or later
+     *
+     * @Deprecated no longer true, only kept to prevent missing blocks.
+     */
+    @Deprecated
+    public boolean usesMetadata() {
+        return true;
+    }
 }

@@ -18,46 +18,41 @@
 
 package appeng.client.gui.widgets;
 
-
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiTextField;
 
+public class GuiNumberBox extends GuiTextField {
+    private final Class type;
 
-public class GuiNumberBox extends GuiTextField
-{
+    public GuiNumberBox(
+        final FontRenderer fontRenderer,
+        final int x,
+        final int y,
+        final int width,
+        final int height,
+        final Class type
+    ) {
+        super(fontRenderer, x, y, width, height);
+        this.type = type;
+    }
 
-	private final Class type;
+    @Override
+    public void writeText(final String selectedText) {
+        final String original = this.getText();
+        super.writeText(selectedText);
 
-	public GuiNumberBox( final FontRenderer fontRenderer, final int x, final int y, final int width, final int height, final Class type )
-	{
-		super( fontRenderer, x, y, width, height );
-		this.type = type;
-	}
+        try {
+            if (this.type == int.class || this.type == Integer.class) {
+                Integer.parseInt(this.getText());
 
-	@Override
-	public void writeText( final String selectedText )
-	{
-		final String original = this.getText();
-		super.writeText( selectedText );
+            } else if (this.type == long.class || this.type == Long.class) {
+                Long.parseLong(this.getText());
 
-		try
-		{
-			if( this.type == int.class || this.type == Integer.class )
-			{
-				Integer.parseInt( this.getText() );
-			}
-			else if( this.type == long.class || this.type == Long.class )
-			{
-				Long.parseLong( this.getText() );
-			}
-			else if( this.type == double.class || this.type == Double.class )
-			{
-				Double.parseDouble( this.getText() );
-			}
-		}
-		catch( final NumberFormatException e )
-		{
-			this.setText( original );
-		}
-	}
+            } else if (this.type == double.class || this.type == Double.class) {
+                Double.parseDouble(this.getText());
+            }
+        } catch (final NumberFormatException e) {
+            this.setText(original);
+        }
+    }
 }

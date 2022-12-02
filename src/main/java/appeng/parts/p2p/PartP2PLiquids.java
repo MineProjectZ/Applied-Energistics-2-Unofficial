@@ -18,6 +18,10 @@
 
 package appeng.parts.p2p;
 
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Stack;
 
 import appeng.me.GridAccessException;
 import cpw.mods.fml.relauncher.Side;
@@ -32,275 +36,223 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.IFluidHandler;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Stack;
+public class PartP2PLiquids
+    extends PartP2PTunnel<PartP2PLiquids> implements IFluidHandler {
+    private static final ThreadLocal<Stack<PartP2PLiquids>> DEPTH
+        = new ThreadLocal<Stack<PartP2PLiquids>>();
+    private static final FluidTankInfo[] ACTIVE_TANK = { new FluidTankInfo(null, 10000) };
+    private static final FluidTankInfo[] INACTIVE_TANK = { new FluidTankInfo(null, 0) };
+    private IFluidHandler cachedTank;
+    private int tmpUsed;
 
+    public PartP2PLiquids(final ItemStack is) {
+        super(is);
+    }
 
-public class PartP2PLiquids extends PartP2PTunnel<PartP2PLiquids> implements IFluidHandler
-{
+    public float getPowerDrainPerTick() {
+        return 2.0f;
+    }
 
-	private static final ThreadLocal<Stack<PartP2PLiquids>> DEPTH = new ThreadLocal<Stack<PartP2PLiquids>>();
-	private static final FluidTankInfo[] ACTIVE_TANK = { new FluidTankInfo( null, 10000 ) };
-	private static final FluidTankInfo[] INACTIVE_TANK = { new FluidTankInfo( null, 0 ) };
-	private IFluidHandler cachedTank;
-	private int tmpUsed;
+    @Override
+    @SideOnly(Side.CLIENT)
+    public IIcon getTypeTexture() {
+        return Blocks.lapis_block.getBlockTextureFromSide(0);
+    }
 
-	public PartP2PLiquids( final ItemStack is )
-	{
-		super( is );
-	}
+    @Override
+    public void onTunnelNetworkChange() {
+        this.cachedTank = null;
+    }
 
-	public float getPowerDrainPerTick()
-	{
-		return 2.0f;
-	}
+    @Override
+    public void onNeighborChanged() {
+        this.cachedTank = null;
+        if (this.isOutput()) {
+            final PartP2PLiquids in = this.getInput();
+            if (in != null) {
+                in.onTunnelNetworkChange();
+            }
+        }
+    }
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	public IIcon getTypeTexture()
-	{
-		return Blocks.lapis_block.getBlockTextureFromSide( 0 );
-	}
+    @Override
+    public int
+    fill(final ForgeDirection from, final FluidStack resource, final boolean doFill) {
+        final Stack<PartP2PLiquids> stack = this.getDepth();
 
-	@Override
-	public void onTunnelNetworkChange()
-	{
-		this.cachedTank = null;
-	}
+        for (final PartP2PLiquids t : stack) {
+            if (t == this) {
+                return 0;
+            }
+        }
 
-	@Override
-	public void onNeighborChanged()
-	{
-		this.cachedTank = null;
-		if( this.isOutput() )
-		{
-			final PartP2PLiquids in = this.getInput();
-			if( in != null )
-			{
-				in.onTunnelNetworkChange();
-			}
-		}
-	}
+        stack.push(this);
 
-	@Override
-	public int fill( final ForgeDirection from, final FluidStack resource, final boolean doFill )
-	{
-		final Stack<PartP2PLiquids> stack = this.getDepth();
+        final List<PartP2PLiquids> list = this.getOutputs(resource.getFluid());
+        int requestTotal = 0;
 
-		for( final PartP2PLiquids t : stack )
-		{
-			if( t == this )
-			{
-				return 0;
-			}
-		}
+        Iterator<PartP2PLiquids> i = list.iterator();
+        while (i.hasNext()) {
+            final PartP2PLiquids l = i.next();
+            final IFluidHandler tank = l.getTarget();
+            if (tank != null) {
+                l.tmpUsed = tank.fill(l.getSide().getOpposite(), resource.copy(), false);
+            } else {
+                l.tmpUsed = 0;
+            }
 
-		stack.push( this );
+            if (l.tmpUsed <= 0) {
+                i.remove();
+            } else {
+                requestTotal += l.tmpUsed;
+            }
+        }
 
-		final List<PartP2PLiquids> list = this.getOutputs( resource.getFluid() );
-		int requestTotal = 0;
+        if (requestTotal <= 0) {
+            if (stack.pop() != this) {
+                throw new IllegalStateException("Invalid Recursion detected.");
+            }
 
-		Iterator<PartP2PLiquids> i = list.iterator();
-		while( i.hasNext() )
-		{
-			final PartP2PLiquids l = i.next();
-			final IFluidHandler tank = l.getTarget();
-			if( tank != null )
-			{
-				l.tmpUsed = tank.fill( l.getSide().getOpposite(), resource.copy(), false );
-			}
-			else
-			{
-				l.tmpUsed = 0;
-			}
+            return 0;
+        }
 
-			if( l.tmpUsed <= 0 )
-			{
-				i.remove();
-			}
-			else
-			{
-				requestTotal += l.tmpUsed;
-			}
-		}
+        if (!doFill) {
+            if (stack.pop() != this) {
+                throw new IllegalStateException("Invalid Recursion detected.");
+            }
 
-		if( requestTotal <= 0 )
-		{
-			if( stack.pop() != this )
-			{
-				throw new IllegalStateException( "Invalid Recursion detected." );
-			}
+            return Math.min(resource.amount, requestTotal);
+        }
 
-			return 0;
-		}
+        int available = resource.amount;
 
-		if( !doFill )
-		{
-			if( stack.pop() != this )
-			{
-				throw new IllegalStateException( "Invalid Recursion detected." );
-			}
+        i = list.iterator();
+        int used = 0;
 
-			return Math.min( resource.amount, requestTotal );
-		}
+        while (i.hasNext() && available > 0) {
+            final PartP2PLiquids l = i.next();
 
-		int available = resource.amount;
+            final FluidStack insert = resource.copy();
+            insert.amount = (int
+            ) Math.ceil(insert.amount * ((double) l.tmpUsed / (double) requestTotal));
+            if (insert.amount > available) {
+                insert.amount = available;
+            }
 
-		i = list.iterator();
-		int used = 0;
+            final IFluidHandler tank = l.getTarget();
+            if (tank != null) {
+                l.tmpUsed = tank.fill(l.getSide().getOpposite(), insert.copy(), true);
+            } else {
+                l.tmpUsed = 0;
+            }
 
-		while( i.hasNext() && available > 0 )
-		{
-			final PartP2PLiquids l = i.next();
+            available -= insert.amount;
+            used += l.tmpUsed;
+        }
 
-			final FluidStack insert = resource.copy();
-			insert.amount = (int) Math.ceil( insert.amount * ( (double) l.tmpUsed / (double) requestTotal ) );
-			if( insert.amount > available )
-			{
-				insert.amount = available;
-			}
+        if (stack.pop() != this) {
+            throw new IllegalStateException("Invalid Recursion detected.");
+        }
 
-			final IFluidHandler tank = l.getTarget();
-			if( tank != null )
-			{
-				l.tmpUsed = tank.fill( l.getSide().getOpposite(), insert.copy(), true );
-			}
-			else
-			{
-				l.tmpUsed = 0;
-			}
+        return used;
+    }
 
-			available -= insert.amount;
-			used += l.tmpUsed;
-		}
+    private Stack<PartP2PLiquids> getDepth() {
+        Stack<PartP2PLiquids> s = DEPTH.get();
 
-		if( stack.pop() != this )
-		{
-			throw new IllegalStateException( "Invalid Recursion detected." );
-		}
+        if (s == null) {
+            DEPTH.set(s = new Stack<PartP2PLiquids>());
+        }
 
-		return used;
-	}
+        return s;
+    }
 
-	private Stack<PartP2PLiquids> getDepth()
-	{
-		Stack<PartP2PLiquids> s = DEPTH.get();
+    private List<PartP2PLiquids> getOutputs(final Fluid input) {
+        final List<PartP2PLiquids> outs = new LinkedList<PartP2PLiquids>();
 
-		if( s == null )
-		{
-			DEPTH.set( s = new Stack<PartP2PLiquids>() );
-		}
+        try {
+            for (final PartP2PLiquids l : this.getOutputs()) {
+                final IFluidHandler handler = l.getTarget();
+                if (handler != null) {
+                    if (handler.canFill(l.getSide().getOpposite(), input)) {
+                        outs.add(l);
+                    }
+                }
+            }
+        } catch (final GridAccessException e) {
+            // :P
+        }
 
-		return s;
-	}
+        return outs;
+    }
 
-	private List<PartP2PLiquids> getOutputs( final Fluid input )
-	{
-		final List<PartP2PLiquids> outs = new LinkedList<PartP2PLiquids>();
+    private IFluidHandler getTarget() {
+        if (!this.getProxy().isActive()) {
+            return null;
+        }
 
-		try
-		{
-			for( final PartP2PLiquids l : this.getOutputs() )
-			{
-				final IFluidHandler handler = l.getTarget();
-				if( handler != null )
-				{
-					if( handler.canFill( l.getSide().getOpposite(), input ) )
-					{
-						outs.add( l );
-					}
-				}
-			}
-		}
-		catch( final GridAccessException e )
-		{
-			// :P
-		}
+        if (this.cachedTank != null) {
+            return this.cachedTank;
+        }
 
-		return outs;
-	}
+        final TileEntity te = this.getTile().getWorldObj().getTileEntity(
+            this.getTile().xCoord + this.getSide().offsetX,
+            this.getTile().yCoord + this.getSide().offsetY,
+            this.getTile().zCoord + this.getSide().offsetZ
+        );
+        if (te instanceof IFluidHandler) {
+            return this.cachedTank = (IFluidHandler) te;
+        }
 
-	private IFluidHandler getTarget()
-	{
-		if( !this.getProxy().isActive() )
-		{
-			return null;
-		}
+        return null;
+    }
 
-		if( this.cachedTank != null )
-		{
-			return this.cachedTank;
-		}
+    @Override
+    public FluidStack
+    drain(final ForgeDirection from, final FluidStack resource, final boolean doDrain) {
+        return null;
+    }
 
-		final TileEntity te = this.getTile().getWorldObj().getTileEntity( this.getTile().xCoord + this.getSide().offsetX, this.getTile().yCoord + this.getSide().offsetY, this.getTile().zCoord + this.getSide().offsetZ );
-		if( te instanceof IFluidHandler )
-		{
-			return this.cachedTank = (IFluidHandler) te;
-		}
+    @Override
+    public FluidStack
+    drain(final ForgeDirection from, final int maxDrain, final boolean doDrain) {
+        return null;
+    }
 
-		return null;
-	}
+    @Override
+    public boolean canFill(final ForgeDirection from, final Fluid fluid) {
+        return !this.isOutput() && from == this.getSide()
+            && !this.getOutputs(fluid).isEmpty();
+    }
 
-	@Override
-	public FluidStack drain( final ForgeDirection from, final FluidStack resource, final boolean doDrain )
-	{
-		return null;
-	}
+    @Override
+    public boolean canDrain(final ForgeDirection from, final Fluid fluid) {
+        return false;
+    }
 
-	@Override
-	public FluidStack drain( final ForgeDirection from, final int maxDrain, final boolean doDrain )
-	{
-		return null;
-	}
+    @Override
+    public FluidTankInfo[] getTankInfo(final ForgeDirection from) {
+        if (from == this.getSide()) {
+            return this.getTank();
+        }
+        return new FluidTankInfo[0];
+    }
 
-	@Override
-	public boolean canFill( final ForgeDirection from, final Fluid fluid )
-	{
-		return !this.isOutput() && from == this.getSide() && !this.getOutputs( fluid ).isEmpty();
-	}
-
-	@Override
-	public boolean canDrain( final ForgeDirection from, final Fluid fluid )
-	{
-		return false;
-	}
-
-	@Override
-	public FluidTankInfo[] getTankInfo( final ForgeDirection from )
-	{
-		if( from == this.getSide() )
-		{
-			return this.getTank();
-		}
-		return new FluidTankInfo[0];
-	}
-
-	private FluidTankInfo[] getTank()
-	{
-		if( this.isOutput() )
-		{
-			final PartP2PLiquids tun = this.getInput();
-			if( tun != null )
-			{
-				return ACTIVE_TANK;
-			}
-		}
-		else
-		{
-			try
-			{
-				if( !this.getOutputs().isEmpty() )
-				{
-					return ACTIVE_TANK;
-				}
-			}
-			catch( final GridAccessException e )
-			{
-				// :(
-			}
-		}
-		return INACTIVE_TANK;
-	}
+    private FluidTankInfo[] getTank() {
+        if (this.isOutput()) {
+            final PartP2PLiquids tun = this.getInput();
+            if (tun != null) {
+                return ACTIVE_TANK;
+            }
+        } else {
+            try {
+                if (!this.getOutputs().isEmpty()) {
+                    return ACTIVE_TANK;
+                }
+            } catch (final GridAccessException e) {
+                // :(
+            }
+        }
+        return INACTIVE_TANK;
+    }
 }

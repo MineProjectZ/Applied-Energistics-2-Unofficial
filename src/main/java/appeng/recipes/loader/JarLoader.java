@@ -18,31 +18,27 @@
 
 package appeng.recipes.loader;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import javax.annotation.Nonnull;
 
 import appeng.api.recipes.IRecipeLoader;
 import com.google.common.base.Preconditions;
 
-import javax.annotation.Nonnull;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+public class JarLoader implements IRecipeLoader {
+    private final String rootPath;
 
+    public JarLoader(final String s) {
+        this.rootPath = s;
+    }
 
-public class JarLoader implements IRecipeLoader
-{
+    @Override
+    public BufferedReader getFile(@Nonnull final String s) throws Exception {
+        Preconditions.checkNotNull(s);
+        Preconditions.checkArgument(!s.isEmpty());
 
-	private final String rootPath;
-
-	public JarLoader( final String s )
-	{
-		this.rootPath = s;
-	}
-
-	@Override
-	public BufferedReader getFile( @Nonnull final String s ) throws Exception
-	{
-		Preconditions.checkNotNull( s );
-		Preconditions.checkArgument( !s.isEmpty() );
-
-		return new BufferedReader( new InputStreamReader( this.getClass().getResourceAsStream( this.rootPath + s ), "UTF-8" ) );
-	}
+        return new BufferedReader(new InputStreamReader(
+            this.getClass().getResourceAsStream(this.rootPath + s), "UTF-8"
+        ));
+    }
 }

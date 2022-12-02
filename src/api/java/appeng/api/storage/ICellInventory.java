@@ -23,98 +23,94 @@
 
 package appeng.api.storage;
 
-
 import appeng.api.config.FuzzyMode;
 import appeng.api.storage.data.IAEItemStack;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 
+public interface ICellInventory extends IMEInventory<IAEItemStack> {
+    /**
+     * @return the item stack of this storage cell.
+     */
+    ItemStack getItemStack();
 
-public interface ICellInventory extends IMEInventory<IAEItemStack>
-{
+    /**
+     * @return idle cost for this Storage Cell
+     */
+    double getIdleDrain();
 
-	/**
-	 * @return the item stack of this storage cell.
-	 */
-	ItemStack getItemStack();
+    /**
+     * @return fuzzy setting
+     */
+    FuzzyMode getFuzzyMode();
 
-	/**
-	 * @return idle cost for this Storage Cell
-	 */
-	double getIdleDrain();
+    /**
+     * @return access configured list
+     */
+    IInventory getConfigInventory();
 
-	/**
-	 * @return fuzzy setting
-	 */
-	FuzzyMode getFuzzyMode();
+    /**
+     * @return access installed upgrades.
+     */
+    IInventory getUpgradesInventory();
 
-	/**
-	 * @return access configured list
-	 */
-	IInventory getConfigInventory();
+    /**
+     * @return How many bytes are used for each type?
+     */
+    int getBytesPerType();
 
-	/**
-	 * @return access installed upgrades.
-	 */
-	IInventory getUpgradesInventory();
+    /**
+     * @return true if a new item type can be added.
+     */
+    boolean canHoldNewItem();
 
-	/**
-	 * @return How many bytes are used for each type?
-	 */
-	int getBytesPerType();
+    /**
+     * @return total byte storage.
+     */
+    long getTotalBytes();
 
-	/**
-	 * @return true if a new item type can be added.
-	 */
-	boolean canHoldNewItem();
+    /**
+     * @return how many bytes are free.
+     */
+    long getFreeBytes();
 
-	/**
-	 * @return total byte storage.
-	 */
-	long getTotalBytes();
+    /**
+     * @return how many bytes are in use.
+     */
+    long getUsedBytes();
 
-	/**
-	 * @return how many bytes are free.
-	 */
-	long getFreeBytes();
+    /**
+     * @return max number of types.
+     */
+    long getTotalItemTypes();
 
-	/**
-	 * @return how many bytes are in use.
-	 */
-	long getUsedBytes();
+    /**
+     * @return how many items are stored.
+     */
+    long getStoredItemCount();
 
-	/**
-	 * @return max number of types.
-	 */
-	long getTotalItemTypes();
+    /**
+     * @return how many items types are currently stored.
+     */
+    long getStoredItemTypes();
 
-	/**
-	 * @return how many items are stored.
-	 */
-	long getStoredItemCount();
+    /**
+     * @return how many item types remain.
+     */
+    long getRemainingItemTypes();
 
-	/**
-	 * @return how many items types are currently stored.
-	 */
-	long getStoredItemTypes();
+    /**
+     * @return how many more items can be stored.
+     */
+    long getRemainingItemCount();
 
-	/**
-	 * @return how many item types remain.
-	 */
-	long getRemainingItemTypes();
+    /**
+     * @return how many items can be added without consuming another byte.
+     */
+    int getUnusedItemCount();
 
-	/**
-	 * @return how many more items can be stored.
-	 */
-	long getRemainingItemCount();
-
-	/**
-	 * @return how many items can be added without consuming another byte.
-	 */
-	int getUnusedItemCount();
-
-	/**
-	 * @return the status number for this drive.
-	 */
-	int getStatusForCell();
+    /**
+     * @return the status number for this drive.
+     */
+    int getStatusForCell();
 }

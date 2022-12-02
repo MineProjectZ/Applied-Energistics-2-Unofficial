@@ -18,46 +18,41 @@
 
 package appeng.core.stats;
 
-
 import appeng.util.Platform;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import net.minecraft.item.ItemStack;
 
-
 /**
- * handles the achievement when an {@link net.minecraft.item.Item} is picked up by a player.
- * The achievement is only added if its a real {@link net.minecraft.entity.player.EntityPlayer}.
+ * handles the achievement when an {@link net.minecraft.item.Item} is picked up by a
+ * player. The achievement is only added if its a real {@link
+ * net.minecraft.entity.player.EntityPlayer}.
  *
  * @author thatsIch
  * @since rv2
  */
-public class AchievementPickupHandler
-{
-	private final PlayerDifferentiator differentiator;
+public class AchievementPickupHandler {
+    private final PlayerDifferentiator differentiator;
 
-	public AchievementPickupHandler( final PlayerDifferentiator differentiator )
-	{
-		this.differentiator = differentiator;
-	}
+    public AchievementPickupHandler(final PlayerDifferentiator differentiator) {
+        this.differentiator = differentiator;
+    }
 
-	@SubscribeEvent
-	public void onItemPickUp( final PlayerEvent.ItemPickupEvent event )
-	{
-		if( this.differentiator.isNoPlayer( event.player ) || event.pickedUp == null || event.pickedUp.getEntityItem() == null )
-		{
-			return;
-		}
+    @SubscribeEvent
+    public void onItemPickUp(final PlayerEvent.ItemPickupEvent event) {
+        if (this.differentiator.isNoPlayer(event.player) || event.pickedUp == null
+            || event.pickedUp.getEntityItem() == null) {
+            return;
+        }
 
-		final ItemStack is = event.pickedUp.getEntityItem();
+        final ItemStack is = event.pickedUp.getEntityItem();
 
-		for( final Achievements achievement : Achievements.values() )
-		{
-			if( achievement.getType() == AchievementType.Pickup && Platform.isSameItemPrecise( achievement.getStack(), is ) )
-			{
-				achievement.addToPlayer( event.player );
-				return;
-			}
-		}
-	}
+        for (final Achievements achievement : Achievements.values()) {
+            if (achievement.getType() == AchievementType.Pickup
+                && Platform.isSameItemPrecise(achievement.getStack(), is)) {
+                achievement.addToPlayer(event.player);
+                return;
+            }
+        }
+    }
 }

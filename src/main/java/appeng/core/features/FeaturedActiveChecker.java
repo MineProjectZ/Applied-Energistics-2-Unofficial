@@ -18,31 +18,24 @@
 
 package appeng.core.features;
 
+import java.util.Set;
 
 import appeng.core.AEConfig;
 
-import java.util.Set;
+public final class FeaturedActiveChecker {
+    private final Set<AEFeature> features;
 
+    public FeaturedActiveChecker(final Set<AEFeature> features) {
+        this.features = features;
+    }
 
-public final class FeaturedActiveChecker
-{
-	private final Set<AEFeature> features;
+    ActivityState getActivityState() {
+        for (final AEFeature f : this.features) {
+            if (!AEConfig.instance.isFeatureEnabled(f)) {
+                return ActivityState.Disabled;
+            }
+        }
 
-	public FeaturedActiveChecker( final Set<AEFeature> features )
-	{
-		this.features = features;
-	}
-
-	ActivityState getActivityState()
-	{
-		for( final AEFeature f : this.features )
-		{
-			if( !AEConfig.instance.isFeatureEnabled( f ) )
-			{
-				return ActivityState.Disabled;
-			}
-		}
-
-		return ActivityState.Enabled;
-	}
+        return ActivityState.Enabled;
+    }
 }

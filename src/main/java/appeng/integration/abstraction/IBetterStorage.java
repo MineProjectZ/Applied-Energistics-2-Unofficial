@@ -18,15 +18,11 @@
 
 package appeng.integration.abstraction;
 
-
 import appeng.util.InventoryAdaptor;
 import net.minecraftforge.common.util.ForgeDirection;
 
+public interface IBetterStorage {
+    boolean isStorageCrate(Object te);
 
-public interface IBetterStorage
-{
-
-	boolean isStorageCrate( Object te );
-
-	InventoryAdaptor getAdaptor( Object te, ForgeDirection d );
+    InventoryAdaptor getAdaptor(Object te, ForgeDirection d);
 }

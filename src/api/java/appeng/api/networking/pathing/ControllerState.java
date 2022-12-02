@@ -23,26 +23,24 @@
 
 package appeng.api.networking.pathing;
 
+public enum ControllerState {
+    /**
+     * No controller blocks are present in the network.
+     */
+    NO_CONTROLLER,
 
-public enum ControllerState
-{
-	/**
-	 * No controller blocks are present in the network.
-	 */
-	NO_CONTROLLER,
+    /**
+     * Controller rules followed, booting enabled.
+     */
+    CONTROLLER_ONLINE,
 
-	/**
-	 * Controller rules followed, booting enabled.
-	 */
-	CONTROLLER_ONLINE,
+    /**
+     * Controller rules not followed, lock up while booting.
+     */
+    CONTROLLER_CONFLICT,
 
-	/**
-	 * Controller rules not followed, lock up while booting.
-	 */
-	CONTROLLER_CONFLICT,
-
-	/**
-	 * Controller is online and has infinite channels
-	 */
-	CONTROLLER_INFINITE
+    /**
+     * Controller is online and has infinite channels
+     */
+    CONTROLLER_INFINITE
 }

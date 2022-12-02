@@ -18,7 +18,6 @@
 
 package appeng.integration.modules.BCHelpers;
 
-
 import appeng.api.config.Actionable;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.storage.IMEInventory;
@@ -31,59 +30,55 @@ import appeng.integration.abstraction.IBuildCraftTransport;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.ForgeDirection;
 
+public class BCPipeInventory implements IMEInventory<IAEItemStack> {
+    private final TileEntity te;
+    private final ForgeDirection direction;
 
-public class BCPipeInventory implements IMEInventory<IAEItemStack>
-{
+    public BCPipeInventory(final TileEntity te, final ForgeDirection direction) {
+        this.te = te;
+        this.direction = direction;
+    }
 
-	private final TileEntity te;
-	private final ForgeDirection direction;
+    @Override
+    public IAEItemStack injectItems(
+        final IAEItemStack input, final Actionable mode, final BaseActionSource src
+    ) {
+        if (IntegrationRegistry.INSTANCE.isEnabled(IntegrationType.BuildCraftTransport)) {
+            final IBuildCraftTransport registry = (IBuildCraftTransport
+            ) IntegrationRegistry.INSTANCE.getInstance(IntegrationType.BuildCraftTransport
+            );
 
-	public BCPipeInventory( final TileEntity te, final ForgeDirection direction )
-	{
-		this.te = te;
-		this.direction = direction;
-	}
+            if (mode == Actionable.SIMULATE) {
+                if (registry.canAddItemsToPipe(
+                        this.te, input.getItemStack(), this.direction
+                    )) {
+                    return null;
+                }
+                return input;
+            }
 
-	@Override
-	public IAEItemStack injectItems( final IAEItemStack input, final Actionable mode, final BaseActionSource src )
-	{
-		if( IntegrationRegistry.INSTANCE.isEnabled( IntegrationType.BuildCraftTransport ) )
-		{
-			final IBuildCraftTransport registry = (IBuildCraftTransport) IntegrationRegistry.INSTANCE.getInstance( IntegrationType.BuildCraftTransport );
+            if (registry.addItemsToPipe(this.te, input.getItemStack(), this.direction)) {
+                return null;
+            }
+        }
 
-			if( mode == Actionable.SIMULATE )
-			{
-				if( registry.canAddItemsToPipe( this.te, input.getItemStack(), this.direction ) )
-				{
-					return null;
-				}
-				return input;
-			}
+        return input;
+    }
 
-			if( registry.addItemsToPipe( this.te, input.getItemStack(), this.direction ) )
-			{
-				return null;
-			}
-		}
+    @Override
+    public IAEItemStack extractItems(
+        final IAEItemStack request, final Actionable mode, final BaseActionSource src
+    ) {
+        return null;
+    }
 
-		return input;
-	}
+    @Override
+    public IItemList<IAEItemStack> getAvailableItems(final IItemList<IAEItemStack> out) {
+        return out;
+    }
 
-	@Override
-	public IAEItemStack extractItems( final IAEItemStack request, final Actionable mode, final BaseActionSource src )
-	{
-		return null;
-	}
-
-	@Override
-	public IItemList<IAEItemStack> getAvailableItems( final IItemList<IAEItemStack> out )
-	{
-		return out;
-	}
-
-	@Override
-	public StorageChannel getChannel()
-	{
-		return StorageChannel.ITEMS;
-	}
+    @Override
+    public StorageChannel getChannel() {
+        return StorageChannel.ITEMS;
+    }
 }

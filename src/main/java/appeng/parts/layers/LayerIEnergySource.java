@@ -18,7 +18,6 @@
 
 package appeng.parts.layers;
 
-
 import appeng.api.parts.IPart;
 import appeng.api.parts.IPartHost;
 import appeng.api.parts.LayerBase;
@@ -33,174 +32,144 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.ForgeDirection;
 
+public class LayerIEnergySource extends LayerBase implements IEnergySource {
+    private TileEntity getEnergySourceTile() {
+        final IPartHost host = (IPartHost) this;
+        return host.getTile();
+    }
 
-public class LayerIEnergySource extends LayerBase implements IEnergySource
-{
+    private World getEnergySourceWorld() {
+        if (this.getEnergySourceTile() == null) {
+            return null;
+        }
+        return this.getEnergySourceTile().getWorldObj();
+    }
 
-	private TileEntity getEnergySourceTile()
-	{
-		final IPartHost host = (IPartHost) this;
-		return host.getTile();
-	}
+    private boolean isTileValid() {
+        final TileEntity te = this.getEnergySourceTile();
+        if (te == null) {
+            return false;
+        }
+        return !te.isInvalid();
+    }
 
-	private World getEnergySourceWorld()
-	{
-		if( this.getEnergySourceTile() == null )
-		{
-			return null;
-		}
-		return this.getEnergySourceTile().getWorldObj();
-	}
+    private void addToENet() {
+        if (this.getEnergySourceWorld() == null) {
+            return;
+        }
 
-	private boolean isTileValid()
-	{
-		final TileEntity te = this.getEnergySourceTile();
-		if( te == null )
-		{
-			return false;
-		}
-		return !te.isInvalid();
-	}
+        // re-add
+        this.removeFromENet();
 
-	private void addToENet()
-	{
-		if( this.getEnergySourceWorld() == null )
-		{
-			return;
-		}
+        if (!this.isInIC2() && Platform.isServer() && this.isTileValid()) {
+            this.getLayerFlags().add(LayerFlags.IC2_ENET);
+            MinecraftForge.EVENT_BUS.post(new ic2.api.energy.event.EnergyTileLoadEvent(
+                (IEnergyTile) this.getEnergySourceTile()
+            ));
+        }
+    }
 
-		// re-add
-		this.removeFromENet();
+    private void removeFromENet() {
+        if (this.getEnergySourceWorld() == null) {
+            return;
+        }
 
-		if( !this.isInIC2() && Platform.isServer() && this.isTileValid() )
-		{
-			this.getLayerFlags().add( LayerFlags.IC2_ENET );
-			MinecraftForge.EVENT_BUS.post( new ic2.api.energy.event.EnergyTileLoadEvent( (IEnergyTile) this.getEnergySourceTile() ) );
-		}
-	}
+        if (this.isInIC2() && Platform.isServer()) {
+            this.getLayerFlags().remove(LayerFlags.IC2_ENET);
+            MinecraftForge.EVENT_BUS.post(new ic2.api.energy.event.EnergyTileUnloadEvent(
+                (IEnergyTile) this.getEnergySourceTile()
+            ));
+        }
+    }
 
-	private void removeFromENet()
-	{
-		if( this.getEnergySourceWorld() == null )
-		{
-			return;
-		}
+    private boolean interestedInIC2() {
+        if (!((IPartHost) this).isInWorld()) {
+            return false;
+        }
 
-		if( this.isInIC2() && Platform.isServer() )
-		{
-			this.getLayerFlags().remove( LayerFlags.IC2_ENET );
-			MinecraftForge.EVENT_BUS.post( new ic2.api.energy.event.EnergyTileUnloadEvent( (IEnergyTile) this.getEnergySourceTile() ) );
-		}
-	}
+        int interested = 0;
+        for (final ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+            final IPart part = this.getPart(dir);
+            if (part instanceof IEnergyTile) {
+                interested++;
+            }
+        }
+        return interested
+            == 1; // if more then one tile is interested we need to abandon...
+    }
 
-	private boolean interestedInIC2()
-	{
-		if( !( (IPartHost) this ).isInWorld() )
-		{
-			return false;
-		}
+    @Override
+    public void partChanged() {
+        super.partChanged();
 
-		int interested = 0;
-		for( final ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS )
-		{
-			final IPart part = this.getPart( dir );
-			if( part instanceof IEnergyTile )
-			{
-				interested++;
-			}
-		}
-		return interested == 1;// if more then one tile is interested we need to abandon...
-	}
+        if (this.interestedInIC2()) {
+            this.addToENet();
+        } else {
+            this.removeFromENet();
+        }
+    }
 
-	@Override
-	public void partChanged()
-	{
-		super.partChanged();
+    @Override
+    public boolean
+    emitsEnergyTo(final TileEntity receiver, final ForgeDirection direction) {
+        if (!this.isInIC2()) {
+            return false;
+        }
 
-		if( this.interestedInIC2() )
-		{
-			this.addToENet();
-		}
-		else
-		{
-			this.removeFromENet();
-		}
-	}
+        final IPart part = this.getPart(direction);
+        if (part instanceof IEnergySink) {
+            return ((IEnergyEmitter) part).emitsEnergyTo(receiver, direction);
+        }
+        return false;
+    }
 
-	@Override
-	public boolean emitsEnergyTo( final TileEntity receiver, final ForgeDirection direction )
-	{
-		if( !this.isInIC2() )
-		{
-			return false;
-		}
+    private boolean isInIC2() {
+        return this.getLayerFlags().contains(LayerFlags.IC2_ENET);
+    }
 
-		final IPart part = this.getPart( direction );
-		if( part instanceof IEnergySink )
-		{
-			return ( (IEnergyEmitter) part ).emitsEnergyTo( receiver, direction );
-		}
-		return false;
-	}
+    @Override
+    public double getOfferedEnergy() {
+        if (!this.isInIC2()) {
+            return 0;
+        }
 
-	private boolean isInIC2()
-	{
-		return this.getLayerFlags().contains( LayerFlags.IC2_ENET );
-	}
+        // this is a flawed implementation, that requires a change to the IC2 API.
 
-	@Override
-	public double getOfferedEnergy()
-	{
-		if( !this.isInIC2() )
-		{
-			return 0;
-		}
+        for (final ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+            final IPart part = this.getPart(dir);
+            if (part instanceof IEnergySource) {
+                // use lower number cause ic2 deletes power it sends that isn't received.
+                return ((IEnergySource) part).getOfferedEnergy();
+            }
+        }
 
-		// this is a flawed implementation, that requires a change to the IC2 API.
+        return 0;
+    }
 
-		for( final ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS )
-		{
-			final IPart part = this.getPart( dir );
-			if( part instanceof IEnergySource )
-			{
-				// use lower number cause ic2 deletes power it sends that isn't received.
-				return ( (IEnergySource) part ).getOfferedEnergy();
-			}
-		}
+    @Override
+    public void drawEnergy(final double amount) {
+        // this is a flawed implementation, that requires a change to the IC2 API.
 
-		return 0;
-	}
+        for (final ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+            final IPart part = this.getPart(dir);
+            if (part instanceof IEnergySource) {
+                ((IEnergySource) part).drawEnergy(amount);
+                return;
+            }
+        }
+    }
 
-	@Override
-	public void drawEnergy( final double amount )
-	{
-		// this is a flawed implementation, that requires a change to the IC2 API.
+    @Override
+    public int getSourceTier() {
+        // this is a flawed implementation, that requires a change to the IC2 API.
 
-		for( final ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS )
-		{
-			final IPart part = this.getPart( dir );
-			if( part instanceof IEnergySource )
-			{
-				( (IEnergySource) part ).drawEnergy( amount );
-				return;
-			}
-		}
-	}
+        for (final ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+            final IPart part = this.getPart(dir);
+            if (part instanceof IEnergySource) {
+                return ((IEnergySource) part).getSourceTier();
+            }
+        }
 
-	@Override
-	public int getSourceTier()
-	{
-		// this is a flawed implementation, that requires a change to the IC2 API.
-
-		for( final ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS )
-		{
-			final IPart part = this.getPart( dir );
-			if( part instanceof IEnergySource )
-			{
-				return ( (IEnergySource) part ).getSourceTier();
-			}
-		}
-
-		return 0;
-	}
+        return 0;
+    }
 }

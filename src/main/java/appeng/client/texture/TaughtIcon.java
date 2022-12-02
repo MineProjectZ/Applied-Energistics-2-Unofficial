@@ -18,114 +18,95 @@
 
 package appeng.client.texture;
 
-
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.util.IIcon;
 
+public class TaughtIcon implements IIcon {
+    private final float tightness;
 
-public class TaughtIcon implements IIcon
-{
+    private final IIcon icon;
 
-	private final float tightness;
+    public TaughtIcon(final IIcon icon, final float tightness) {
+        if (icon == null) {
+            throw new IllegalArgumentException(
+                "Cannot create a wrapper icon with a null icon."
+            );
+        }
 
-	private final IIcon icon;
+        this.icon = icon;
+        this.tightness = tightness * 0.4f;
+    }
 
-	public TaughtIcon( final IIcon icon, final float tightness )
-	{
-		if( icon == null )
-		{
-			throw new IllegalArgumentException( "Cannot create a wrapper icon with a null icon." );
-		}
+    @Override
+    public int getIconWidth() {
+        return this.icon.getIconWidth();
+    }
 
-		this.icon = icon;
-		this.tightness = tightness * 0.4f;
-	}
+    @Override
+    public int getIconHeight() {
+        return this.icon.getIconHeight();
+    }
 
-	@Override
-	public int getIconWidth()
-	{
-		return this.icon.getIconWidth();
-	}
+    @Override
+    @SideOnly(Side.CLIENT)
+    public float getMinU() {
+        return this.u(0);
+    }
 
-	@Override
-	public int getIconHeight()
-	{
-		return this.icon.getIconHeight();
-	}
+    @Override
+    @SideOnly(Side.CLIENT)
+    public float getMaxU() {
+        return this.u(16);
+    }
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	public float getMinU()
-	{
-		return this.u( 0 );
-	}
+    @Override
+    @SideOnly(Side.CLIENT)
+    public float getInterpolatedU(final double d0) {
+        return this.u(d0);
+    }
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	public float getMaxU()
-	{
-		return this.u( 16 );
-	}
+    @Override
+    @SideOnly(Side.CLIENT)
+    public float getMinV() {
+        return this.v(0);
+    }
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	public float getInterpolatedU( final double d0 )
-	{
-		return this.u( d0 );
-	}
+    @Override
+    @SideOnly(Side.CLIENT)
+    public float getMaxV() {
+        return this.v(16);
+    }
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	public float getMinV()
-	{
-		return this.v( 0 );
-	}
+    @Override
+    @SideOnly(Side.CLIENT)
+    public float getInterpolatedV(final double d0) {
+        return this.v(d0);
+    }
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	public float getMaxV()
-	{
-		return this.v( 16 );
-	}
+    @Override
+    @SideOnly(Side.CLIENT)
+    public String getIconName() {
+        return this.icon.getIconName();
+    }
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	public float getInterpolatedV( final double d0 )
-	{
-		return this.v( d0 );
-	}
+    private float v(double d) {
+        if (d < 8) {
+            d -= this.tightness;
+        }
+        if (d > 8) {
+            d += this.tightness;
+        }
+        return this.icon.getInterpolatedV(Math.min(16.0, Math.max(0.0, d)));
+    }
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	public String getIconName()
-	{
-		return this.icon.getIconName();
-	}
-
-	private float v( double d )
-	{
-		if( d < 8 )
-		{
-			d -= this.tightness;
-		}
-		if( d > 8 )
-		{
-			d += this.tightness;
-		}
-		return this.icon.getInterpolatedV( Math.min( 16.0, Math.max( 0.0, d ) ) );
-	}
-
-	private float u( double d )
-	{
-		if( d < 8 )
-		{
-			d -= this.tightness;
-		}
-		if( d > 8 )
-		{
-			d += this.tightness;
-		}
-		return this.icon.getInterpolatedU( Math.min( 16.0, Math.max( 0.0, d ) ) );
-	}
+    private float u(double d) {
+        if (d < 8) {
+            d -= this.tightness;
+        }
+        if (d > 8) {
+            d += this.tightness;
+        }
+        return this.icon.getInterpolatedU(Math.min(16.0, Math.max(0.0, d)));
+    }
 }

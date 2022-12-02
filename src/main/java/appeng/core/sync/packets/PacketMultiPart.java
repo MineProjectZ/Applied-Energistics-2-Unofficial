@@ -18,7 +18,6 @@
 
 package appeng.core.sync.packets;
 
-
 import appeng.core.sync.AppEngPacket;
 import appeng.core.sync.network.INetworkInfo;
 import appeng.integration.IntegrationRegistry;
@@ -30,33 +29,29 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.common.MinecraftForge;
 
+public class PacketMultiPart extends AppEngPacket {
+    // automatic.
+    public PacketMultiPart(final ByteBuf stream) {}
 
-public class PacketMultiPart extends AppEngPacket
-{
+    // api
+    public PacketMultiPart() {
+        final ByteBuf data = Unpooled.buffer();
 
-	// automatic.
-	public PacketMultiPart( final ByteBuf stream )
-	{
-	}
+        data.writeInt(this.getPacketID());
 
-	// api
-	public PacketMultiPart()
-	{
-		final ByteBuf data = Unpooled.buffer();
+        this.configureWrite(data);
+    }
 
-		data.writeInt( this.getPacketID() );
-
-		this.configureWrite( data );
-	}
-
-	@Override
-	public void serverPacketData( final INetworkInfo manager, final AppEngPacket packet, final EntityPlayer player )
-	{
-		final IFMP fmp = (IFMP) IntegrationRegistry.INSTANCE.getInstance( IntegrationType.FMP );
-		if( fmp != null )
-		{
-			final EntityPlayerMP sender = (EntityPlayerMP) player;
-			MinecraftForge.EVENT_BUS.post( fmp.newFMPPacketEvent( sender ) ); // when received it just posts this event.
-		}
-	}
+    @Override
+    public void serverPacketData(
+        final INetworkInfo manager, final AppEngPacket packet, final EntityPlayer player
+    ) {
+        final IFMP fmp
+            = (IFMP) IntegrationRegistry.INSTANCE.getInstance(IntegrationType.FMP);
+        if (fmp != null) {
+            final EntityPlayerMP sender = (EntityPlayerMP) player;
+            MinecraftForge.EVENT_BUS.post(fmp.newFMPPacketEvent(sender)
+            ); // when received it just posts this event.
+        }
+    }
 }

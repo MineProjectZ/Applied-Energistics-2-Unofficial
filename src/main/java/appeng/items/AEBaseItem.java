@@ -18,6 +18,8 @@
 
 package appeng.items;
 
+import java.util.EnumSet;
+import java.util.List;
 
 import appeng.core.features.*;
 import com.google.common.base.Optional;
@@ -26,78 +28,79 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
-import java.util.EnumSet;
-import java.util.List;
+public abstract class AEBaseItem extends Item implements IAEFeature {
+    private final String fullName;
+    private final Optional<String> subName;
+    private IFeatureHandler feature;
 
+    public AEBaseItem() {
+        this(Optional.<String>absent());
+        this.setNoRepair();
+    }
 
-public abstract class AEBaseItem extends Item implements IAEFeature
-{
-	private final String fullName;
-	private final Optional<String> subName;
-	private IFeatureHandler feature;
+    public AEBaseItem(final Optional<String> subName) {
+        this.subName = subName;
+        this.fullName = new FeatureNameExtractor(this.getClass(), subName).get();
+    }
 
-	public AEBaseItem()
-	{
-		this( Optional.<String>absent() );
-		this.setNoRepair();
-	}
+    @Override
+    public String toString() {
+        return this.fullName;
+    }
 
-	public AEBaseItem( final Optional<String> subName )
-	{
-		this.subName = subName;
-		this.fullName = new FeatureNameExtractor( this.getClass(), subName ).get();
-	}
+    @Override
+    public IFeatureHandler handler() {
+        return this.feature;
+    }
 
-	@Override
-	public String toString()
-	{
-		return this.fullName;
-	}
+    @Override
+    public void postInit() {
+        // override!
+    }
 
-	@Override
-	public IFeatureHandler handler()
-	{
-		return this.feature;
-	}
+    public void setFeature(final EnumSet<AEFeature> f) {
+        this.feature = new ItemFeatureHandler(f, this, this, this.subName);
+    }
 
-	@Override
-	public void postInit()
-	{
-		// override!
-	}
+    @Override
+    @SuppressWarnings("unchecked")
+    public final void addInformation(
+        final ItemStack stack,
+        final EntityPlayer player,
+        final List lines,
+        final boolean displayMoreInfo
+    ) {
+        this.addCheckedInformation(stack, player, lines, displayMoreInfo);
+    }
 
-	public void setFeature( final EnumSet<AEFeature> f )
-	{
-		this.feature = new ItemFeatureHandler( f, this, this, this.subName );
-	}
+    @Override
+    @SuppressWarnings("unchecked")
+    public final void getSubItems(
+        final Item sameItem, final CreativeTabs creativeTab, final List itemStacks
+    ) {
+        this.getCheckedSubItems(sameItem, creativeTab, itemStacks);
+    }
 
-	@Override
-	@SuppressWarnings( "unchecked" )
-	public final void addInformation( final ItemStack stack, final EntityPlayer player, final List lines, final boolean displayMoreInfo )
-	{
-		this.addCheckedInformation( stack, player, lines, displayMoreInfo );
-	}
+    @Override
+    public boolean
+    isBookEnchantable(final ItemStack itemstack1, final ItemStack itemstack2) {
+        return false;
+    }
 
-	@Override
-	@SuppressWarnings( "unchecked" )
-	public final void getSubItems( final Item sameItem, final CreativeTabs creativeTab, final List itemStacks )
-	{
-		this.getCheckedSubItems( sameItem, creativeTab, itemStacks );
-	}
+    protected void addCheckedInformation(
+        final ItemStack stack,
+        final EntityPlayer player,
+        final List<String> lines,
+        final boolean displayMoreInfo
+    ) {
+        super.addInformation(stack, player, lines, displayMoreInfo);
+    }
 
-	@Override
-	public boolean isBookEnchantable( final ItemStack itemstack1, final ItemStack itemstack2 )
-	{
-		return false;
-	}
-
-	protected void addCheckedInformation( final ItemStack stack, final EntityPlayer player, final List<String> lines, final boolean displayMoreInfo )
-	{
-		super.addInformation( stack, player, lines, displayMoreInfo );
-	}
-
-	protected void getCheckedSubItems( final Item sameItem, final CreativeTabs creativeTab, final List<ItemStack> itemStacks )
-	{
-		super.getSubItems( sameItem, creativeTab, itemStacks );
-	}
+    protected void getCheckedSubItems(
+        final Item sameItem,
+        final CreativeTabs creativeTab,
+        final List<ItemStack> itemStacks
+    ) {
+        super.getSubItems(sameItem, creativeTab, itemStacks);
+    }
 }

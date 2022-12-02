@@ -18,85 +18,68 @@
 
 package appeng.container;
 
-
 import appeng.api.parts.IPart;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+public class ContainerOpenContext {
+    private final boolean isItem;
+    private World w;
+    private int x;
+    private int y;
+    private int z;
+    private ForgeDirection side;
 
-public class ContainerOpenContext
-{
+    public ContainerOpenContext(final Object myItem) {
+        final boolean isWorld = myItem instanceof IPart || myItem instanceof TileEntity;
+        this.isItem = !isWorld;
+    }
 
-	private final boolean isItem;
-	private World w;
-	private int x;
-	private int y;
-	private int z;
-	private ForgeDirection side;
+    public TileEntity getTile() {
+        if (this.isItem) {
+            return null;
+        }
+        return this.getWorld().getTileEntity(this.getX(), this.getY(), this.getZ());
+    }
 
-	public ContainerOpenContext( final Object myItem )
-	{
-		final boolean isWorld = myItem instanceof IPart || myItem instanceof TileEntity;
-		this.isItem = !isWorld;
-	}
+    public ForgeDirection getSide() {
+        return this.side;
+    }
 
-	public TileEntity getTile()
-	{
-		if( this.isItem )
-		{
-			return null;
-		}
-		return this.getWorld().getTileEntity( this.getX(), this.getY(), this.getZ() );
-	}
+    public void setSide(final ForgeDirection side) {
+        this.side = side;
+    }
 
-	public ForgeDirection getSide()
-	{
-		return this.side;
-	}
+    private int getZ() {
+        return this.z;
+    }
 
-	public void setSide( final ForgeDirection side )
-	{
-		this.side = side;
-	}
+    public void setZ(final int z) {
+        this.z = z;
+    }
 
-	private int getZ()
-	{
-		return this.z;
-	}
+    private int getY() {
+        return this.y;
+    }
 
-	public void setZ( final int z )
-	{
-		this.z = z;
-	}
+    public void setY(final int y) {
+        this.y = y;
+    }
 
-	private int getY()
-	{
-		return this.y;
-	}
+    private int getX() {
+        return this.x;
+    }
 
-	public void setY( final int y )
-	{
-		this.y = y;
-	}
+    public void setX(final int x) {
+        this.x = x;
+    }
 
-	private int getX()
-	{
-		return this.x;
-	}
+    private World getWorld() {
+        return this.w;
+    }
 
-	public void setX( final int x )
-	{
-		this.x = x;
-	}
-
-	private World getWorld()
-	{
-		return this.w;
-	}
-
-	public void setWorld( final World w )
-	{
-		this.w = w;
-	}
+    public void setWorld(final World w) {
+        this.w = w;
+    }
 }

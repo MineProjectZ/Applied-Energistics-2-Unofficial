@@ -18,7 +18,6 @@
 
 package appeng.container.implementations;
 
-
 import appeng.api.storage.ITerminalHost;
 import appeng.container.ContainerNull;
 import appeng.container.slot.SlotCraftingMatrix;
@@ -34,79 +33,90 @@ import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
 
+public class ContainerCraftingTerm extends ContainerMEMonitorable
+    implements IAEAppEngInventory, IContainerCraftingPacket {
+    private final ICraftingTerminal ct;
+    private final AppEngInternalInventory output = new AppEngInternalInventory(this, 1);
+    private final SlotCraftingMatrix[] craftingSlots = new SlotCraftingMatrix[9];
+    private final SlotCraftingTerm outputSlot;
 
-public class ContainerCraftingTerm extends ContainerMEMonitorable implements IAEAppEngInventory, IContainerCraftingPacket
-{
+    public ContainerCraftingTerm(
+        final InventoryPlayer ip, final ITerminalHost monitorable
+    ) {
+        super(ip, monitorable, false);
+        this.ct = (ICraftingTerminal) monitorable;
 
-	private final ICraftingTerminal ct;
-	private final AppEngInternalInventory output = new AppEngInternalInventory( this, 1 );
-	private final SlotCraftingMatrix[] craftingSlots = new SlotCraftingMatrix[9];
-	private final SlotCraftingTerm outputSlot;
+        final IInventory crafting = this.ct.getInventoryByName("crafting");
 
-	public ContainerCraftingTerm( final InventoryPlayer ip, final ITerminalHost monitorable )
-	{
-		super( ip, monitorable, false );
-		this.ct = (ICraftingTerminal) monitorable;
+        for (int y = 0; y < 3; y++) {
+            for (int x = 0; x < 3; x++) {
+                this.addSlotToContainer(
+                    this.craftingSlots[x + y * 3] = new SlotCraftingMatrix(
+                        this, crafting, x + y * 3, 37 + x * 18, -72 + y * 18
+                    )
+                );
+            }
+        }
 
-		final IInventory crafting = this.ct.getInventoryByName( "crafting" );
+        this.addSlotToContainer(
+            this.outputSlot = new SlotCraftingTerm(
+                this.getPlayerInv().player,
+                this.getActionSource(),
+                this.getPowerSource(),
+                monitorable,
+                crafting,
+                crafting,
+                this.output,
+                131,
+                -72 + 18,
+                this
+            )
+        );
 
-		for( int y = 0; y < 3; y++ )
-		{
-			for( int x = 0; x < 3; x++ )
-			{
-				this.addSlotToContainer( this.craftingSlots[x + y * 3] = new SlotCraftingMatrix( this, crafting, x + y * 3, 37 + x * 18, -72 + y * 18 ) );
-			}
-		}
+        this.bindPlayerInventory(ip, 0, 0);
 
-		this.addSlotToContainer( this.outputSlot = new SlotCraftingTerm( this.getPlayerInv().player, this.getActionSource(), this.getPowerSource(), monitorable, crafting, crafting, this.output, 131, -72 + 18, this ) );
+        this.onCraftMatrixChanged(crafting);
+    }
 
-		this.bindPlayerInventory( ip, 0, 0 );
+    /**
+     * Callback for when the crafting matrix is changed.
+     */
+    @Override
+    public void onCraftMatrixChanged(final IInventory par1IInventory) {
+        final ContainerNull cn = new ContainerNull();
+        final InventoryCrafting ic = new InventoryCrafting(cn, 3, 3);
 
-		this.onCraftMatrixChanged( crafting );
-	}
+        for (int x = 0; x < 9; x++) {
+            ic.setInventorySlotContents(x, this.craftingSlots[x].getStack());
+        }
 
-	/**
-	 * Callback for when the crafting matrix is changed.
-	 */
-	@Override
-	public void onCraftMatrixChanged( final IInventory par1IInventory )
-	{
-		final ContainerNull cn = new ContainerNull();
-		final InventoryCrafting ic = new InventoryCrafting( cn, 3, 3 );
+        this.outputSlot.putStack(CraftingManager.getInstance().findMatchingRecipe(
+            ic, this.getPlayerInv().player.worldObj
+        ));
+    }
 
-		for( int x = 0; x < 9; x++ )
-		{
-			ic.setInventorySlotContents( x, this.craftingSlots[x].getStack() );
-		}
+    @Override
+    public void saveChanges() {}
 
-		this.outputSlot.putStack( CraftingManager.getInstance().findMatchingRecipe( ic, this.getPlayerInv().player.worldObj ) );
-	}
+    @Override
+    public void onChangeInventory(
+        final IInventory inv,
+        final int slot,
+        final InvOperation mc,
+        final ItemStack removedStack,
+        final ItemStack newStack
+    ) {}
 
-	@Override
-	public void saveChanges()
-	{
+    @Override
+    public IInventory getInventoryByName(final String name) {
+        if (name.equals("player")) {
+            return this.getInventoryPlayer();
+        }
+        return this.ct.getInventoryByName(name);
+    }
 
-	}
-
-	@Override
-	public void onChangeInventory( final IInventory inv, final int slot, final InvOperation mc, final ItemStack removedStack, final ItemStack newStack )
-	{
-
-	}
-
-	@Override
-	public IInventory getInventoryByName( final String name )
-	{
-		if( name.equals( "player" ) )
-		{
-			return this.getInventoryPlayer();
-		}
-		return this.ct.getInventoryByName( name );
-	}
-
-	@Override
-	public boolean useRealItems()
-	{
-		return true;
-	}
+    @Override
+    public boolean useRealItems() {
+        return true;
+    }
 }

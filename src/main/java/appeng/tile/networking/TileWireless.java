@@ -18,6 +18,7 @@
 
 package appeng.tile.networking;
 
+import java.util.EnumSet;
 
 import appeng.api.AEApi;
 import appeng.api.implementations.IPowerChannelState;
@@ -43,186 +44,164 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.EnumSet;
+public class TileWireless
+    extends AENetworkInvTile implements IWirelessAccessPoint, IPowerChannelState {
+    public static final int POWERED_FLAG = 1;
+    public static final int CHANNEL_FLAG = 2;
 
+    private final int[] sides = { 0 };
+    private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 1);
 
-public class TileWireless extends AENetworkInvTile implements IWirelessAccessPoint, IPowerChannelState
-{
+    private int clientFlags = 0;
 
-	public static final int POWERED_FLAG = 1;
-	public static final int CHANNEL_FLAG = 2;
+    public TileWireless() {
+        this.getProxy().setFlags(GridFlags.REQUIRE_CHANNEL);
+        this.getProxy().setValidSides(EnumSet.noneOf(ForgeDirection.class));
+    }
 
-	private final int[] sides = { 0 };
-	private final AppEngInternalInventory inv = new AppEngInternalInventory( this, 1 );
-
-	private int clientFlags = 0;
-
-	public TileWireless()
-	{
-		this.getProxy().setFlags( GridFlags.REQUIRE_CHANNEL );
-		this.getProxy().setValidSides( EnumSet.noneOf( ForgeDirection.class ) );
-	}
-
-	@Override
-	public void setOrientation( final ForgeDirection inForward, final ForgeDirection inUp )
-	{
-		super.setOrientation( inForward, inUp );
-        if (this.worldObj.getBlock(this.xCoord, this.yCoord, this.zCoord) instanceof BlockWirelessAccessPoint) {
-            this.getProxy().setValidSides( EnumSet.allOf(ForgeDirection.class) );
+    @Override
+    public void
+    setOrientation(final ForgeDirection inForward, final ForgeDirection inUp) {
+        super.setOrientation(inForward, inUp);
+        if (this.worldObj.getBlock(this.xCoord, this.yCoord, this.zCoord)
+                instanceof BlockWirelessAccessPoint) {
+            this.getProxy().setValidSides(EnumSet.allOf(ForgeDirection.class));
         } else {
-		this.getProxy().setValidSides( EnumSet.of( this.getForward().getOpposite() ) );
+            this.getProxy().setValidSides(EnumSet.of(this.getForward().getOpposite()));
         }
-	}
+    }
 
-	@MENetworkEventSubscribe
-	public void chanRender( final MENetworkChannelsChanged c )
-	{
-		this.markForUpdate();
-	}
+    @MENetworkEventSubscribe
+    public void chanRender(final MENetworkChannelsChanged c) {
+        this.markForUpdate();
+    }
 
-	@MENetworkEventSubscribe
-	public void powerRender( final MENetworkPowerStatusChange c )
-	{
-		this.markForUpdate();
-	}
+    @MENetworkEventSubscribe
+    public void powerRender(final MENetworkPowerStatusChange c) {
+        this.markForUpdate();
+    }
 
-	@TileEvent( TileEventType.NETWORK_READ )
-	public boolean readFromStream_TileWireless( final ByteBuf data )
-	{
-		final int old = this.getClientFlags();
-		this.setClientFlags( data.readByte() );
+    @TileEvent(TileEventType.NETWORK_READ)
+    public boolean readFromStream_TileWireless(final ByteBuf data) {
+        final int old = this.getClientFlags();
+        this.setClientFlags(data.readByte());
 
-		return old != this.getClientFlags();
-	}
+        return old != this.getClientFlags();
+    }
 
-	@TileEvent( TileEventType.NETWORK_WRITE )
-	public void writeToStream_TileWireless( final ByteBuf data )
-	{
-		this.setClientFlags( 0 );
+    @TileEvent(TileEventType.NETWORK_WRITE)
+    public void writeToStream_TileWireless(final ByteBuf data) {
+        this.setClientFlags(0);
 
-		try
-		{
-			if( this.getProxy().getEnergy().isNetworkPowered() )
-			{
-				this.setClientFlags( this.getClientFlags() | POWERED_FLAG );
-			}
+        try {
+            if (this.getProxy().getEnergy().isNetworkPowered()) {
+                this.setClientFlags(this.getClientFlags() | POWERED_FLAG);
+            }
 
-			if( this.getProxy().getNode().meetsChannelRequirements() )
-			{
-				this.setClientFlags( this.getClientFlags() | CHANNEL_FLAG );
-			}
-		}
-		catch( final GridAccessException e )
-		{
-			// meh
-		}
+            if (this.getProxy().getNode().meetsChannelRequirements()) {
+                this.setClientFlags(this.getClientFlags() | CHANNEL_FLAG);
+            }
+        } catch (final GridAccessException e) {
+            // meh
+        }
 
-		data.writeByte( (byte) this.getClientFlags() );
-	}
+        data.writeByte((byte) this.getClientFlags());
+    }
 
-	@Override
-	public AECableType getCableConnectionType( final ForgeDirection dir )
-	{
-		return AECableType.SMART;
-	}
+    @Override
+    public AECableType getCableConnectionType(final ForgeDirection dir) {
+        return AECableType.SMART;
+    }
 
-	@Override
-	public DimensionalCoord getLocation()
-	{
-		return new DimensionalCoord( this );
-	}
+    @Override
+    public DimensionalCoord getLocation() {
+        return new DimensionalCoord(this);
+    }
 
-	@Override
-	public IInventory getInternalInventory()
-	{
-		return this.inv;
-	}
+    @Override
+    public IInventory getInternalInventory() {
+        return this.inv;
+    }
 
-	@Override
-	public boolean isItemValidForSlot( final int i, final ItemStack itemstack )
-	{
-		return AEApi.instance().definitions().materials().wirelessBooster().isSameAs( itemstack );
-	}
+    @Override
+    public boolean isItemValidForSlot(final int i, final ItemStack itemstack) {
+        return AEApi.instance().definitions().materials().wirelessBooster().isSameAs(
+            itemstack
+        );
+    }
 
-	@Override
-	public void onChangeInventory( final IInventory inv, final int slot, final InvOperation mc, final ItemStack removed, final ItemStack added )
-	{
-		// :P
-	}
+    @Override
+    public void onChangeInventory(
+        final IInventory inv,
+        final int slot,
+        final InvOperation mc,
+        final ItemStack removed,
+        final ItemStack added
+    ) {
+        // :P
+    }
 
-	@Override
-	public int[] getAccessibleSlotsBySide( final ForgeDirection side )
-	{
-		return this.sides;
-	}
+    @Override
+    public int[] getAccessibleSlotsBySide(final ForgeDirection side) {
+        return this.sides;
+    }
 
-	@Override
-	public void onReady()
-	{
-		this.updatePower();
-		super.onReady();
-	}
+    @Override
+    public void onReady() {
+        this.updatePower();
+        super.onReady();
+    }
 
-	private void updatePower()
-	{
-		this.getProxy().setIdlePowerUsage( AEConfig.instance.wireless_getPowerDrain( this.getBoosters() ) );
-	}
+    private void updatePower() {
+        this.getProxy().setIdlePowerUsage(
+            AEConfig.instance.wireless_getPowerDrain(this.getBoosters())
+        );
+    }
 
-	private int getBoosters()
-	{
-		final ItemStack boosters = this.inv.getStackInSlot( 0 );
-		return boosters == null ? 0 : boosters.stackSize;
-	}
+    private int getBoosters() {
+        final ItemStack boosters = this.inv.getStackInSlot(0);
+        return boosters == null ? 0 : boosters.stackSize;
+    }
 
-	@Override
-	public void markDirty()
-	{
-		this.updatePower();
-	}
+    @Override
+    public void markDirty() {
+        this.updatePower();
+    }
 
-	@Override
-	public double getRange()
-	{
-		return AEConfig.instance.wireless_getMaxRange( this.getBoosters() );
-	}
+    @Override
+    public double getRange() {
+        return AEConfig.instance.wireless_getMaxRange(this.getBoosters());
+    }
 
-	@Override
-	public boolean isActive()
-	{
-		if( Platform.isClient() )
-		{
-			return this.isPowered() && ( CHANNEL_FLAG == ( this.getClientFlags() & CHANNEL_FLAG ) );
-		}
+    @Override
+    public boolean isActive() {
+        if (Platform.isClient()) {
+            return this.isPowered()
+                && (CHANNEL_FLAG == (this.getClientFlags() & CHANNEL_FLAG));
+        }
 
-		return this.getProxy().isActive();
-	}
+        return this.getProxy().isActive();
+    }
 
-	@Override
-	public IGrid getGrid()
-	{
-		try
-		{
-			return this.getProxy().getGrid();
-		}
-		catch( final GridAccessException e )
-		{
-			return null;
-		}
-	}
+    @Override
+    public IGrid getGrid() {
+        try {
+            return this.getProxy().getGrid();
+        } catch (final GridAccessException e) {
+            return null;
+        }
+    }
 
-	@Override
-	public boolean isPowered()
-	{
-		return POWERED_FLAG == ( this.getClientFlags() & POWERED_FLAG );
-	}
+    @Override
+    public boolean isPowered() {
+        return POWERED_FLAG == (this.getClientFlags() & POWERED_FLAG);
+    }
 
-	public int getClientFlags()
-	{
-		return this.clientFlags;
-	}
+    public int getClientFlags() {
+        return this.clientFlags;
+    }
 
-	private void setClientFlags( final int clientFlags )
-	{
-		this.clientFlags = clientFlags;
-	}
+    private void setClientFlags(final int clientFlags) {
+        this.clientFlags = clientFlags;
+    }
 }

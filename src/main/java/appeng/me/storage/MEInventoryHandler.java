@@ -18,7 +18,6 @@
 
 package appeng.me.storage;
 
-
 import appeng.api.config.AccessRestriction;
 import appeng.api.config.Actionable;
 import appeng.api.config.IncludeExclude;
@@ -31,169 +30,145 @@ import appeng.api.storage.data.IItemList;
 import appeng.util.prioitylist.DefaultPriorityList;
 import appeng.util.prioitylist.IPartitionList;
 
+public class MEInventoryHandler<T extends IAEStack<T>> implements IMEInventoryHandler<T> {
+    private final IMEInventoryHandler<T> internal;
+    private int myPriority;
+    private IncludeExclude myWhitelist;
+    private AccessRestriction myAccess;
+    private IPartitionList<T> myPartitionList;
 
-public class MEInventoryHandler<T extends IAEStack<T>> implements IMEInventoryHandler<T>
-{
+    private AccessRestriction cachedAccessRestriction;
+    private boolean hasReadAccess;
+    private boolean hasWriteAccess;
 
-	private final IMEInventoryHandler<T> internal;
-	private int myPriority;
-	private IncludeExclude myWhitelist;
-	private AccessRestriction myAccess;
-	private IPartitionList<T> myPartitionList;
+    public MEInventoryHandler(final IMEInventory<T> i, final StorageChannel channel) {
+        if (i instanceof IMEInventoryHandler) {
+            this.internal = (IMEInventoryHandler<T>) i;
+        } else {
+            this.internal = new MEPassThrough<T>(i, channel);
+        }
 
-	private AccessRestriction cachedAccessRestriction;
-	private boolean hasReadAccess;
-	private boolean hasWriteAccess;
+        this.myPriority = 0;
+        this.myWhitelist = IncludeExclude.WHITELIST;
+        this.setBaseAccess(AccessRestriction.READ_WRITE);
+        this.myPartitionList = new DefaultPriorityList<T>();
+    }
 
-	public MEInventoryHandler( final IMEInventory<T> i, final StorageChannel channel )
-	{
-		if( i instanceof IMEInventoryHandler )
-		{
-			this.internal = (IMEInventoryHandler<T>) i;
-		}
-		else
-		{
-			this.internal = new MEPassThrough<T>( i, channel );
-		}
+    IncludeExclude getWhitelist() {
+        return this.myWhitelist;
+    }
 
-		this.myPriority = 0;
-		this.myWhitelist = IncludeExclude.WHITELIST;
-		this.setBaseAccess( AccessRestriction.READ_WRITE );
-		this.myPartitionList = new DefaultPriorityList<T>();
-	}
+    public void setWhitelist(final IncludeExclude myWhitelist) {
+        this.myWhitelist = myWhitelist;
+    }
 
-	IncludeExclude getWhitelist()
-	{
-		return this.myWhitelist;
-	}
+    public AccessRestriction getBaseAccess() {
+        return this.myAccess;
+    }
 
-	public void setWhitelist( final IncludeExclude myWhitelist )
-	{
-		this.myWhitelist = myWhitelist;
-	}
+    public void setBaseAccess(final AccessRestriction myAccess) {
+        this.myAccess = myAccess;
+        this.cachedAccessRestriction
+            = this.myAccess.restrictPermissions(this.internal.getAccess());
+        this.hasReadAccess
+            = this.cachedAccessRestriction.hasPermission(AccessRestriction.READ);
+        this.hasWriteAccess
+            = this.cachedAccessRestriction.hasPermission(AccessRestriction.WRITE);
+    }
 
-	public AccessRestriction getBaseAccess()
-	{
-		return this.myAccess;
-	}
+    IPartitionList<T> getPartitionList() {
+        return this.myPartitionList;
+    }
 
-	public void setBaseAccess( final AccessRestriction myAccess )
-	{
-		this.myAccess = myAccess;
-		this.cachedAccessRestriction = this.myAccess.restrictPermissions( this.internal.getAccess() );
-		this.hasReadAccess = this.cachedAccessRestriction.hasPermission( AccessRestriction.READ );
-		this.hasWriteAccess = this.cachedAccessRestriction.hasPermission( AccessRestriction.WRITE );
-	}
+    public void setPartitionList(final IPartitionList<T> myPartitionList) {
+        this.myPartitionList = myPartitionList;
+    }
 
-	IPartitionList<T> getPartitionList()
-	{
-		return this.myPartitionList;
-	}
+    @Override
+    public T
+    injectItems(final T input, final Actionable type, final BaseActionSource src) {
+        if (!this.canAccept(input)) {
+            return input;
+        }
 
-	public void setPartitionList( final IPartitionList<T> myPartitionList )
-	{
-		this.myPartitionList = myPartitionList;
-	}
+        return this.internal.injectItems(input, type, src);
+    }
 
-	@Override
-	public T injectItems( final T input, final Actionable type, final BaseActionSource src )
-	{
-		if( !this.canAccept( input ) )
-		{
-			return input;
-		}
+    @Override
+    public T
+    extractItems(final T request, final Actionable type, final BaseActionSource src) {
+        if (!this.hasReadAccess) {
+            return null;
+        }
 
-		return this.internal.injectItems( input, type, src );
-	}
+        return this.internal.extractItems(request, type, src);
+    }
 
-	@Override
-	public T extractItems( final T request, final Actionable type, final BaseActionSource src )
-	{
-		if( !this.hasReadAccess )
-		{
-			return null;
-		}
+    @Override
+    public IItemList<T> getAvailableItems(final IItemList<T> out) {
+        if (!this.hasReadAccess) {
+            return out;
+        }
 
-		return this.internal.extractItems( request, type, src );
-	}
+        return this.internal.getAvailableItems(out);
+    }
 
-	@Override
-	public IItemList<T> getAvailableItems( final IItemList<T> out )
-	{
-		if( !this.hasReadAccess )
-		{
-			return out;
-		}
+    @Override
+    public StorageChannel getChannel() {
+        return this.internal.getChannel();
+    }
 
-		return this.internal.getAvailableItems( out );
-	}
+    @Override
+    public AccessRestriction getAccess() {
+        return this.cachedAccessRestriction;
+    }
 
-	@Override
-	public StorageChannel getChannel()
-	{
-		return this.internal.getChannel();
-	}
+    @Override
+    public boolean isPrioritized(final T input) {
+        if (this.myWhitelist == IncludeExclude.WHITELIST) {
+            return this.myPartitionList.isListed(input)
+                || this.internal.isPrioritized(input);
+        }
+        return false;
+    }
 
-	@Override
-	public AccessRestriction getAccess()
-	{
-		return this.cachedAccessRestriction;
-	}
+    @Override
+    public boolean canAccept(final T input) {
+        if (!this.hasWriteAccess) {
+            return false;
+        }
 
-	@Override
-	public boolean isPrioritized( final T input )
-	{
-		if( this.myWhitelist == IncludeExclude.WHITELIST )
-		{
-			return this.myPartitionList.isListed( input ) || this.internal.isPrioritized( input );
-		}
-		return false;
-	}
+        if (this.myWhitelist == IncludeExclude.BLACKLIST
+            && this.myPartitionList.isListed(input)) {
+            return false;
+        }
+        if (this.myPartitionList.isEmpty()
+            || this.myWhitelist == IncludeExclude.BLACKLIST) {
+            return this.internal.canAccept(input);
+        }
+        return this.myPartitionList.isListed(input) && this.internal.canAccept(input);
+    }
 
-	@Override
-	public boolean canAccept( final T input )
-	{
-		if( !this.hasWriteAccess )
-		{
-			return false;
-		}
+    @Override
+    public int getPriority() {
+        return this.myPriority;
+    }
 
-		if( this.myWhitelist == IncludeExclude.BLACKLIST && this.myPartitionList.isListed( input ) )
-		{
-			return false;
-		}
-		if( this.myPartitionList.isEmpty() || this.myWhitelist == IncludeExclude.BLACKLIST )
-		{
-			return this.internal.canAccept( input );
-		}
-		return this.myPartitionList.isListed( input ) && this.internal.canAccept( input );
-	}
+    public void setPriority(final int myPriority) {
+        this.myPriority = myPriority;
+    }
 
-	@Override
-	public int getPriority()
-	{
-		return this.myPriority;
-	}
+    @Override
+    public int getSlot() {
+        return this.internal.getSlot();
+    }
 
-	public void setPriority( final int myPriority )
-	{
-		this.myPriority = myPriority;
-	}
+    @Override
+    public boolean validForPass(final int i) {
+        return true;
+    }
 
-	@Override
-	public int getSlot()
-	{
-		return this.internal.getSlot();
-	}
-
-	@Override
-	public boolean validForPass( final int i )
-	{
-		return true;
-	}
-
-	public IMEInventory<T> getInternal()
-	{
-		return this.internal;
-	}
+    public IMEInventory<T> getInternal() {
+        return this.internal;
+    }
 }

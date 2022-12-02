@@ -18,6 +18,8 @@
 
 package appeng.block.solids;
 
+import java.util.EnumSet;
+import java.util.Random;
 
 import appeng.client.render.effects.VibrantFX;
 import appeng.core.AEConfig;
@@ -28,38 +30,34 @@ import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.World;
 
-import java.util.EnumSet;
-import java.util.Random;
+public class BlockQuartzLamp extends BlockQuartzGlass {
+    public BlockQuartzLamp() {
+        this.setLightLevel(1.0f);
+        this.setBlockTextureName("BlockQuartzGlass");
+        this.setFeature(
+            EnumSet.of(AEFeature.DecorativeQuartzBlocks, AEFeature.DecorativeLights)
+        );
+    }
 
+    @Override
+    @SideOnly(Side.CLIENT)
+    public void randomDisplayTick(
+        final World w, final int x, final int y, final int z, final Random r
+    ) {
+        if (!AEConfig.instance.enableEffects) {
+            return;
+        }
 
-public class BlockQuartzLamp extends BlockQuartzGlass
-{
+        if (CommonHelper.proxy.shouldAddParticles(r)) {
+            final double d0 = (r.nextFloat() - 0.5F) * 0.96D;
+            final double d1 = (r.nextFloat() - 0.5F) * 0.96D;
+            final double d2 = (r.nextFloat() - 0.5F) * 0.96D;
 
-	public BlockQuartzLamp()
-	{
-		this.setLightLevel( 1.0f );
-		this.setBlockTextureName( "BlockQuartzGlass" );
-		this.setFeature( EnumSet.of( AEFeature.DecorativeQuartzBlocks, AEFeature.DecorativeLights ) );
-	}
+            final VibrantFX fx = new VibrantFX(
+                w, 0.5 + x + d0, 0.5 + y + d1, 0.5 + z + d2, 0.0D, 0.0D, 0.0D
+            );
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	public void randomDisplayTick( final World w, final int x, final int y, final int z, final Random r )
-	{
-		if( !AEConfig.instance.enableEffects )
-		{
-			return;
-		}
-
-		if( CommonHelper.proxy.shouldAddParticles( r ) )
-		{
-			final double d0 = ( r.nextFloat() - 0.5F ) * 0.96D;
-			final double d1 = ( r.nextFloat() - 0.5F ) * 0.96D;
-			final double d2 = ( r.nextFloat() - 0.5F ) * 0.96D;
-
-			final VibrantFX fx = new VibrantFX( w, 0.5 + x + d0, 0.5 + y + d1, 0.5 + z + d2, 0.0D, 0.0D, 0.0D );
-
-			Minecraft.getMinecraft().effectRenderer.addEffect( fx );
-		}
-	}
+            Minecraft.getMinecraft().effectRenderer.addEffect(fx);
+        }
+    }
 }

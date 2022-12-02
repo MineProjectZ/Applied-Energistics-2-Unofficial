@@ -18,6 +18,9 @@
 
 package appeng.container.implementations;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import appeng.api.networking.crafting.ICraftingCPU;
 import appeng.api.networking.crafting.ICraftingGrid;
@@ -27,152 +30,115 @@ import appeng.util.Platform;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.entity.player.InventoryPlayer;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+public class ContainerCraftingStatus extends ContainerCraftingCPU {
+    private final List<CraftingCPURecord> cpus = new ArrayList<CraftingCPURecord>();
+    @GuiSync(5)
+    public int selectedCpu = -1;
+    @GuiSync(6)
+    public boolean noCPU = true;
+    @GuiSync(7)
+    public String myName = "";
 
+    public ContainerCraftingStatus(final InventoryPlayer ip, final ITerminalHost te) {
+        super(ip, te);
+    }
 
-public class ContainerCraftingStatus extends ContainerCraftingCPU
-{
+    @Override
+    public void detectAndSendChanges() {
+        if (Platform.isServer() && this.getNetwork() != null) {
+            final ICraftingGrid cc = this.getNetwork().getCache(ICraftingGrid.class);
+            final ImmutableSet<ICraftingCPU> cpuSet = cc.getCpus();
 
-	private final List<CraftingCPURecord> cpus = new ArrayList<CraftingCPURecord>();
-	@GuiSync( 5 )
-	public int selectedCpu = -1;
-	@GuiSync( 6 )
-	public boolean noCPU = true;
-	@GuiSync( 7 )
-	public String myName = "";
+            int matches = 0;
+            boolean changed = false;
+            for (final ICraftingCPU c : cpuSet) {
+                boolean found = false;
+                for (final CraftingCPURecord ccr : this.cpus) {
+                    if (ccr.getCpu() == c) {
+                        found = true;
+                    }
+                }
 
-	public ContainerCraftingStatus( final InventoryPlayer ip, final ITerminalHost te )
-	{
-		super( ip, te );
-	}
+                final boolean matched = this.cpuMatches(c);
 
-	@Override
-	public void detectAndSendChanges()
-	{
-		if( Platform.isServer() && this.getNetwork() != null )
-		{
-			final ICraftingGrid cc = this.getNetwork().getCache( ICraftingGrid.class );
-			final ImmutableSet<ICraftingCPU> cpuSet = cc.getCpus();
+                if (matched) {
+                    matches++;
+                }
 
-			int matches = 0;
-			boolean changed = false;
-			for( final ICraftingCPU c : cpuSet )
-			{
-				boolean found = false;
-				for( final CraftingCPURecord ccr : this.cpus )
-				{
-					if( ccr.getCpu() == c )
-					{
-						found = true;
-					}
-				}
+                if (found == !matched) {
+                    changed = true;
+                }
+            }
 
-				final boolean matched = this.cpuMatches( c );
+            if (changed || this.cpus.size() != matches) {
+                this.cpus.clear();
+                for (final ICraftingCPU c : cpuSet) {
+                    if (this.cpuMatches(c)) {
+                        this.cpus.add(new CraftingCPURecord(
+                            c.getAvailableStorage(), c.getCoProcessors(), c
+                        ));
+                    }
+                }
 
-				if( matched )
-				{
-					matches++;
-				}
+                this.sendCPUs();
+            }
 
-				if( found == !matched )
-				{
-					changed = true;
-				}
-			}
+            this.noCPU = this.cpus.isEmpty();
+        }
 
-			if( changed || this.cpus.size() != matches )
-			{
-				this.cpus.clear();
-				for( final ICraftingCPU c : cpuSet )
-				{
-					if( this.cpuMatches( c ) )
-					{
-						this.cpus.add( new CraftingCPURecord( c.getAvailableStorage(), c.getCoProcessors(), c ) );
-					}
-				}
+        super.detectAndSendChanges();
+    }
 
-				this.sendCPUs();
-			}
+    private boolean cpuMatches(final ICraftingCPU c) {
+        return c.isBusy();
+    }
 
-			this.noCPU = this.cpus.isEmpty();
-		}
+    private void sendCPUs() {
+        Collections.sort(this.cpus);
 
-		super.detectAndSendChanges();
-	}
+        if (this.selectedCpu >= this.cpus.size()) {
+            this.selectedCpu = -1;
+            this.myName = "";
+        } else if (this.selectedCpu != -1) {
+            this.myName = this.cpus.get(this.selectedCpu).getName();
+        }
 
-	private boolean cpuMatches( final ICraftingCPU c )
-	{
-		return c.isBusy();
-	}
+        if (this.selectedCpu == -1 && this.cpus.size() > 0) {
+            this.selectedCpu = 0;
+        }
 
-	private void sendCPUs()
-	{
-		Collections.sort( this.cpus );
+        if (this.selectedCpu != -1) {
+            if (this.cpus.get(this.selectedCpu).getCpu() != this.getMonitor()) {
+                this.setCPU(this.cpus.get(this.selectedCpu).getCpu());
+            }
+        } else {
+            this.setCPU(null);
+        }
+    }
 
-		if( this.selectedCpu >= this.cpus.size() )
-		{
-			this.selectedCpu = -1;
-			this.myName = "";
-		}
-		else if( this.selectedCpu != -1 )
-		{
-			this.myName = this.cpus.get( this.selectedCpu ).getName();
-		}
+    public void cycleCpu(final boolean next) {
+        if (next) {
+            this.selectedCpu++;
+        } else {
+            this.selectedCpu--;
+        }
 
-		if( this.selectedCpu == -1 && this.cpus.size() > 0 )
-		{
-			this.selectedCpu = 0;
-		}
+        if (this.selectedCpu < -1) {
+            this.selectedCpu = this.cpus.size() - 1;
+        } else if (this.selectedCpu >= this.cpus.size()) {
+            this.selectedCpu = -1;
+        }
 
-		if( this.selectedCpu != -1 )
-		{
-			if( this.cpus.get( this.selectedCpu ).getCpu() != this.getMonitor() )
-			{
-				this.setCPU( this.cpus.get( this.selectedCpu ).getCpu() );
-			}
-		}
-		else
-		{
-			this.setCPU( null );
-		}
-	}
+        if (this.selectedCpu == -1 && this.cpus.size() > 0) {
+            this.selectedCpu = 0;
+        }
 
-	public void cycleCpu( final boolean next )
-	{
-		if( next )
-		{
-			this.selectedCpu++;
-		}
-		else
-		{
-			this.selectedCpu--;
-		}
-
-		if( this.selectedCpu < -1 )
-		{
-			this.selectedCpu = this.cpus.size() - 1;
-		}
-		else if( this.selectedCpu >= this.cpus.size() )
-		{
-			this.selectedCpu = -1;
-		}
-
-		if( this.selectedCpu == -1 && this.cpus.size() > 0 )
-		{
-			this.selectedCpu = 0;
-		}
-
-		if( this.selectedCpu == -1 )
-		{
-			this.myName = "";
-			this.setCPU( null );
-		}
-		else
-		{
-			this.myName = this.cpus.get( this.selectedCpu ).getName();
-			this.setCPU( this.cpus.get( this.selectedCpu ).getCpu() );
-		}
-	}
+        if (this.selectedCpu == -1) {
+            this.myName = "";
+            this.setCPU(null);
+        } else {
+            this.myName = this.cpus.get(this.selectedCpu).getName();
+            this.setCPU(this.cpus.get(this.selectedCpu).getCpu());
+        }
+    }
 }

@@ -18,7 +18,6 @@
 
 package appeng.container.implementations;
 
-
 import appeng.api.AEApi;
 import appeng.container.AEBaseContainer;
 import appeng.container.slot.QuartzKnifeOutput;
@@ -36,210 +35,180 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerDestroyItemEvent;
 
+public class ContainerQuartzKnife
+    extends AEBaseContainer implements IAEAppEngInventory, IInventory {
+    private final QuartzKnifeObj toolInv;
 
-public class ContainerQuartzKnife extends AEBaseContainer implements IAEAppEngInventory, IInventory
-{
+    private final AppEngInternalInventory inSlot = new AppEngInternalInventory(this, 1);
+    private final SlotRestrictedInput metals;
+    private final QuartzKnifeOutput output;
+    private String myName = "";
 
-	private final QuartzKnifeObj toolInv;
+    public ContainerQuartzKnife(final InventoryPlayer ip, final QuartzKnifeObj te) {
+        super(ip, null, null);
+        this.toolInv = te;
 
-	private final AppEngInternalInventory inSlot = new AppEngInternalInventory( this, 1 );
-	private final SlotRestrictedInput metals;
-	private final QuartzKnifeOutput output;
-	private String myName = "";
+        this.metals = new SlotRestrictedInput(
+            SlotRestrictedInput.PlacableItemType.METAL_INGOTS, this.inSlot, 0, 94, 44, ip
+        );
+        this.addSlotToContainer(this.metals);
 
-	public ContainerQuartzKnife( final InventoryPlayer ip, final QuartzKnifeObj te )
-	{
-		super( ip, null, null );
-		this.toolInv = te;
+        this.output = new QuartzKnifeOutput(this, 0, 134, 44, -1);
+        this.addSlotToContainer(this.output);
 
-		this.metals = new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.METAL_INGOTS, this.inSlot, 0, 94, 44, ip );
-		this.addSlotToContainer( this.metals );
+        this.lockPlayerInventorySlot(ip.currentItem);
 
-		this.output = new QuartzKnifeOutput( this, 0, 134, 44, -1 );
-		this.addSlotToContainer( this.output );
+        this.bindPlayerInventory(ip, 0, 184 - /* height of player inventory */ 82);
+    }
 
-		this.lockPlayerInventorySlot( ip.currentItem );
+    public void setName(final String value) {
+        this.myName = value;
+    }
 
-		this.bindPlayerInventory( ip, 0, 184 - /* height of player inventory */82 );
-	}
+    @Override
+    public void detectAndSendChanges() {
+        final ItemStack currentItem = this.getPlayerInv().getCurrentItem();
 
-	public void setName( final String value )
-	{
-		this.myName = value;
-	}
+        if (currentItem != this.toolInv.getItemStack()) {
+            if (currentItem != null) {
+                if (Platform.isSameItem(this.toolInv.getItemStack(), currentItem)) {
+                    this.getPlayerInv().setInventorySlotContents(
+                        this.getPlayerInv().currentItem, this.toolInv.getItemStack()
+                    );
+                } else {
+                    this.setValidContainer(false);
+                }
+            } else {
+                this.setValidContainer(false);
+            }
+        }
 
-	@Override
-	public void detectAndSendChanges()
-	{
-		final ItemStack currentItem = this.getPlayerInv().getCurrentItem();
+        super.detectAndSendChanges();
+    }
 
-		if( currentItem != this.toolInv.getItemStack() )
-		{
-			if( currentItem != null )
-			{
-				if( Platform.isSameItem( this.toolInv.getItemStack(), currentItem ) )
-				{
-					this.getPlayerInv().setInventorySlotContents( this.getPlayerInv().currentItem, this.toolInv.getItemStack() );
-				}
-				else
-				{
-					this.setValidContainer( false );
-				}
-			}
-			else
-			{
-				this.setValidContainer( false );
-			}
-		}
+    @Override
+    public void onContainerClosed(final EntityPlayer par1EntityPlayer) {
+        if (this.inSlot.getStackInSlot(0) != null) {
+            par1EntityPlayer.dropPlayerItemWithRandomChoice(
+                this.inSlot.getStackInSlot(0), false
+            );
+        }
+    }
 
-		super.detectAndSendChanges();
-	}
+    @Override
+    public void saveChanges() {}
 
-	@Override
-	public void onContainerClosed( final EntityPlayer par1EntityPlayer )
-	{
-		if( this.inSlot.getStackInSlot( 0 ) != null )
-		{
-			par1EntityPlayer.dropPlayerItemWithRandomChoice( this.inSlot.getStackInSlot( 0 ), false );
-		}
-	}
+    @Override
+    public void onChangeInventory(
+        final IInventory inv,
+        final int slot,
+        final InvOperation mc,
+        final ItemStack removedStack,
+        final ItemStack newStack
+    ) {}
 
-	@Override
-	public void saveChanges()
-	{
+    @Override
+    public int getSizeInventory() {
+        return 1;
+    }
 
-	}
+    @Override
+    public ItemStack getStackInSlot(final int var1) {
+        final ItemStack input = this.inSlot.getStackInSlot(0);
+        if (input == null) {
+            return null;
+        }
 
-	@Override
-	public void onChangeInventory( final IInventory inv, final int slot, final InvOperation mc, final ItemStack removedStack, final ItemStack newStack )
-	{
+        if (SlotRestrictedInput.isMetalIngot(input)) {
+            if (this.myName.length() > 0) {
+                for (final ItemStack namePressStack : AEApi.instance()
+                                                          .definitions()
+                                                          .materials()
+                                                          .namePress()
+                                                          .maybeStack(1)
+                                                          .asSet()) {
+                    final NBTTagCompound compound = Platform.openNbtData(namePressStack);
+                    compound.setString("InscribeName", this.myName);
 
-	}
+                    return namePressStack;
+                }
+            }
+        }
 
-	@Override
-	public int getSizeInventory()
-	{
-		return 1;
-	}
+        return null;
+    }
 
-	@Override
-	public ItemStack getStackInSlot( final int var1 )
-	{
-		final ItemStack input = this.inSlot.getStackInSlot( 0 );
-		if( input == null )
-		{
-			return null;
-		}
+    @Override
+    public ItemStack decrStackSize(final int var1, final int var2) {
+        final ItemStack is = this.getStackInSlot(0);
+        if (is != null) {
+            if (this.makePlate()) {
+                return is;
+            }
+        }
+        return null;
+    }
 
-		if( SlotRestrictedInput.isMetalIngot( input ) )
-		{
-			if( this.myName.length() > 0 )
-			{
-				for( final ItemStack namePressStack : AEApi.instance().definitions().materials().namePress().maybeStack( 1 ).asSet() )
-				{
-					final NBTTagCompound compound = Platform.openNbtData( namePressStack );
-					compound.setString( "InscribeName", this.myName );
+    private boolean makePlate() {
+        if (this.inSlot.decrStackSize(0, 1) != null) {
+            final ItemStack item = this.toolInv.getItemStack();
+            item.damageItem(1, this.getPlayerInv().player);
 
-					return namePressStack;
-				}
-			}
-		}
+            if (item.stackSize == 0) {
+                this.getPlayerInv().mainInventory[this.getPlayerInv().currentItem] = null;
+                MinecraftForge.EVENT_BUS.post(
+                    new PlayerDestroyItemEvent(this.getPlayerInv().player, item)
+                );
+            }
 
-		return null;
-	}
+            return true;
+        }
+        return false;
+    }
 
-	@Override
-	public ItemStack decrStackSize( final int var1, final int var2 )
-	{
-		final ItemStack is = this.getStackInSlot( 0 );
-		if( is != null )
-		{
-			if( this.makePlate() )
-			{
-				return is;
-			}
-		}
-		return null;
-	}
+    @Override
+    public ItemStack getStackInSlotOnClosing(final int var1) {
+        return null;
+    }
 
-	private boolean makePlate()
-	{
-		if( this.inSlot.decrStackSize( 0, 1 ) != null )
-		{
-			final ItemStack item = this.toolInv.getItemStack();
-			item.damageItem( 1, this.getPlayerInv().player );
+    @Override
+    public void setInventorySlotContents(final int var1, final ItemStack var2) {
+        if (var2 == null && Platform.isServer()) {
+            this.makePlate();
+        }
+    }
 
-			if( item.stackSize == 0 )
-			{
-				this.getPlayerInv().mainInventory[this.getPlayerInv().currentItem] = null;
-				MinecraftForge.EVENT_BUS.post( new PlayerDestroyItemEvent( this.getPlayerInv().player, item ) );
-			}
+    @Override
+    public String getInventoryName() {
+        return "Quartz Knife Output";
+    }
 
-			return true;
-		}
-		return false;
-	}
+    @Override
+    public boolean hasCustomInventoryName() {
+        return false;
+    }
 
-	@Override
-	public ItemStack getStackInSlotOnClosing( final int var1 )
-	{
-		return null;
-	}
+    @Override
+    public int getInventoryStackLimit() {
+        return 1;
+    }
 
-	@Override
-	public void setInventorySlotContents( final int var1, final ItemStack var2 )
-	{
-		if( var2 == null && Platform.isServer() )
-		{
-			this.makePlate();
-		}
-	}
+    @Override
+    public void markDirty() {}
 
-	@Override
-	public String getInventoryName()
-	{
-		return "Quartz Knife Output";
-	}
+    @Override
+    public boolean isUseableByPlayer(final EntityPlayer var1) {
+        return false;
+    }
 
-	@Override
-	public boolean hasCustomInventoryName()
-	{
-		return false;
-	}
+    @Override
+    public void openInventory() {}
 
-	@Override
-	public int getInventoryStackLimit()
-	{
-		return 1;
-	}
+    @Override
+    public void closeInventory() {}
 
-	@Override
-	public void markDirty()
-	{
-
-	}
-
-	@Override
-	public boolean isUseableByPlayer( final EntityPlayer var1 )
-	{
-		return false;
-	}
-
-	@Override
-	public void openInventory()
-	{
-
-	}
-
-	@Override
-	public void closeInventory()
-	{
-
-	}
-
-	@Override
-	public boolean isItemValidForSlot( final int var1, final ItemStack var2 )
-	{
-		return false;
-	}
+    @Override
+    public boolean isItemValidForSlot(final int var1, final ItemStack var2) {
+        return false;
+    }
 }

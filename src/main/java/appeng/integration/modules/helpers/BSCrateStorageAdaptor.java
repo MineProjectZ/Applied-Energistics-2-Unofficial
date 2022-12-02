@@ -18,6 +18,7 @@
 
 package appeng.integration.modules.helpers;
 
+import java.util.Iterator;
 
 import appeng.api.config.FuzzyMode;
 import appeng.util.InventoryAdaptor;
@@ -28,185 +29,166 @@ import appeng.util.iterators.StackToSlotIterator;
 import net.mcft.copy.betterstorage.api.crate.ICrateStorage;
 import net.minecraft.item.ItemStack;
 
-import java.util.Iterator;
+public class BSCrateStorageAdaptor extends InventoryAdaptor {
+    private final ICrateStorage cs;
 
+    public BSCrateStorageAdaptor(final Object te) {
+        this.cs = (ICrateStorage) te;
+    }
 
-public class BSCrateStorageAdaptor extends InventoryAdaptor
-{
+    @Override
+    public ItemStack removeItems(
+        final int amount, final ItemStack filter, final IInventoryDestination destination
+    ) {
+        ItemStack target = null;
 
-	private final ICrateStorage cs;
+        for (final ItemStack is : this.cs.getContents()) {
+            if (is != null) {
+                if (is.stackSize > 0
+                    && (filter == null || Platform.isSameItem(filter, is))) {
+                    if (destination == null || destination.canInsert(is)) {
+                        target = is;
+                        break;
+                    }
+                }
+            }
+        }
 
-	public BSCrateStorageAdaptor( final Object te )
-	{
-		this.cs = (ICrateStorage) te;
-	}
+        if (target != null) {
+            final ItemStack f = Platform.cloneItemStack(target);
+            f.stackSize = amount;
+            return this.cs.extractItems(f, amount);
+        }
 
-	@Override
-	public ItemStack removeItems( final int amount, final ItemStack filter, final IInventoryDestination destination )
-	{
-		ItemStack target = null;
+        return null;
+    }
 
-		for( final ItemStack is : this.cs.getContents() )
-		{
-			if( is != null )
-			{
-				if( is.stackSize > 0 && ( filter == null || Platform.isSameItem( filter, is ) ) )
-				{
-					if( destination == null || destination.canInsert( is ) )
-					{
-						target = is;
-						break;
-					}
-				}
-			}
-		}
+    @Override
+    public ItemStack simulateRemove(
+        final int amount, final ItemStack filter, final IInventoryDestination destination
+    ) {
+        ItemStack target = null;
 
-		if( target != null )
-		{
-			final ItemStack f = Platform.cloneItemStack( target );
-			f.stackSize = amount;
-			return this.cs.extractItems( f, amount );
-		}
+        for (final ItemStack is : this.cs.getContents()) {
+            if (is != null) {
+                if (is.stackSize > 0
+                    && (filter == null || Platform.isSameItem(filter, is))) {
+                    if (destination == null || destination.canInsert(is)) {
+                        target = is;
+                        break;
+                    }
+                }
+            }
+        }
 
-		return null;
-	}
+        if (target != null) {
+            int cnt = this.cs.getItemCount(target);
+            if (cnt == 0) {
+                return null;
+            }
+            if (cnt > amount) {
+                cnt = amount;
+            }
+            final ItemStack c = target.copy();
+            c.stackSize = cnt;
+            return c;
+        }
 
-	@Override
-	public ItemStack simulateRemove( final int amount, final ItemStack filter, final IInventoryDestination destination )
-	{
-		ItemStack target = null;
+        return null;
+    }
 
-		for( final ItemStack is : this.cs.getContents() )
-		{
-			if( is != null )
-			{
-				if( is.stackSize > 0 && ( filter == null || Platform.isSameItem( filter, is ) ) )
-				{
-					if( destination == null || destination.canInsert( is ) )
-					{
-						target = is;
-						break;
-					}
-				}
-			}
-		}
+    @Override
+    public ItemStack removeSimilarItems(
+        final int amount,
+        final ItemStack filter,
+        final FuzzyMode fuzzyMode,
+        final IInventoryDestination destination
+    ) {
+        ItemStack target = null;
 
-		if( target != null )
-		{
-			int cnt = this.cs.getItemCount( target );
-			if( cnt == 0 )
-			{
-				return null;
-			}
-			if( cnt > amount )
-			{
-				cnt = amount;
-			}
-			final ItemStack c = target.copy();
-			c.stackSize = cnt;
-			return c;
-		}
+        for (final ItemStack is : this.cs.getContents()) {
+            if (is != null) {
+                if (is.stackSize > 0
+                    && (filter == null || Platform.isSameItemFuzzy(filter, is, fuzzyMode)
+                    )) {
+                    if (destination == null || destination.canInsert(is)) {
+                        target = is;
+                        break;
+                    }
+                }
+            }
+        }
 
-		return null;
-	}
+        if (target != null) {
+            final ItemStack f = Platform.cloneItemStack(target);
+            f.stackSize = amount;
+            return this.cs.extractItems(f, amount);
+        }
 
-	@Override
-	public ItemStack removeSimilarItems( final int amount, final ItemStack filter, final FuzzyMode fuzzyMode, final IInventoryDestination destination )
-	{
-		ItemStack target = null;
+        return null;
+    }
 
-		for( final ItemStack is : this.cs.getContents() )
-		{
-			if( is != null )
-			{
-				if( is.stackSize > 0 && ( filter == null || Platform.isSameItemFuzzy( filter, is, fuzzyMode ) ) )
-				{
-					if( destination == null || destination.canInsert( is ) )
-					{
-						target = is;
-						break;
-					}
-				}
-			}
-		}
+    @Override
+    public ItemStack simulateSimilarRemove(
+        final int amount,
+        final ItemStack filter,
+        final FuzzyMode fuzzyMode,
+        final IInventoryDestination destination
+    ) {
+        ItemStack target = null;
 
-		if( target != null )
-		{
-			final ItemStack f = Platform.cloneItemStack( target );
-			f.stackSize = amount;
-			return this.cs.extractItems( f, amount );
-		}
+        for (final ItemStack is : this.cs.getContents()) {
+            if (is != null) {
+                if (is.stackSize > 0
+                    && (filter == null || Platform.isSameItemFuzzy(filter, is, fuzzyMode)
+                    )) {
+                    if (destination == null || destination.canInsert(is)) {
+                        target = is;
+                        break;
+                    }
+                }
+            }
+        }
 
-		return null;
-	}
+        if (target != null) {
+            int cnt = this.cs.getItemCount(target);
+            if (cnt == 0) {
+                return null;
+            }
+            if (cnt > amount) {
+                cnt = amount;
+            }
+            final ItemStack c = target.copy();
+            c.stackSize = cnt;
+            return c;
+        }
 
-	@Override
-	public ItemStack simulateSimilarRemove( final int amount, final ItemStack filter, final FuzzyMode fuzzyMode, final IInventoryDestination destination )
-	{
-		ItemStack target = null;
+        return null;
+    }
 
-		for( final ItemStack is : this.cs.getContents() )
-		{
-			if( is != null )
-			{
-				if( is.stackSize > 0 && ( filter == null || Platform.isSameItemFuzzy( filter, is, fuzzyMode ) ) )
-				{
-					if( destination == null || destination.canInsert( is ) )
-					{
-						target = is;
-						break;
-					}
-				}
-			}
-		}
+    @Override
+    public ItemStack addItems(final ItemStack toBeAdded) {
+        return this.cs.insertItems(toBeAdded);
+    }
 
-		if( target != null )
-		{
-			int cnt = this.cs.getItemCount( target );
-			if( cnt == 0 )
-			{
-				return null;
-			}
-			if( cnt > amount )
-			{
-				cnt = amount;
-			}
-			final ItemStack c = target.copy();
-			c.stackSize = cnt;
-			return c;
-		}
+    @Override
+    public ItemStack simulateAdd(final ItemStack toBeSimulated) {
+        final int items = this.cs.getSpaceForItem(toBeSimulated);
+        final ItemStack cloned = Platform.cloneItemStack(toBeSimulated);
+        if (toBeSimulated.stackSize <= items) {
+            return null;
+        }
+        cloned.stackSize -= items;
+        return cloned;
+    }
 
-		return null;
-	}
+    @Override
+    public boolean containsItems() {
+        return this.cs.getUniqueItems() > 0;
+    }
 
-	@Override
-	public ItemStack addItems( final ItemStack toBeAdded )
-	{
-		return this.cs.insertItems( toBeAdded );
-	}
-
-	@Override
-	public ItemStack simulateAdd( final ItemStack toBeSimulated )
-	{
-		final int items = this.cs.getSpaceForItem( toBeSimulated );
-		final ItemStack cloned = Platform.cloneItemStack( toBeSimulated );
-		if( toBeSimulated.stackSize <= items )
-		{
-			return null;
-		}
-		cloned.stackSize -= items;
-		return cloned;
-	}
-
-	@Override
-	public boolean containsItems()
-	{
-		return this.cs.getUniqueItems() > 0;
-	}
-
-	@Override
-	public Iterator<ItemSlot> iterator()
-	{
-		return new StackToSlotIterator( this.cs.getContents().iterator() );
-	}
+    @Override
+    public Iterator<ItemSlot> iterator() {
+        return new StackToSlotIterator(this.cs.getContents().iterator());
+    }
 }

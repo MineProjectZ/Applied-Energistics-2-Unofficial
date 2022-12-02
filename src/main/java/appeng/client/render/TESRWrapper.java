@@ -18,7 +18,6 @@
 
 package appeng.client.render;
 
-
 import appeng.block.AEBaseBlock;
 import appeng.core.AELog;
 import appeng.tile.AEBaseTile;
@@ -31,55 +30,58 @@ import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer;
 import net.minecraft.tileentity.TileEntity;
 import org.lwjgl.opengl.GL11;
 
+@SideOnly(Side.CLIENT)
+public class TESRWrapper extends TileEntitySpecialRenderer {
+    private final RenderBlocks renderBlocksInstance = new RenderBlocks();
 
-@SideOnly( Side.CLIENT )
-public class TESRWrapper extends TileEntitySpecialRenderer
-{
+    private final BaseBlockRender blkRender;
+    private final double maxDistance;
 
-	private final RenderBlocks renderBlocksInstance = new RenderBlocks();
+    public TESRWrapper(final BaseBlockRender render) {
+        this.blkRender = render;
+        this.maxDistance = this.blkRender.getTesrRenderDistance();
+    }
 
-	private final BaseBlockRender blkRender;
-	private final double maxDistance;
+    @Override
+    public final void renderTileEntityAt(
+        final TileEntity te, final double x, final double y, final double z, final float f
+    ) {
+        if (te instanceof AEBaseTile) {
+            final Block b = te.getBlockType();
 
-	public TESRWrapper( final BaseBlockRender render )
-	{
-		this.blkRender = render;
-		this.maxDistance = this.blkRender.getTesrRenderDistance();
-	}
+            if (b instanceof AEBaseBlock && ((AEBaseTile) te).requiresTESR()) {
+                if (Math.abs(x) > this.maxDistance || Math.abs(y) > this.maxDistance
+                    || Math.abs(z) > this.maxDistance) {
+                    return;
+                }
 
-	@Override
-	public final void renderTileEntityAt( final TileEntity te, final double x, final double y, final double z, final float f )
-	{
-		if( te instanceof AEBaseTile )
-		{
-			final Block b = te.getBlockType();
+                final Tessellator tess = Tessellator.instance;
 
-			if( b instanceof AEBaseBlock && ( (AEBaseTile) te ).requiresTESR() )
-			{
-				if( Math.abs( x ) > this.maxDistance || Math.abs( y ) > this.maxDistance || Math.abs( z ) > this.maxDistance )
-				{
-					return;
-				}
+                try {
+                    GL11.glPushMatrix();
 
-				final Tessellator tess = Tessellator.instance;
+                    this.renderBlocksInstance.blockAccess = te.getWorldObj();
+                    this.blkRender.renderTile(
+                        (AEBaseBlock) b,
+                        (AEBaseTile) te,
+                        tess,
+                        x,
+                        y,
+                        z,
+                        f,
+                        this.renderBlocksInstance
+                    );
 
-				try
-				{
-					GL11.glPushMatrix();
-
-					this.renderBlocksInstance.blockAccess = te.getWorldObj();
-					this.blkRender.renderTile( (AEBaseBlock) b, (AEBaseTile) te, tess, x, y, z, f, this.renderBlocksInstance );
-
-					GL11.glPopMatrix();
-				}
-				catch( final Throwable t )
-				{
-					AELog.error( "Hi, Looks like there was a crash while rendering something..." );
-					t.printStackTrace();
-					AELog.error( "MC will now crash ( probably )!" );
-					throw new IllegalStateException( t );
-				}
-			}
-		}
-	}
+                    GL11.glPopMatrix();
+                } catch (final Throwable t) {
+                    AELog.error(
+                        "Hi, Looks like there was a crash while rendering something..."
+                    );
+                    t.printStackTrace();
+                    AELog.error("MC will now crash ( probably )!");
+                    throw new IllegalStateException(t);
+                }
+            }
+        }
+    }
 }

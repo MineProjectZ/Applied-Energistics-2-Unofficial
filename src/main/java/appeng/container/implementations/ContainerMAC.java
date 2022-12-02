@@ -18,7 +18,6 @@
 
 package appeng.container.implementations;
 
-
 import appeng.api.config.RedstoneMode;
 import appeng.api.config.SecurityPermissions;
 import appeng.api.config.Settings;
@@ -36,121 +35,156 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
+public class ContainerMAC extends ContainerUpgradeable implements IProgressProvider {
+    private static final int MAX_CRAFT_PROGRESS = 100;
+    private final TileMolecularAssembler tma;
+    @GuiSync(4)
+    public int craftProgress = 0;
 
-public class ContainerMAC extends ContainerUpgradeable implements IProgressProvider
-{
+    public ContainerMAC(final InventoryPlayer ip, final TileMolecularAssembler te) {
+        super(ip, te);
+        this.tma = te;
+    }
 
-	private static final int MAX_CRAFT_PROGRESS = 100;
-	private final TileMolecularAssembler tma;
-	@GuiSync( 4 )
-	public int craftProgress = 0;
+    public boolean isValidItemForSlot(final int slotIndex, final ItemStack i) {
+        final IInventory mac = this.getUpgradeable().getInventoryByName("mac");
 
-	public ContainerMAC( final InventoryPlayer ip, final TileMolecularAssembler te )
-	{
-		super( ip, te );
-		this.tma = te;
-	}
+        final ItemStack is = mac.getStackInSlot(10);
+        if (is == null) {
+            return false;
+        }
 
-	public boolean isValidItemForSlot( final int slotIndex, final ItemStack i )
-	{
-		final IInventory mac = this.getUpgradeable().getInventoryByName( "mac" );
+        if (is.getItem() instanceof ItemEncodedPattern) {
+            final World w = this.getTileEntity().getWorldObj();
+            final ItemEncodedPattern iep = (ItemEncodedPattern) is.getItem();
+            final ICraftingPatternDetails ph = iep.getPatternForItem(is, w);
+            if (ph.isCraftable()) {
+                return ph.isValidItemForSlot(slotIndex, i, w);
+            }
+        }
 
-		final ItemStack is = mac.getStackInSlot( 10 );
-		if( is == null )
-		{
-			return false;
-		}
+        return false;
+    }
 
-		if( is.getItem() instanceof ItemEncodedPattern )
-		{
-			final World w = this.getTileEntity().getWorldObj();
-			final ItemEncodedPattern iep = (ItemEncodedPattern) is.getItem();
-			final ICraftingPatternDetails ph = iep.getPatternForItem( is, w );
-			if( ph.isCraftable() )
-			{
-				return ph.isValidItemForSlot( slotIndex, i, w );
-			}
-		}
+    @Override
+    protected int getHeight() {
+        return 197;
+    }
 
-		return false;
-	}
+    @Override
+    protected void setupConfig() {
+        int offX = 29;
+        int offY = 30;
 
-	@Override
-	protected int getHeight()
-	{
-		return 197;
-	}
+        final IInventory mac = this.getUpgradeable().getInventoryByName("mac");
 
-	@Override
-	protected void setupConfig()
-	{
-		int offX = 29;
-		int offY = 30;
+        for (int y = 0; y < 3; y++) {
+            for (int x = 0; x < 3; x++) {
+                final SlotMACPattern s = new SlotMACPattern(
+                    this, mac, x + y * 3, offX + x * 18, offY + y * 18
+                );
+                this.addSlotToContainer(s);
+            }
+        }
 
-		final IInventory mac = this.getUpgradeable().getInventoryByName( "mac" );
+        offX = 126;
+        offY = 16;
 
-		for( int y = 0; y < 3; y++ )
-		{
-			for( int x = 0; x < 3; x++ )
-			{
-				final SlotMACPattern s = new SlotMACPattern( this, mac, x + y * 3, offX + x * 18, offY + y * 18 );
-				this.addSlotToContainer( s );
-			}
-		}
+        this.addSlotToContainer(new SlotRestrictedInput(
+            SlotRestrictedInput.PlacableItemType.ENCODED_CRAFTING_PATTERN,
+            mac,
+            10,
+            offX,
+            offY,
+            this.getInventoryPlayer()
+        ));
+        this.addSlotToContainer(new SlotOutput(mac, 9, offX, offY + 32, -1));
 
-		offX = 126;
-		offY = 16;
+        offX = 122;
+        offY = 17;
 
-		this.addSlotToContainer( new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.ENCODED_CRAFTING_PATTERN, mac, 10, offX, offY, this.getInventoryPlayer() ) );
-		this.addSlotToContainer( new SlotOutput( mac, 9, offX, offY + 32, -1 ) );
+        final IInventory upgrades = this.getUpgradeable().getInventoryByName("upgrades");
+        this.addSlotToContainer((new SlotRestrictedInput(
+                                     SlotRestrictedInput.PlacableItemType.UPGRADES,
+                                     upgrades,
+                                     0,
+                                     187,
+                                     8,
+                                     this.getInventoryPlayer()
+                                 ))
+                                    .setNotDraggable());
+        this.addSlotToContainer((new SlotRestrictedInput(
+                                     SlotRestrictedInput.PlacableItemType.UPGRADES,
+                                     upgrades,
+                                     1,
+                                     187,
+                                     8 + 18,
+                                     this.getInventoryPlayer()
+                                 ))
+                                    .setNotDraggable());
+        this.addSlotToContainer((new SlotRestrictedInput(
+                                     SlotRestrictedInput.PlacableItemType.UPGRADES,
+                                     upgrades,
+                                     2,
+                                     187,
+                                     8 + 18 * 2,
+                                     this.getInventoryPlayer()
+                                 ))
+                                    .setNotDraggable());
+        this.addSlotToContainer((new SlotRestrictedInput(
+                                     SlotRestrictedInput.PlacableItemType.UPGRADES,
+                                     upgrades,
+                                     3,
+                                     187,
+                                     8 + 18 * 3,
+                                     this.getInventoryPlayer()
+                                 ))
+                                    .setNotDraggable());
+        this.addSlotToContainer((new SlotRestrictedInput(
+                                     SlotRestrictedInput.PlacableItemType.UPGRADES,
+                                     upgrades,
+                                     4,
+                                     187,
+                                     8 + 18 * 4,
+                                     this.getInventoryPlayer()
+                                 ))
+                                    .setNotDraggable());
+    }
 
-		offX = 122;
-		offY = 17;
+    @Override
+    protected boolean supportCapacity() {
+        return false;
+    }
 
-		final IInventory upgrades = this.getUpgradeable().getInventoryByName( "upgrades" );
-		this.addSlotToContainer( ( new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.UPGRADES, upgrades, 0, 187, 8, this.getInventoryPlayer() ) ).setNotDraggable() );
-		this.addSlotToContainer( ( new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.UPGRADES, upgrades, 1, 187, 8 + 18, this.getInventoryPlayer() ) ).setNotDraggable() );
-		this.addSlotToContainer( ( new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.UPGRADES, upgrades, 2, 187, 8 + 18 * 2, this.getInventoryPlayer() ) ).setNotDraggable() );
-		this.addSlotToContainer( ( new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.UPGRADES, upgrades, 3, 187, 8 + 18 * 3, this.getInventoryPlayer() ) ).setNotDraggable() );
-		this.addSlotToContainer( ( new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.UPGRADES, upgrades, 4, 187, 8 + 18 * 4, this.getInventoryPlayer() ) ).setNotDraggable() );
-	}
+    @Override
+    public int availableUpgrades() {
+        return 5;
+    }
 
-	@Override
-	protected boolean supportCapacity()
-	{
-		return false;
-	}
+    @Override
+    public void detectAndSendChanges() {
+        this.verifyPermissions(SecurityPermissions.BUILD, false);
 
-	@Override
-	public int availableUpgrades()
-	{
-		return 5;
-	}
+        if (Platform.isServer()) {
+            this.setRedStoneMode(
+                (RedstoneMode) this.getUpgradeable().getConfigManager().getSetting(
+                    Settings.REDSTONE_CONTROLLED
+                )
+            );
+        }
 
-	@Override
-	public void detectAndSendChanges()
-	{
-		this.verifyPermissions( SecurityPermissions.BUILD, false );
+        this.craftProgress = this.tma.getCraftingProgress();
 
-		if( Platform.isServer() )
-		{
-			this.setRedStoneMode( (RedstoneMode) this.getUpgradeable().getConfigManager().getSetting( Settings.REDSTONE_CONTROLLED ) );
-		}
+        this.standardDetectAndSendChanges();
+    }
 
-		this.craftProgress = this.tma.getCraftingProgress();
+    @Override
+    public int getCurrentProgress() {
+        return this.craftProgress;
+    }
 
-		this.standardDetectAndSendChanges();
-	}
-
-	@Override
-	public int getCurrentProgress()
-	{
-		return this.craftProgress;
-	}
-
-	@Override
-	public int getMaxProgress()
-	{
-		return MAX_CRAFT_PROGRESS;
-	}
+    @Override
+    public int getMaxProgress() {
+        return MAX_CRAFT_PROGRESS;
+    }
 }

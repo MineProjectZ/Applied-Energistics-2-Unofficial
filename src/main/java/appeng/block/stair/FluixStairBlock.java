@@ -18,18 +18,14 @@
 
 package appeng.block.stair;
 
+import java.util.EnumSet;
 
 import appeng.block.AEBaseStairBlock;
 import appeng.core.features.AEFeature;
 import net.minecraft.block.Block;
 
-import java.util.EnumSet;
-
-
-public class FluixStairBlock extends AEBaseStairBlock
-{
-	public FluixStairBlock( final Block block )
-	{
-		super( block, 0, EnumSet.of( AEFeature.DecorativeQuartzBlocks ) );
-	}
+public class FluixStairBlock extends AEBaseStairBlock {
+    public FluixStairBlock(final Block block) {
+        super(block, 0, EnumSet.of(AEFeature.DecorativeQuartzBlocks));
+    }
 }

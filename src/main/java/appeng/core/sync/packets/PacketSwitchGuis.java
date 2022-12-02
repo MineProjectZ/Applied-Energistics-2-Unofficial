@@ -18,7 +18,6 @@
 
 package appeng.core.sync.packets;
 
-
 import appeng.client.gui.AEBaseGui;
 import appeng.container.AEBaseContainer;
 import appeng.container.ContainerOpenContext;
@@ -32,55 +31,49 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Container;
 import net.minecraft.tileentity.TileEntity;
 
+public class PacketSwitchGuis extends AppEngPacket {
+    private final GuiBridge newGui;
 
-public class PacketSwitchGuis extends AppEngPacket
-{
+    // automatic.
+    public PacketSwitchGuis(final ByteBuf stream) {
+        this.newGui = GuiBridge.values()[stream.readInt()];
+    }
 
-	private final GuiBridge newGui;
+    // api
+    public PacketSwitchGuis(final GuiBridge newGui) {
+        this.newGui = newGui;
 
-	// automatic.
-	public PacketSwitchGuis( final ByteBuf stream )
-	{
-		this.newGui = GuiBridge.values()[stream.readInt()];
-	}
+        if (Platform.isClient()) {
+            AEBaseGui.setSwitchingGuis(true);
+        }
 
-	// api
-	public PacketSwitchGuis( final GuiBridge newGui )
-	{
-		this.newGui = newGui;
+        final ByteBuf data = Unpooled.buffer();
 
-		if( Platform.isClient() )
-		{
-			AEBaseGui.setSwitchingGuis( true );
-		}
+        data.writeInt(this.getPacketID());
+        data.writeInt(newGui.ordinal());
 
-		final ByteBuf data = Unpooled.buffer();
+        this.configureWrite(data);
+    }
 
-		data.writeInt( this.getPacketID() );
-		data.writeInt( newGui.ordinal() );
+    @Override
+    public void serverPacketData(
+        final INetworkInfo manager, final AppEngPacket packet, final EntityPlayer player
+    ) {
+        final Container c = player.openContainer;
+        if (c instanceof AEBaseContainer) {
+            final AEBaseContainer bc = (AEBaseContainer) c;
+            final ContainerOpenContext context = bc.getOpenContext();
+            if (context != null) {
+                final TileEntity te = context.getTile();
+                Platform.openGUI(player, te, context.getSide(), this.newGui);
+            }
+        }
+    }
 
-		this.configureWrite( data );
-	}
-
-	@Override
-	public void serverPacketData( final INetworkInfo manager, final AppEngPacket packet, final EntityPlayer player )
-	{
-		final Container c = player.openContainer;
-		if( c instanceof AEBaseContainer )
-		{
-			final AEBaseContainer bc = (AEBaseContainer) c;
-			final ContainerOpenContext context = bc.getOpenContext();
-			if( context != null )
-			{
-				final TileEntity te = context.getTile();
-				Platform.openGUI( player, te, context.getSide(), this.newGui );
-			}
-		}
-	}
-
-	@Override
-	public void clientPacketData( final INetworkInfo network, final AppEngPacket packet, final EntityPlayer player )
-	{
-		AEBaseGui.setSwitchingGuis( true );
-	}
+    @Override
+    public void clientPacketData(
+        final INetworkInfo network, final AppEngPacket packet, final EntityPlayer player
+    ) {
+        AEBaseGui.setSwitchingGuis(true);
+    }
 }

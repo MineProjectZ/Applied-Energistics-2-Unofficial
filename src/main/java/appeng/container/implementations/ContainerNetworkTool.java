@@ -18,7 +18,6 @@
 
 package appeng.container.implementations;
 
-
 import appeng.api.implementations.guiobjects.INetworkTool;
 import appeng.container.AEBaseContainer;
 import appeng.container.guisync.GuiSync;
@@ -28,80 +27,71 @@ import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
+public class ContainerNetworkTool extends AEBaseContainer {
+    private final INetworkTool toolInv;
 
-public class ContainerNetworkTool extends AEBaseContainer
-{
+    @GuiSync(1)
+    public boolean facadeMode;
 
-	private final INetworkTool toolInv;
+    public ContainerNetworkTool(final InventoryPlayer ip, final INetworkTool te) {
+        super(ip, null, null);
+        this.toolInv = te;
 
-	@GuiSync( 1 )
-	public boolean facadeMode;
+        this.lockPlayerInventorySlot(ip.currentItem);
 
-	public ContainerNetworkTool( final InventoryPlayer ip, final INetworkTool te )
-	{
-		super( ip, null, null );
-		this.toolInv = te;
+        for (int y = 0; y < 3; y++) {
+            for (int x = 0; x < 3; x++) {
+                this.addSlotToContainer((new SlotRestrictedInput(
+                    SlotRestrictedInput.PlacableItemType.UPGRADES,
+                    te,
+                    y * 3 + x,
+                    80 - 18 + x * 18,
+                    37 - 18 + y * 18,
+                    this.getInventoryPlayer()
+                )));
+            }
+        }
 
-		this.lockPlayerInventorySlot( ip.currentItem );
+        this.bindPlayerInventory(ip, 0, 166 - /* height of player inventory */ 82);
+    }
 
-		for( int y = 0; y < 3; y++ )
-		{
-			for( int x = 0; x < 3; x++ )
-			{
-				this.addSlotToContainer( ( new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.UPGRADES, te, y * 3 + x, 80 - 18 + x * 18, 37 - 18 + y * 18, this.getInventoryPlayer() ) ) );
-			}
-		}
+    public void toggleFacadeMode() {
+        final NBTTagCompound data = Platform.openNbtData(this.toolInv.getItemStack());
+        data.setBoolean("hideFacades", !data.getBoolean("hideFacades"));
+        this.detectAndSendChanges();
+    }
 
-		this.bindPlayerInventory( ip, 0, 166 - /* height of player inventory */82 );
-	}
+    @Override
+    public void detectAndSendChanges() {
+        final ItemStack currentItem = this.getPlayerInv().getCurrentItem();
 
-	public void toggleFacadeMode()
-	{
-		final NBTTagCompound data = Platform.openNbtData( this.toolInv.getItemStack() );
-		data.setBoolean( "hideFacades", !data.getBoolean( "hideFacades" ) );
-		this.detectAndSendChanges();
-	}
+        if (currentItem != this.toolInv.getItemStack()) {
+            if (currentItem != null) {
+                if (Platform.isSameItem(this.toolInv.getItemStack(), currentItem)) {
+                    this.getPlayerInv().setInventorySlotContents(
+                        this.getPlayerInv().currentItem, this.toolInv.getItemStack()
+                    );
+                } else {
+                    this.setValidContainer(false);
+                }
+            } else {
+                this.setValidContainer(false);
+            }
+        }
 
-	@Override
-	public void detectAndSendChanges()
-	{
-		final ItemStack currentItem = this.getPlayerInv().getCurrentItem();
+        if (this.isValidContainer()) {
+            final NBTTagCompound data = Platform.openNbtData(currentItem);
+            this.setFacadeMode(data.getBoolean("hideFacades"));
+        }
 
-		if( currentItem != this.toolInv.getItemStack() )
-		{
-			if( currentItem != null )
-			{
-				if( Platform.isSameItem( this.toolInv.getItemStack(), currentItem ) )
-				{
-					this.getPlayerInv().setInventorySlotContents( this.getPlayerInv().currentItem, this.toolInv.getItemStack() );
-				}
-				else
-				{
-					this.setValidContainer( false );
-				}
-			}
-			else
-			{
-				this.setValidContainer( false );
-			}
-		}
+        super.detectAndSendChanges();
+    }
 
-		if( this.isValidContainer() )
-		{
-			final NBTTagCompound data = Platform.openNbtData( currentItem );
-			this.setFacadeMode( data.getBoolean( "hideFacades" ) );
-		}
+    public boolean isFacadeMode() {
+        return this.facadeMode;
+    }
 
-		super.detectAndSendChanges();
-	}
-
-	public boolean isFacadeMode()
-	{
-		return this.facadeMode;
-	}
-
-	private void setFacadeMode( final boolean facadeMode )
-	{
-		this.facadeMode = facadeMode;
-	}
+    private void setFacadeMode(final boolean facadeMode) {
+        this.facadeMode = facadeMode;
+    }
 }

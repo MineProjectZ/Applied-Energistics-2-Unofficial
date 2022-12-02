@@ -18,6 +18,7 @@
 
 package appeng.me.cluster.implementations;
 
+import java.util.Iterator;
 
 import appeng.api.AEApi;
 import appeng.api.events.LocatableEventAnnounce;
@@ -40,267 +41,243 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.event.world.WorldEvent;
 
-import java.util.Iterator;
+public class QuantumCluster implements ILocatable, IAECluster {
+    private final WorldCoord min;
+    private final WorldCoord max;
+    private boolean isDestroyed = false;
+    private boolean updateStatus = true;
+    private TileQuantumBridge[] Ring;
+    private boolean registered = false;
+    private ConnectionWrapper connection;
+    private long thisSide;
+    private long otherSide;
+    private TileQuantumBridge center;
 
+    public QuantumCluster(final WorldCoord min, final WorldCoord max) {
+        this.min = min;
+        this.max = max;
+        this.setRing(new TileQuantumBridge[8]);
+    }
 
-public class QuantumCluster implements ILocatable, IAECluster
-{
+    @SubscribeEvent
+    public void onUnload(final WorldEvent.Unload e) {
+        if (this.center.getWorldObj() == e.world) {
+            this.setUpdateStatus(false);
+            this.destroy();
+        }
+    }
 
-	private final WorldCoord min;
-	private final WorldCoord max;
-	private boolean isDestroyed = false;
-	private boolean updateStatus = true;
-	private TileQuantumBridge[] Ring;
-	private boolean registered = false;
-	private ConnectionWrapper connection;
-	private long thisSide;
-	private long otherSide;
-	private TileQuantumBridge center;
+    @Override
+    public void updateStatus(final boolean updateGrid) {
+        final long qe = this.center.getQEFrequency();
 
-	public QuantumCluster( final WorldCoord min, final WorldCoord max )
-	{
-		this.min = min;
-		this.max = max;
-		this.setRing( new TileQuantumBridge[8] );
-	}
+        if (this.thisSide != qe && this.thisSide != -qe) {
+            if (qe != 0) {
+                if (this.thisSide != 0) {
+                    MinecraftForge.EVENT_BUS.post(
+                        new LocatableEventAnnounce(this, LocatableEvent.Unregister)
+                    );
+                }
 
-	@SubscribeEvent
-	public void onUnload( final WorldEvent.Unload e )
-	{
-		if( this.center.getWorldObj() == e.world )
-		{
-			this.setUpdateStatus( false );
-			this.destroy();
-		}
-	}
+                if (this.canUseNode(-qe)) {
+                    this.otherSide = qe;
+                    this.thisSide = -qe;
+                } else if (this.canUseNode(qe)) {
+                    this.thisSide = qe;
+                    this.otherSide = -qe;
+                }
 
-	@Override
-	public void updateStatus( final boolean updateGrid )
-	{
-		final long qe = this.center.getQEFrequency();
+                MinecraftForge.EVENT_BUS.post(
+                    new LocatableEventAnnounce(this, LocatableEvent.Register)
+                );
+            } else {
+                MinecraftForge.EVENT_BUS.post(
+                    new LocatableEventAnnounce(this, LocatableEvent.Unregister)
+                );
 
-		if( this.thisSide != qe && this.thisSide != -qe )
-		{
-			if( qe != 0 )
-			{
-				if( this.thisSide != 0 )
-				{
-					MinecraftForge.EVENT_BUS.post( new LocatableEventAnnounce( this, LocatableEvent.Unregister ) );
-				}
+                this.otherSide = 0;
+                this.thisSide = 0;
+            }
+        }
 
-				if( this.canUseNode( -qe ) )
-				{
-					this.otherSide = qe;
-					this.thisSide = -qe;
-				}
-				else if( this.canUseNode( qe ) )
-				{
-					this.thisSide = qe;
-					this.otherSide = -qe;
-				}
+        final ILocatable myOtherSide = this.otherSide == 0
+            ? null
+            : AEApi.instance().registries().locatable().getLocatableBy(this.otherSide);
 
-				MinecraftForge.EVENT_BUS.post( new LocatableEventAnnounce( this, LocatableEvent.Register ) );
-			}
-			else
-			{
-				MinecraftForge.EVENT_BUS.post( new LocatableEventAnnounce( this, LocatableEvent.Unregister ) );
+        boolean shutdown = false;
 
-				this.otherSide = 0;
-				this.thisSide = 0;
-			}
-		}
+        if (myOtherSide instanceof QuantumCluster) {
+            final QuantumCluster sideA = this;
+            final QuantumCluster sideB = (QuantumCluster) myOtherSide;
 
-		final ILocatable myOtherSide = this.otherSide == 0 ? null : AEApi.instance().registries().locatable().getLocatableBy( this.otherSide );
+            if (sideA.isActive() && sideB.isActive()) {
+                if (this.connection != null && this.connection.getConnection() != null) {
+                    final IGridNode a = this.connection.getConnection().a();
+                    final IGridNode b = this.connection.getConnection().b();
+                    final IGridNode sa = sideA.getNode();
+                    final IGridNode sb = sideB.getNode();
+                    if ((a == sa || b == sa) && (a == sb || b == sb)) {
+                        return;
+                    }
+                }
 
-		boolean shutdown = false;
+                try {
+                    if (sideA.connection != null) {
+                        if (sideA.connection.getConnection() != null) {
+                            sideA.connection.getConnection().destroy();
+                            sideA.connection = new ConnectionWrapper(null);
+                        }
+                    }
 
-		if( myOtherSide instanceof QuantumCluster )
-		{
-			final QuantumCluster sideA = this;
-			final QuantumCluster sideB = (QuantumCluster) myOtherSide;
+                    if (sideB.connection != null) {
+                        if (sideB.connection.getConnection() != null) {
+                            sideB.connection.getConnection().destroy();
+                            sideB.connection = new ConnectionWrapper(null);
+                        }
+                    }
 
-			if( sideA.isActive() && sideB.isActive() )
-			{
-				if( this.connection != null && this.connection.getConnection() != null )
-				{
-					final IGridNode a = this.connection.getConnection().a();
-					final IGridNode b = this.connection.getConnection().b();
-					final IGridNode sa = sideA.getNode();
-					final IGridNode sb = sideB.getNode();
-					if( ( a == sa || b == sa ) && ( a == sb || b == sb ) )
-					{
-						return;
-					}
-				}
+                    sideA.connection = sideB.connection
+                        = new ConnectionWrapper(AEApi.instance().createGridConnection(
+                            sideA.getNode(), sideB.getNode()
+                        ));
+                } catch (final FailedConnection e) {
+                    // :(
+                }
+            } else {
+                shutdown = true;
+            }
+        } else {
+            shutdown = true;
+        }
 
-				try
-				{
-					if( sideA.connection != null )
-					{
-						if( sideA.connection.getConnection() != null )
-						{
-							sideA.connection.getConnection().destroy();
-							sideA.connection = new ConnectionWrapper( null );
-						}
-					}
+        if (shutdown && this.connection != null) {
+            if (this.connection.getConnection() != null) {
+                this.connection.getConnection().destroy();
+                this.connection.setConnection(null);
+                this.connection = new ConnectionWrapper(null);
+            }
+        }
+    }
 
-					if( sideB.connection != null )
-					{
-						if( sideB.connection.getConnection() != null )
-						{
-							sideB.connection.getConnection().destroy();
-							sideB.connection = new ConnectionWrapper( null );
-						}
-					}
+    private boolean canUseNode(final long qe) {
+        final QuantumCluster qc
+            = (QuantumCluster) AEApi.instance().registries().locatable().getLocatableBy(qe
+            );
+        if (qc != null) {
+            final World theWorld = qc.center.getWorldObj();
+            if (!qc.isDestroyed) {
+                final Chunk c = theWorld.getChunkFromBlockCoords(
+                    qc.center.xCoord, qc.center.zCoord
+                );
+                if (c.isChunkLoaded) {
+                    final int id = theWorld.provider.dimensionId;
+                    final World cur = DimensionManager.getWorld(id);
 
-					sideA.connection = sideB.connection = new ConnectionWrapper( AEApi.instance().createGridConnection( sideA.getNode(), sideB.getNode() ) );
-				}
-				catch( final FailedConnection e )
-				{
-					// :(
-				}
-			}
-			else
-			{
-				shutdown = true;
-			}
-		}
-		else
-		{
-			shutdown = true;
-		}
+                    final TileEntity te = theWorld.getTileEntity(
+                        qc.center.xCoord, qc.center.yCoord, qc.center.zCoord
+                    );
+                    return te != qc.center || theWorld != cur;
+                }
+            }
+        }
+        return true;
+    }
 
-		if( shutdown && this.connection != null )
-		{
-			if( this.connection.getConnection() != null )
-			{
-				this.connection.getConnection().destroy();
-				this.connection.setConnection( null );
-				this.connection = new ConnectionWrapper( null );
-			}
-		}
-	}
+    private boolean isActive() {
+        if (this.isDestroyed || !this.registered) {
+            return false;
+        }
 
-	private boolean canUseNode( final long qe )
-	{
-		final QuantumCluster qc = (QuantumCluster) AEApi.instance().registries().locatable().getLocatableBy( qe );
-		if( qc != null )
-		{
-			final World theWorld = qc.center.getWorldObj();
-			if( !qc.isDestroyed )
-			{
-				final Chunk c = theWorld.getChunkFromBlockCoords( qc.center.xCoord, qc.center.zCoord );
-				if( c.isChunkLoaded )
-				{
-					final int id = theWorld.provider.dimensionId;
-					final World cur = DimensionManager.getWorld( id );
+        return this.center.isPowered() && this.hasQES();
+    }
 
-					final TileEntity te = theWorld.getTileEntity( qc.center.xCoord, qc.center.yCoord, qc.center.zCoord );
-					return te != qc.center || theWorld != cur;
-				}
-			}
-		}
-		return true;
-	}
+    private IGridNode getNode() {
+        return this.center.getGridNode(ForgeDirection.UNKNOWN);
+    }
 
-	private boolean isActive()
-	{
-		if( this.isDestroyed || !this.registered )
-		{
-			return false;
-		}
+    private boolean hasQES() {
+        return this.thisSide != 0;
+    }
 
-		return this.center.isPowered() && this.hasQES();
-	}
+    @Override
+    public void destroy() {
+        if (this.isDestroyed) {
+            return;
+        }
+        this.isDestroyed = true;
 
-	private IGridNode getNode()
-	{
-		return this.center.getGridNode( ForgeDirection.UNKNOWN );
-	}
+        if (this.registered) {
+            MinecraftForge.EVENT_BUS.unregister(this);
+            this.registered = false;
+        }
 
-	private boolean hasQES()
-	{
-		return this.thisSide != 0;
-	}
+        if (this.thisSide != 0) {
+            this.updateStatus(true);
+            MinecraftForge.EVENT_BUS.post(
+                new LocatableEventAnnounce(this, LocatableEvent.Unregister)
+            );
+        }
 
-	@Override
-	public void destroy()
-	{
-		if( this.isDestroyed )
-		{
-			return;
-		}
-		this.isDestroyed = true;
+        this.center.updateStatus(null, (byte) -1, this.isUpdateStatus());
 
-		if( this.registered )
-		{
-			MinecraftForge.EVENT_BUS.unregister( this );
-			this.registered = false;
-		}
+        for (final TileQuantumBridge r : this.getRing()) {
+            r.updateStatus(null, (byte) -1, this.isUpdateStatus());
+        }
 
-		if( this.thisSide != 0 )
-		{
-			this.updateStatus( true );
-			MinecraftForge.EVENT_BUS.post( new LocatableEventAnnounce( this, LocatableEvent.Unregister ) );
-		}
+        this.center = null;
+        this.setRing(new TileQuantumBridge[8]);
+    }
 
-		this.center.updateStatus( null, (byte) -1, this.isUpdateStatus() );
+    @Override
+    public Iterator<IGridHost> getTiles() {
+        return new ChainedIterator<IGridHost>(
+            this.getRing()[0],
+            this.getRing()[1],
+            this.getRing()[2],
+            this.getRing()[3],
+            this.getRing()[4],
+            this.getRing()[5],
+            this.getRing()[6],
+            this.getRing()[7],
+            this.center
+        );
+    }
 
-		for( final TileQuantumBridge r : this.getRing() )
-		{
-			r.updateStatus( null, (byte) -1, this.isUpdateStatus() );
-		}
+    public boolean isCorner(final TileQuantumBridge tileQuantumBridge) {
+        return this.getRing()[0] == tileQuantumBridge
+            || this.getRing()[2] == tileQuantumBridge
+            || this.getRing()[4] == tileQuantumBridge
+            || this.getRing()[6] == tileQuantumBridge;
+    }
 
-		this.center = null;
-		this.setRing( new TileQuantumBridge[8] );
-	}
+    @Override
+    public long getLocatableSerial() {
+        return this.thisSide;
+    }
 
-	@Override
-	public Iterator<IGridHost> getTiles()
-	{
-		return new ChainedIterator<IGridHost>( this.getRing()[0], this.getRing()[1], this.getRing()[2], this.getRing()[3], this.getRing()[4], this.getRing()[5], this.getRing()[6], this.getRing()[7], this.center );
-	}
+    public TileQuantumBridge getCenter() {
+        return this.center;
+    }
 
-	public boolean isCorner( final TileQuantumBridge tileQuantumBridge )
-	{
-		return this.getRing()[0] == tileQuantumBridge || this.getRing()[2] == tileQuantumBridge || this.getRing()[4] == tileQuantumBridge || this.getRing()[6] == tileQuantumBridge;
-	}
+    void setCenter(final TileQuantumBridge c) {
+        this.registered = true;
+        MinecraftForge.EVENT_BUS.register(this);
+        this.center = c;
+    }
 
-	@Override
-	public long getLocatableSerial()
-	{
-		return this.thisSide;
-	}
+    private boolean isUpdateStatus() {
+        return this.updateStatus;
+    }
 
-	public TileQuantumBridge getCenter()
-	{
-		return this.center;
-	}
+    public void setUpdateStatus(final boolean updateStatus) {
+        this.updateStatus = updateStatus;
+    }
 
-	void setCenter( final TileQuantumBridge c )
-	{
-		this.registered = true;
-		MinecraftForge.EVENT_BUS.register( this );
-		this.center = c;
-	}
+    TileQuantumBridge[] getRing() {
+        return this.Ring;
+    }
 
-	private boolean isUpdateStatus()
-	{
-		return this.updateStatus;
-	}
-
-	public void setUpdateStatus( final boolean updateStatus )
-	{
-		this.updateStatus = updateStatus;
-	}
-
-	TileQuantumBridge[] getRing()
-	{
-		return this.Ring;
-	}
-
-	private void setRing( final TileQuantumBridge[] ring )
-	{
-		this.Ring = ring;
-	}
+    private void setRing(final TileQuantumBridge[] ring) {
+        this.Ring = ring;
+    }
 }

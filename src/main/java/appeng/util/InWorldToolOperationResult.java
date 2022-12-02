@@ -18,70 +18,60 @@
 
 package appeng.util;
 
+import java.util.ArrayList;
+import java.util.List;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
 import net.minecraft.item.ItemStack;
 
-import java.util.ArrayList;
-import java.util.List;
+public class InWorldToolOperationResult {
+    private final ItemStack BlockItem;
+    private final List<ItemStack> Drops;
 
+    public InWorldToolOperationResult() {
+        this.BlockItem = null;
+        this.Drops = null;
+    }
 
-public class InWorldToolOperationResult
-{
+    public InWorldToolOperationResult(
+        final ItemStack block, final List<ItemStack> drops
+    ) {
+        this.BlockItem = block;
+        this.Drops = drops;
+    }
 
-	private final ItemStack BlockItem;
-	private final List<ItemStack> Drops;
+    public InWorldToolOperationResult(final ItemStack block) {
+        this.BlockItem = block;
+        this.Drops = null;
+    }
 
-	public InWorldToolOperationResult()
-	{
-		this.BlockItem = null;
-		this.Drops = null;
-	}
+    public static InWorldToolOperationResult
+    getBlockOperationResult(final ItemStack[] items) {
+        final List<ItemStack> temp = new ArrayList<ItemStack>();
+        ItemStack b = null;
 
-	public InWorldToolOperationResult( final ItemStack block, final List<ItemStack> drops )
-	{
-		this.BlockItem = block;
-		this.Drops = drops;
-	}
+        for (final ItemStack l : items) {
+            if (b == null) {
+                final Block bl = Block.getBlockFromItem(l.getItem());
 
-	public InWorldToolOperationResult( final ItemStack block )
-	{
-		this.BlockItem = block;
-		this.Drops = null;
-	}
+                if (bl != null && !(bl instanceof BlockAir)) {
+                    b = l;
+                    continue;
+                }
+            }
 
-	public static InWorldToolOperationResult getBlockOperationResult( final ItemStack[] items )
-	{
-		final List<ItemStack> temp = new ArrayList<ItemStack>();
-		ItemStack b = null;
+            temp.add(l);
+        }
 
-		for( final ItemStack l : items )
-		{
-			if( b == null )
-			{
-				final Block bl = Block.getBlockFromItem( l.getItem() );
+        return new InWorldToolOperationResult(b, temp);
+    }
 
-				if( bl != null && !( bl instanceof BlockAir ) )
-				{
-					b = l;
-					continue;
-				}
-			}
+    public ItemStack getBlockItem() {
+        return this.BlockItem;
+    }
 
-			temp.add( l );
-		}
-
-		return new InWorldToolOperationResult( b, temp );
-	}
-
-	public ItemStack getBlockItem()
-	{
-		return this.BlockItem;
-	}
-
-	public List<ItemStack> getDrops()
-	{
-		return this.Drops;
-	}
+    public List<ItemStack> getDrops() {
+        return this.Drops;
+    }
 }

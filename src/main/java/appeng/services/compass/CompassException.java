@@ -18,16 +18,12 @@
 
 package appeng.services.compass;
 
+public class CompassException extends RuntimeException {
+    private static final long serialVersionUID = 8825268683203860877L;
 
-public class CompassException extends RuntimeException
-{
+    private final Throwable inner;
 
-	private static final long serialVersionUID = 8825268683203860877L;
-
-	private final Throwable inner;
-
-	public CompassException( final Throwable t )
-	{
-		this.inner = t;
-	}
+    public CompassException(final Throwable t) {
+        this.inner = t;
+    }
 }

@@ -18,6 +18,7 @@
 
 package appeng.util.inv;
 
+import java.util.Iterator;
 
 import appeng.api.config.FuzzyMode;
 import appeng.util.InventoryAdaptor;
@@ -26,211 +27,183 @@ import appeng.util.iterators.NullIterator;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 
-import java.util.Iterator;
-
-
 /*
  * Lets you do simply tests with the players cursor, without messing with the specifics.
  */
-public class AdaptorPlayerHand extends InventoryAdaptor
-{
+public class AdaptorPlayerHand extends InventoryAdaptor {
+    private final EntityPlayer player;
 
-	private final EntityPlayer player;
+    public AdaptorPlayerHand(final EntityPlayer player) {
+        this.player = player;
+    }
 
-	public AdaptorPlayerHand( final EntityPlayer player )
-	{
-		this.player = player;
-	}
+    @Override
+    public ItemStack removeItems(
+        final int amount, final ItemStack filter, final IInventoryDestination destination
+    ) {
+        final ItemStack hand = this.player.inventory.getItemStack();
+        if (hand == null) {
+            return null;
+        }
 
-	@Override
-	public ItemStack removeItems( final int amount, final ItemStack filter, final IInventoryDestination destination )
-	{
-		final ItemStack hand = this.player.inventory.getItemStack();
-		if( hand == null )
-		{
-			return null;
-		}
+        if (filter == null || Platform.isSameItemPrecise(filter, hand)) {
+            final ItemStack result = hand.copy();
+            result.stackSize = hand.stackSize > amount ? amount : hand.stackSize;
+            hand.stackSize -= amount;
+            if (hand.stackSize <= 0) {
+                this.player.inventory.setItemStack(null);
+            }
+            return result;
+        }
 
-		if( filter == null || Platform.isSameItemPrecise( filter, hand ) )
-		{
-			final ItemStack result = hand.copy();
-			result.stackSize = hand.stackSize > amount ? amount : hand.stackSize;
-			hand.stackSize -= amount;
-			if( hand.stackSize <= 0 )
-			{
-				this.player.inventory.setItemStack( null );
-			}
-			return result;
-		}
+        return null;
+    }
 
-		return null;
-	}
+    @Override
+    public ItemStack simulateRemove(
+        final int amount, final ItemStack filter, final IInventoryDestination destination
+    ) {
+        final ItemStack hand = this.player.inventory.getItemStack();
+        if (hand == null) {
+            return null;
+        }
 
-	@Override
-	public ItemStack simulateRemove( final int amount, final ItemStack filter, final IInventoryDestination destination )
-	{
+        if (filter == null || Platform.isSameItemPrecise(filter, hand)) {
+            final ItemStack result = hand.copy();
+            result.stackSize = hand.stackSize > amount ? amount : hand.stackSize;
+            return result;
+        }
 
-		final ItemStack hand = this.player.inventory.getItemStack();
-		if( hand == null )
-		{
-			return null;
-		}
+        return null;
+    }
 
-		if( filter == null || Platform.isSameItemPrecise( filter, hand ) )
-		{
-			final ItemStack result = hand.copy();
-			result.stackSize = hand.stackSize > amount ? amount : hand.stackSize;
-			return result;
-		}
+    @Override
+    public ItemStack removeSimilarItems(
+        final int amount,
+        final ItemStack filter,
+        final FuzzyMode fuzzyMode,
+        final IInventoryDestination destination
+    ) {
+        final ItemStack hand = this.player.inventory.getItemStack();
+        if (hand == null) {
+            return null;
+        }
 
-		return null;
-	}
+        if (filter == null || Platform.isSameItemFuzzy(filter, hand, fuzzyMode)) {
+            final ItemStack result = hand.copy();
+            result.stackSize = hand.stackSize > amount ? amount : hand.stackSize;
+            hand.stackSize -= amount;
+            if (hand.stackSize <= 0) {
+                this.player.inventory.setItemStack(null);
+            }
+            return result;
+        }
 
-	@Override
-	public ItemStack removeSimilarItems( final int amount, final ItemStack filter, final FuzzyMode fuzzyMode, final IInventoryDestination destination )
-	{
-		final ItemStack hand = this.player.inventory.getItemStack();
-		if( hand == null )
-		{
-			return null;
-		}
+        return null;
+    }
 
-		if( filter == null || Platform.isSameItemFuzzy( filter, hand, fuzzyMode ) )
-		{
-			final ItemStack result = hand.copy();
-			result.stackSize = hand.stackSize > amount ? amount : hand.stackSize;
-			hand.stackSize -= amount;
-			if( hand.stackSize <= 0 )
-			{
-				this.player.inventory.setItemStack( null );
-			}
-			return result;
-		}
+    @Override
+    public ItemStack simulateSimilarRemove(
+        final int amount,
+        final ItemStack filter,
+        final FuzzyMode fuzzyMode,
+        final IInventoryDestination destination
+    ) {
+        final ItemStack hand = this.player.inventory.getItemStack();
+        if (hand == null) {
+            return null;
+        }
 
-		return null;
-	}
+        if (filter == null || Platform.isSameItemFuzzy(filter, hand, fuzzyMode)) {
+            final ItemStack result = hand.copy();
+            result.stackSize = hand.stackSize > amount ? amount : hand.stackSize;
+            return result;
+        }
 
-	@Override
-	public ItemStack simulateSimilarRemove( final int amount, final ItemStack filter, final FuzzyMode fuzzyMode, final IInventoryDestination destination )
-	{
+        return null;
+    }
 
-		final ItemStack hand = this.player.inventory.getItemStack();
-		if( hand == null )
-		{
-			return null;
-		}
+    @Override
+    public ItemStack addItems(final ItemStack toBeAdded) {
+        if (toBeAdded == null) {
+            return null;
+        }
+        if (toBeAdded.stackSize == 0) {
+            return null;
+        }
+        if (this.player == null) {
+            return toBeAdded;
+        }
+        if (this.player.inventory == null) {
+            return toBeAdded;
+        }
 
-		if( filter == null || Platform.isSameItemFuzzy( filter, hand, fuzzyMode ) )
-		{
-			final ItemStack result = hand.copy();
-			result.stackSize = hand.stackSize > amount ? amount : hand.stackSize;
-			return result;
-		}
+        final ItemStack hand = this.player.inventory.getItemStack();
 
-		return null;
-	}
+        if (hand != null && !Platform.isSameItemPrecise(toBeAdded, hand)) {
+            return toBeAdded;
+        }
 
-	@Override
-	public ItemStack addItems( final ItemStack toBeAdded )
-	{
+        int original = 0;
+        ItemStack newHand = null;
+        if (hand == null) {
+            newHand = toBeAdded.copy();
+        } else {
+            newHand = hand;
+            original = hand.stackSize;
+            newHand.stackSize += toBeAdded.stackSize;
+        }
 
-		if( toBeAdded == null )
-		{
-			return null;
-		}
-		if( toBeAdded.stackSize == 0 )
-		{
-			return null;
-		}
-		if( this.player == null )
-		{
-			return toBeAdded;
-		}
-		if( this.player.inventory == null )
-		{
-			return toBeAdded;
-		}
+        if (newHand.stackSize > newHand.getMaxStackSize()) {
+            newHand.stackSize = newHand.getMaxStackSize();
+            final ItemStack B = toBeAdded.copy();
+            B.stackSize -= newHand.stackSize - original;
+            this.player.inventory.setItemStack(newHand);
+            return B;
+        }
 
-		final ItemStack hand = this.player.inventory.getItemStack();
+        this.player.inventory.setItemStack(newHand);
+        return null;
+    }
 
-		if( hand != null && !Platform.isSameItemPrecise( toBeAdded, hand ) )
-		{
-			return toBeAdded;
-		}
+    @Override
+    public ItemStack simulateAdd(final ItemStack toBeSimulated) {
+        final ItemStack hand = this.player.inventory.getItemStack();
+        if (toBeSimulated == null) {
+            return null;
+        }
 
-		int original = 0;
-		ItemStack newHand = null;
-		if( hand == null )
-		{
-			newHand = toBeAdded.copy();
-		}
-		else
-		{
-			newHand = hand;
-			original = hand.stackSize;
-			newHand.stackSize += toBeAdded.stackSize;
-		}
+        if (hand != null && !Platform.isSameItem(toBeSimulated, hand)) {
+            return toBeSimulated;
+        }
 
-		if( newHand.stackSize > newHand.getMaxStackSize() )
-		{
-			newHand.stackSize = newHand.getMaxStackSize();
-			final ItemStack B = toBeAdded.copy();
-			B.stackSize -= newHand.stackSize - original;
-			this.player.inventory.setItemStack( newHand );
-			return B;
-		}
+        int original = 0;
+        ItemStack newHand = null;
+        if (hand == null) {
+            newHand = toBeSimulated.copy();
+        } else {
+            newHand = hand.copy();
+            original = hand.stackSize;
+            newHand.stackSize += toBeSimulated.stackSize;
+        }
 
-		this.player.inventory.setItemStack( newHand );
-		return null;
-	}
+        if (newHand.stackSize > newHand.getMaxStackSize()) {
+            newHand.stackSize = newHand.getMaxStackSize();
+            final ItemStack B = toBeSimulated.copy();
+            B.stackSize -= newHand.stackSize - original;
+            return B;
+        }
 
-	@Override
-	public ItemStack simulateAdd( final ItemStack toBeSimulated )
-	{
-		final ItemStack hand = this.player.inventory.getItemStack();
-		if( toBeSimulated == null )
-		{
-			return null;
-		}
+        return null;
+    }
 
-		if( hand != null && !Platform.isSameItem( toBeSimulated, hand ) )
-		{
-			return toBeSimulated;
-		}
+    @Override
+    public boolean containsItems() {
+        return this.player.inventory.getItemStack() != null;
+    }
 
-		int original = 0;
-		ItemStack newHand = null;
-		if( hand == null )
-		{
-			newHand = toBeSimulated.copy();
-		}
-		else
-		{
-			newHand = hand.copy();
-			original = hand.stackSize;
-			newHand.stackSize += toBeSimulated.stackSize;
-		}
-
-		if( newHand.stackSize > newHand.getMaxStackSize() )
-		{
-			newHand.stackSize = newHand.getMaxStackSize();
-			final ItemStack B = toBeSimulated.copy();
-			B.stackSize -= newHand.stackSize - original;
-			return B;
-		}
-
-		return null;
-	}
-
-	@Override
-	public boolean containsItems()
-	{
-		return this.player.inventory.getItemStack() != null;
-	}
-
-	@Override
-	public Iterator<ItemSlot> iterator()
-	{
-		return new NullIterator<ItemSlot>();
-	}
+    @Override
+    public Iterator<ItemSlot> iterator() {
+        return new NullIterator<ItemSlot>();
+    }
 }

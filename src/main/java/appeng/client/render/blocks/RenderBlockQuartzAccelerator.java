@@ -18,7 +18,6 @@
 
 package appeng.client.render.blocks;
 
-
 import appeng.block.misc.BlockQuartzGrowthAccelerator;
 import appeng.client.render.BaseBlockRender;
 import appeng.client.texture.ExtraBlockTextures;
@@ -28,37 +27,42 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 
+public class RenderBlockQuartzAccelerator
+    extends BaseBlockRender<BlockQuartzGrowthAccelerator, TileQuartzGrowthAccelerator> {
+    public RenderBlockQuartzAccelerator() {
+        super(false, 20);
+    }
 
-public class RenderBlockQuartzAccelerator extends BaseBlockRender<BlockQuartzGrowthAccelerator, TileQuartzGrowthAccelerator>
-{
+    @Override
+    public boolean renderInWorld(
+        final BlockQuartzGrowthAccelerator blk,
+        final IBlockAccess world,
+        final int x,
+        final int y,
+        final int z,
+        final RenderBlocks renderer
+    ) {
+        final TileEntity te = world.getTileEntity(x, y, z);
 
-	public RenderBlockQuartzAccelerator()
-	{
-		super( false, 20 );
-	}
+        if (te instanceof TileQuartzGrowthAccelerator) {
+            final TileQuartzGrowthAccelerator tileCGA = (TileQuartzGrowthAccelerator) te;
 
-	@Override
-	public boolean renderInWorld( final BlockQuartzGrowthAccelerator blk, final IBlockAccess world, final int x, final int y, final int z, final RenderBlocks renderer )
-	{
-		final TileEntity te = world.getTileEntity( x, y, z );
+            if (tileCGA.isPowered()) {
+                final IIcon top_Bottom
+                    = ExtraBlockTextures.BlockQuartzGrowthAcceleratorOn.getIcon();
+                final IIcon side
+                    = ExtraBlockTextures.BlockQuartzGrowthAcceleratorSideOn.getIcon();
 
-		if( te instanceof TileQuartzGrowthAccelerator )
-		{
-			final TileQuartzGrowthAccelerator tileCGA = (TileQuartzGrowthAccelerator) te;
+                blk.getRendererInstance().setTemporaryRenderIcons(
+                    top_Bottom, top_Bottom, side, side, side, side
+                );
+            }
+        }
 
-			if( tileCGA.isPowered() )
-			{
-				final IIcon top_Bottom = ExtraBlockTextures.BlockQuartzGrowthAcceleratorOn.getIcon();
-				final IIcon side = ExtraBlockTextures.BlockQuartzGrowthAcceleratorSideOn.getIcon();
+        final boolean out = super.renderInWorld(blk, world, x, y, z, renderer);
 
-				blk.getRendererInstance().setTemporaryRenderIcons( top_Bottom, top_Bottom, side, side, side, side );
-			}
-		}
+        blk.getRendererInstance().setTemporaryRenderIcon(null);
 
-		final boolean out = super.renderInWorld( blk, world, x, y, z, renderer );
-
-		blk.getRendererInstance().setTemporaryRenderIcon( null );
-
-		return out;
-	}
+        return out;
+    }
 }

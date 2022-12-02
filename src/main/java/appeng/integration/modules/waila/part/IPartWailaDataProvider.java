@@ -18,6 +18,7 @@
 
 package appeng.integration.modules.waila.part;
 
+import java.util.List;
 
 import appeng.api.parts.IPart;
 import mcp.mobius.waila.api.IWailaConfigHandler;
@@ -28,26 +29,47 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
-import java.util.List;
-
-
 /**
- * An abstraction layer of the {@link appeng.integration.modules.waila.part.IPartWailaDataProvider} for
+ * An abstraction layer of the {@link
+ * appeng.integration.modules.waila.part.IPartWailaDataProvider} for
  * {@link appeng.api.parts.IPart}.
  *
  * @author thatsIch
  * @version rv2
  * @since rv2
  */
-public interface IPartWailaDataProvider
-{
-	ItemStack getWailaStack( IPart part, IWailaConfigHandler config, ItemStack partStack );
+public interface IPartWailaDataProvider {
+    ItemStack getWailaStack(IPart part, IWailaConfigHandler config, ItemStack partStack);
 
-	List<String> getWailaHead( IPart part, List<String> currentToolTip, IWailaDataAccessor accessor, IWailaConfigHandler config );
+    List<String> getWailaHead(
+        IPart part,
+        List<String> currentToolTip,
+        IWailaDataAccessor accessor,
+        IWailaConfigHandler config
+    );
 
-	List<String> getWailaBody( IPart part, List<String> currentToolTip, IWailaDataAccessor accessor, IWailaConfigHandler config );
+    List<String> getWailaBody(
+        IPart part,
+        List<String> currentToolTip,
+        IWailaDataAccessor accessor,
+        IWailaConfigHandler config
+    );
 
-	List<String> getWailaTail( IPart part, List<String> currentToolTip, IWailaDataAccessor accessor, IWailaConfigHandler config );
+    List<String> getWailaTail(
+        IPart part,
+        List<String> currentToolTip,
+        IWailaDataAccessor accessor,
+        IWailaConfigHandler config
+    );
 
-	NBTTagCompound getNBTData( EntityPlayerMP player, IPart part, TileEntity te, NBTTagCompound tag, World world, int x, int y, int z );
+    NBTTagCompound getNBTData(
+        EntityPlayerMP player,
+        IPart part,
+        TileEntity te,
+        NBTTagCompound tag,
+        World world,
+        int x,
+        int y,
+        int z
+    );
 }

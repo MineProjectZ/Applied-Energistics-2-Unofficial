@@ -18,54 +18,44 @@
 
 package appeng.helpers;
 
-
 import appeng.api.util.IOrientable;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.ForgeDirection;
 
+public class LocationRotation implements IOrientable {
+    private final IBlockAccess w;
+    private final int x;
+    private final int y;
+    private final int z;
 
-public class LocationRotation implements IOrientable
-{
+    public LocationRotation(
+        final IBlockAccess world, final int x, final int y, final int z
+    ) {
+        this.w = world;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
 
-	private final IBlockAccess w;
-	private final int x;
-	private final int y;
-	private final int z;
+    @Override
+    public boolean canBeRotated() {
+        return false;
+    }
 
-	public LocationRotation( final IBlockAccess world, final int x, final int y, final int z )
-	{
-		this.w = world;
-		this.x = x;
-		this.y = y;
-		this.z = z;
-	}
+    @Override
+    public ForgeDirection getForward() {
+        if (this.getUp().offsetY == 0) {
+            return ForgeDirection.UP;
+        }
+        return ForgeDirection.SOUTH;
+    }
 
-	@Override
-	public boolean canBeRotated()
-	{
-		return false;
-	}
+    @Override
+    public ForgeDirection getUp() {
+        final int num = Math.abs(this.x + this.y + this.z) % 6;
+        return ForgeDirection.getOrientation(num);
+    }
 
-	@Override
-	public ForgeDirection getForward()
-	{
-		if( this.getUp().offsetY == 0 )
-		{
-			return ForgeDirection.UP;
-		}
-		return ForgeDirection.SOUTH;
-	}
-
-	@Override
-	public ForgeDirection getUp()
-	{
-		final int num = Math.abs( this.x + this.y + this.z ) % 6;
-		return ForgeDirection.getOrientation( num );
-	}
-
-	@Override
-	public void setOrientation( final ForgeDirection forward, final ForgeDirection up )
-	{
-
-	}
+    @Override
+    public void setOrientation(final ForgeDirection forward, final ForgeDirection up) {}
 }

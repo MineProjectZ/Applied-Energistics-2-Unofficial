@@ -18,6 +18,7 @@
 
 package appeng.hooks;
 
+import java.util.Random;
 
 import appeng.api.AEApi;
 import appeng.api.definitions.IItemDefinition;
@@ -30,95 +31,104 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.village.MerchantRecipe;
 import net.minecraft.village.MerchantRecipeList;
 
-import java.util.Random;
+public class AETrading implements IVillageTradeHandler {
+    @Override
+    public void manipulateTradesForVillager(
+        final EntityVillager villager,
+        final MerchantRecipeList recipeList,
+        final Random random
+    ) {
+        final IMaterials materials = AEApi.instance().definitions().materials();
 
+        this.addMerchant(recipeList, materials.silicon(), 1, random, 2);
+        this.addMerchant(recipeList, materials.certusQuartzCrystal(), 2, random, 4);
+        this.addMerchant(recipeList, materials.certusQuartzDust(), 1, random, 3);
 
-public class AETrading implements IVillageTradeHandler
-{
+        this.addTrade(
+            recipeList,
+            materials.certusQuartzDust(),
+            materials.certusQuartzCrystal(),
+            random,
+            2
+        );
+    }
 
-	@Override
-	public void manipulateTradesForVillager( final EntityVillager villager, final MerchantRecipeList recipeList, final Random random )
-	{
-		final IMaterials materials = AEApi.instance().definitions().materials();
+    private void addMerchant(
+        final MerchantRecipeList list,
+        final IItemDefinition item,
+        final int emera,
+        final Random rand,
+        final int greed
+    ) {
+        for (final ItemStack itemStack : item.maybeStack(1).asSet()) {
+            // Sell
+            final ItemStack from = itemStack.copy();
+            final ItemStack to = new ItemStack(Items.emerald);
 
-		this.addMerchant( recipeList, materials.silicon(), 1, random, 2 );
-		this.addMerchant( recipeList, materials.certusQuartzCrystal(), 2, random, 4 );
-		this.addMerchant( recipeList, materials.certusQuartzDust(), 1, random, 3 );
+            final int multiplier = (Math.abs(rand.nextInt()) % 6);
+            final int emeraldCost
+                = emera + (Math.abs(rand.nextInt()) % greed) - multiplier;
+            final int mood = rand.nextInt() % 2;
 
-		this.addTrade( recipeList, materials.certusQuartzDust(), materials.certusQuartzCrystal(), random, 2 );
-	}
+            from.stackSize = multiplier + mood;
+            to.stackSize = multiplier * emeraldCost - mood;
 
-	private void addMerchant( final MerchantRecipeList list, final IItemDefinition item, final int emera, final Random rand, final int greed )
-	{
-		for( final ItemStack itemStack : item.maybeStack( 1 ).asSet() )
-		{
-			// Sell
-			final ItemStack from = itemStack.copy();
-			final ItemStack to = new ItemStack( Items.emerald );
+            if (to.stackSize < 0) {
+                from.stackSize -= to.stackSize;
+                to.stackSize -= to.stackSize;
+            }
 
-			final int multiplier = ( Math.abs( rand.nextInt() ) % 6 );
-			final int emeraldCost = emera + ( Math.abs( rand.nextInt() ) % greed ) - multiplier;
-			final int mood = rand.nextInt() % 2;
+            this.addToList(list, from, to);
 
-			from.stackSize = multiplier + mood;
-			to.stackSize = multiplier * emeraldCost - mood;
+            // Buy
+            final ItemStack reverseTo = from.copy();
+            final ItemStack reverseFrom = to.copy();
 
-			if( to.stackSize < 0 )
-			{
-				from.stackSize -= to.stackSize;
-				to.stackSize -= to.stackSize;
-			}
+            reverseFrom.stackSize *= rand.nextFloat() * 3.0f + 1.0f;
 
-			this.addToList( list, from, to );
+            this.addToList(list, reverseFrom, reverseTo);
+        }
+    }
 
-			// Buy
-			final ItemStack reverseTo = from.copy();
-			final ItemStack reverseFrom = to.copy();
+    private void addTrade(
+        final MerchantRecipeList list,
+        final IItemDefinition inputDefinition,
+        final IItemDefinition outputDefinition,
+        final Random rand,
+        final int conversionVariance
+    ) {
+        final Optional<ItemStack> maybeInputStack = inputDefinition.maybeStack(1);
+        final Optional<ItemStack> maybeOutputStack = outputDefinition.maybeStack(1);
 
-			reverseFrom.stackSize *= rand.nextFloat() * 3.0f + 1.0f;
+        if (maybeInputStack.isPresent() && maybeOutputStack.isPresent()) {
+            // Sell
+            final ItemStack inputStack = maybeInputStack.get().copy();
+            final ItemStack outputStack = maybeOutputStack.get().copy();
 
-			this.addToList( list, reverseFrom, reverseTo );
-		}
-	}
+            inputStack.stackSize
+                = 1 + (Math.abs(rand.nextInt()) % (1 + conversionVariance));
+            outputStack.stackSize = 1;
 
-	private void addTrade( final MerchantRecipeList list, final IItemDefinition inputDefinition, final IItemDefinition outputDefinition, final Random rand, final int conversionVariance )
-	{
-		final Optional<ItemStack> maybeInputStack = inputDefinition.maybeStack( 1 );
-		final Optional<ItemStack> maybeOutputStack = outputDefinition.maybeStack( 1 );
+            this.addToList(list, inputStack, outputStack);
+        }
+    }
 
-		if( maybeInputStack.isPresent() && maybeOutputStack.isPresent() )
-		{
-			// Sell
-			final ItemStack inputStack = maybeInputStack.get().copy();
-			final ItemStack outputStack = maybeOutputStack.get().copy();
+    private void
+    addToList(final MerchantRecipeList l, final ItemStack a, final ItemStack b) {
+        if (a.stackSize < 1) {
+            a.stackSize = 1;
+        }
+        if (b.stackSize < 1) {
+            b.stackSize = 1;
+        }
 
-			inputStack.stackSize = 1 + ( Math.abs( rand.nextInt() ) % ( 1 + conversionVariance ) );
-			outputStack.stackSize = 1;
+        if (a.stackSize > a.getMaxStackSize()) {
+            a.stackSize = a.getMaxStackSize();
+        }
+        if (b.stackSize > b.getMaxStackSize()) {
+            b.stackSize = b.getMaxStackSize();
+        }
 
-			this.addToList( list, inputStack, outputStack );
-		}
-	}
-
-	private void addToList( final MerchantRecipeList l, final ItemStack a, final ItemStack b )
-	{
-		if( a.stackSize < 1 )
-		{
-			a.stackSize = 1;
-		}
-		if( b.stackSize < 1 )
-		{
-			b.stackSize = 1;
-		}
-
-		if( a.stackSize > a.getMaxStackSize() )
-		{
-			a.stackSize = a.getMaxStackSize();
-		}
-		if( b.stackSize > b.getMaxStackSize() )
-		{
-			b.stackSize = b.getMaxStackSize();
-		}
-
-		l.add( new MerchantRecipe( a, b ) );
-	}
+        l.add(new MerchantRecipe(a, b));
+    }
 }

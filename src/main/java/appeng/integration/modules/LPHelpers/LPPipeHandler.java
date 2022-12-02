@@ -18,7 +18,6 @@
 
 package appeng.integration.modules.LPHelpers;
 
-
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.storage.IExternalStorageHandler;
 import appeng.api.storage.IMEInventory;
@@ -26,7 +25,6 @@ import appeng.api.storage.StorageChannel;
 import appeng.integration.IntegrationRegistry;
 import appeng.integration.IntegrationType;
 import appeng.integration.abstraction.ILogisticsPipes;
-
 import appeng.me.storage.MEMonitorIInventory;
 import appeng.util.inv.IMEAdaptor;
 import logisticspipes.api.ILPPipeTile;
@@ -34,26 +32,32 @@ import logisticspipes.pipes.basic.CoreUnroutedPipe;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.ForgeDirection;
 
-
-public class LPPipeHandler implements IExternalStorageHandler
-{
+public class LPPipeHandler implements IExternalStorageHandler {
     @Override
-    public boolean canHandle( final TileEntity te, final ForgeDirection d, final StorageChannel channel, final BaseActionSource mySrc )
-    {
-        if( IntegrationRegistry.INSTANCE.isEnabled( IntegrationType.LogisticsPipes ) )
-        {
-            return channel == StorageChannel.ITEMS && te instanceof ILPPipeTile &&
-                    ( (CoreUnroutedPipe) ( (ILPPipeTile) te ).getLPPipe() ).canPipeConnect( te, d );
+    public boolean canHandle(
+        final TileEntity te,
+        final ForgeDirection d,
+        final StorageChannel channel,
+        final BaseActionSource mySrc
+    ) {
+        if (IntegrationRegistry.INSTANCE.isEnabled(IntegrationType.LogisticsPipes)) {
+            return channel == StorageChannel.ITEMS && te instanceof ILPPipeTile
+                && ((CoreUnroutedPipe) ((ILPPipeTile) te).getLPPipe())
+                       .canPipeConnect(te, d);
         }
         return false;
     }
 
     @Override
-    public IMEInventory getInventory( final TileEntity te, final ForgeDirection d, final StorageChannel channel, final BaseActionSource src )
-    {
-        if( channel == StorageChannel.ITEMS )
-        {
-            return new MEMonitorIInventory( new IMEAdaptor( new LPPipeInventory( te, d ), src ) );
+    public IMEInventory getInventory(
+        final TileEntity te,
+        final ForgeDirection d,
+        final StorageChannel channel,
+        final BaseActionSource src
+    ) {
+        if (channel == StorageChannel.ITEMS) {
+            return new MEMonitorIInventory(new IMEAdaptor(new LPPipeInventory(te, d), src)
+            );
         }
         return null;
     }

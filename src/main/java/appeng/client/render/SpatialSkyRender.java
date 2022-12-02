@@ -18,6 +18,7 @@
 
 package appeng.client.render;
 
+import java.util.Random;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -28,162 +29,147 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraftforge.client.IRenderHandler;
 import org.lwjgl.opengl.GL11;
 
-import java.util.Random;
+public class SpatialSkyRender extends IRenderHandler {
+    private static final SpatialSkyRender INSTANCE = new SpatialSkyRender();
 
+    private final Random random = new Random();
+    private final int dspList;
+    private long cycle = 0;
 
-public class SpatialSkyRender extends IRenderHandler
-{
+    public SpatialSkyRender() {
+        this.dspList = GLAllocation.generateDisplayLists(1);
+    }
 
-	private static final SpatialSkyRender INSTANCE = new SpatialSkyRender();
+    public static IRenderHandler getInstance() {
+        return INSTANCE;
+    }
 
-	private final Random random = new Random();
-	private final int dspList;
-	private long cycle = 0;
+    @Override
+    public void
+    render(final float partialTicks, final WorldClient world, final Minecraft mc) {
+        final long now = System.currentTimeMillis();
 
-	public SpatialSkyRender()
-	{
-		this.dspList = GLAllocation.generateDisplayLists( 1 );
-	}
+        if (now - this.cycle > 2000) {
+            this.cycle = now;
+            GL11.glNewList(this.dspList, GL11.GL_COMPILE);
+            this.renderTwinkles();
+            GL11.glEndList();
+        }
 
-	public static IRenderHandler getInstance()
-	{
-		return INSTANCE;
-	}
+        float fade = now - this.cycle;
+        fade /= 1000;
+        fade = 0.15f * (1.0f - Math.abs((fade - 1.0f) * (fade - 1.0f)));
 
-	@Override
-	public void render( final float partialTicks, final WorldClient world, final Minecraft mc )
-	{
-		final long now = System.currentTimeMillis();
+        GL11.glDisable(GL11.GL_FOG);
+        GL11.glDisable(GL11.GL_ALPHA_TEST);
+        GL11.glDisable(GL11.GL_BLEND);
+        GL11.glDepthMask(false);
+        GL11.glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
 
-		if( now - this.cycle > 2000 )
-		{
-			this.cycle = now;
-			GL11.glNewList( this.dspList, GL11.GL_COMPILE );
-			this.renderTwinkles();
-			GL11.glEndList();
-		}
+        final Tessellator tessellator = Tessellator.instance;
 
-		float fade = now - this.cycle;
-		fade /= 1000;
-		fade = 0.15f * ( 1.0f - Math.abs( ( fade - 1.0f ) * ( fade - 1.0f ) ) );
+        for (int i = 0; i < 6; ++i) {
+            GL11.glPushMatrix();
 
-		GL11.glDisable( GL11.GL_FOG );
-		GL11.glDisable( GL11.GL_ALPHA_TEST );
-		GL11.glDisable( GL11.GL_BLEND );
-		GL11.glDepthMask( false );
-		GL11.glColor4f( 0.0f, 0.0f, 0.0f, 1.0f );
+            switch (i) {
+                case 1:
+                    GL11.glRotatef(90.0F, 1.0F, 0.0F, 0.0F);
+                    break;
+                case 2:
+                    GL11.glRotatef(-90.0F, 1.0F, 0.0F, 0.0F);
+                    break;
+                case 3:
+                    GL11.glRotatef(180.0F, 1.0F, 0.0F, 0.0F);
+                    break;
+                case 4:
+                    GL11.glRotatef(90.0F, 0.0F, 0.0F, 1.0F);
+                    break;
+                case 5:
+                    GL11.glRotatef(-90.0F, 0.0F, 0.0F, 1.0F);
+                    break;
+                default:
+                    break;
+            }
 
-		final Tessellator tessellator = Tessellator.instance;
+            tessellator.startDrawingQuads();
+            tessellator.setColorOpaque_I(0);
+            tessellator.addVertexWithUV(-100.0D, -100.0D, -100.0D, 0.0D, 0.0D);
+            tessellator.addVertexWithUV(-100.0D, -100.0D, 100.0D, 0.0D, 16.0D);
+            tessellator.addVertexWithUV(100.0D, -100.0D, 100.0D, 16.0D, 16.0D);
+            tessellator.addVertexWithUV(100.0D, -100.0D, -100.0D, 16.0D, 0.0D);
+            tessellator.draw();
 
-		for( int i = 0; i < 6; ++i )
-		{
-			GL11.glPushMatrix();
+            GL11.glPopMatrix();
+        }
 
-			switch( i )
-			{
-				case 1:
-					GL11.glRotatef( 90.0F, 1.0F, 0.0F, 0.0F );
-					break;
-				case 2:
-					GL11.glRotatef( -90.0F, 1.0F, 0.0F, 0.0F );
-					break;
-				case 3:
-					GL11.glRotatef( 180.0F, 1.0F, 0.0F, 0.0F );
-					break;
-				case 4:
-					GL11.glRotatef( 90.0F, 0.0F, 0.0F, 1.0F );
-					break;
-				case 5:
-					GL11.glRotatef( -90.0F, 0.0F, 0.0F, 1.0F );
-					break;
-				default:
-					break;
-			}
+        if (fade > 0.0f) {
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
 
-			tessellator.startDrawingQuads();
-			tessellator.setColorOpaque_I( 0 );
-			tessellator.addVertexWithUV( -100.0D, -100.0D, -100.0D, 0.0D, 0.0D );
-			tessellator.addVertexWithUV( -100.0D, -100.0D, 100.0D, 0.0D, 16.0D );
-			tessellator.addVertexWithUV( 100.0D, -100.0D, 100.0D, 16.0D, 16.0D );
-			tessellator.addVertexWithUV( 100.0D, -100.0D, -100.0D, 16.0D, 0.0D );
-			tessellator.draw();
+            OpenGlHelper.glBlendFunc(770, 771, 1, 0);
+            RenderHelper.disableStandardItemLighting();
 
-			GL11.glPopMatrix();
-		}
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
+            GL11.glColor4f(fade, fade, fade, 1.0f);
+            GL11.glCallList(this.dspList);
 
-		if( fade > 0.0f )
-		{
-			GL11.glEnable( GL11.GL_BLEND );
-			GL11.glDisable( GL11.GL_TEXTURE_2D );
+            RenderHelper.enableStandardItemLighting();
+        }
 
-			OpenGlHelper.glBlendFunc( 770, 771, 1, 0 );
-			RenderHelper.disableStandardItemLighting();
+        GL11.glEnable(GL11.GL_FOG);
+        GL11.glEnable(GL11.GL_ALPHA_TEST);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glDepthMask(true);
 
-			GL11.glEnable( GL11.GL_TEXTURE_2D );
-			GL11.glColor4f( fade, fade, fade, 1.0f );
-			GL11.glCallList( this.dspList );
+        GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    }
 
-			RenderHelper.enableStandardItemLighting();
-		}
+    private void renderTwinkles() {
+        final Tessellator tessellator = Tessellator.instance;
+        tessellator.startDrawingQuads();
 
-		GL11.glEnable( GL11.GL_FOG );
-		GL11.glEnable( GL11.GL_ALPHA_TEST );
-		GL11.glEnable( GL11.GL_BLEND );
-		GL11.glDepthMask( true );
+        for (int i = 0; i < 50; ++i) {
+            double iX = this.random.nextFloat() * 2.0F - 1.0F;
+            double iY = this.random.nextFloat() * 2.0F - 1.0F;
+            double iZ = this.random.nextFloat() * 2.0F - 1.0F;
+            final double d3 = 0.05F + this.random.nextFloat() * 0.1F;
+            double dist = iX * iX + iY * iY + iZ * iZ;
 
-		GL11.glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-	}
+            if (dist < 1.0D && dist > 0.01D) {
+                dist = 1.0D / Math.sqrt(dist);
+                iX *= dist;
+                iY *= dist;
+                iZ *= dist;
 
-	private void renderTwinkles()
-	{
-		final Tessellator tessellator = Tessellator.instance;
-		tessellator.startDrawingQuads();
+                final double x = iX * 100.0D;
+                final double y = iY * 100.0D;
+                final double z = iZ * 100.0D;
+                final double d8 = Math.atan2(iX, iZ);
+                final double d9 = Math.sin(d8);
+                final double d10 = Math.cos(d8);
+                final double d11 = Math.atan2(Math.sqrt(iX * iX + iZ * iZ), iY);
+                final double d12 = Math.sin(d11);
+                final double d13 = Math.cos(d11);
+                final double d14 = this.random.nextDouble() * Math.PI * 2.0D;
+                final double d15 = Math.sin(d14);
+                final double d16 = Math.cos(d14);
 
-		for( int i = 0; i < 50; ++i )
-		{
-			double iX = this.random.nextFloat() * 2.0F - 1.0F;
-			double iY = this.random.nextFloat() * 2.0F - 1.0F;
-			double iZ = this.random.nextFloat() * 2.0F - 1.0F;
-			final double d3 = 0.05F + this.random.nextFloat() * 0.1F;
-			double dist = iX * iX + iY * iY + iZ * iZ;
+                for (int j = 0; j < 4; ++j) {
+                    final double d17 = 0.0D;
+                    final double d18 = ((j & 2) - 1) * d3;
+                    final double d19 = ((j + 1 & 2) - 1) * d3;
+                    final double d20 = d18 * d16 - d19 * d15;
+                    final double d21 = d19 * d16 + d18 * d15;
+                    final double d22 = d20 * d12 + d17 * d13;
+                    final double d23 = d17 * d12 - d20 * d13;
+                    final double d24 = d23 * d9 - d21 * d10;
+                    final double d25 = d21 * d9 + d23 * d10;
 
-			if( dist < 1.0D && dist > 0.01D )
-			{
-				dist = 1.0D / Math.sqrt( dist );
-				iX *= dist;
-				iY *= dist;
-				iZ *= dist;
+                    tessellator.addVertex(x + d24, y + d22, z + d25);
+                }
+            }
+        }
 
-				final double x = iX * 100.0D;
-				final double y = iY * 100.0D;
-				final double z = iZ * 100.0D;
-				final double d8 = Math.atan2( iX, iZ );
-				final double d9 = Math.sin( d8 );
-				final double d10 = Math.cos( d8 );
-				final double d11 = Math.atan2( Math.sqrt( iX * iX + iZ * iZ ), iY );
-				final double d12 = Math.sin( d11 );
-				final double d13 = Math.cos( d11 );
-				final double d14 = this.random.nextDouble() * Math.PI * 2.0D;
-				final double d15 = Math.sin( d14 );
-				final double d16 = Math.cos( d14 );
-
-				for( int j = 0; j < 4; ++j )
-				{
-					final double d17 = 0.0D;
-					final double d18 = ( ( j & 2 ) - 1 ) * d3;
-					final double d19 = ( ( j + 1 & 2 ) - 1 ) * d3;
-					final double d20 = d18 * d16 - d19 * d15;
-					final double d21 = d19 * d16 + d18 * d15;
-					final double d22 = d20 * d12 + d17 * d13;
-					final double d23 = d17 * d12 - d20 * d13;
-					final double d24 = d23 * d9 - d21 * d10;
-					final double d25 = d21 * d9 + d23 * d10;
-
-					tessellator.addVertex( x + d24, y + d22, z + d25 );
-				}
-			}
-		}
-
-		tessellator.draw();
-	}
+        tessellator.draw();
+    }
 }

@@ -18,7 +18,6 @@
 
 package appeng.tile.networking;
 
-
 import appeng.api.config.AccessRestriction;
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;
@@ -34,212 +33,183 @@ import appeng.util.SettingsFrom;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.util.ForgeDirection;
 
+public class TileEnergyCell extends AENetworkTile implements IAEPowerStorage {
+    private double internalCurrentPower = 0.0;
+    private double internalMaxPower = 200000.0;
 
-public class TileEnergyCell extends AENetworkTile implements IAEPowerStorage
-{
+    private byte currentMeta = -1;
 
-	private double internalCurrentPower = 0.0;
-	private double internalMaxPower = 200000.0;
+    public TileEnergyCell() {
+        this.getProxy().setIdlePowerUsage(0);
+    }
 
-	private byte currentMeta = -1;
+    @Override
+    public AECableType getCableConnectionType(final ForgeDirection dir) {
+        return AECableType.COVERED;
+    }
 
-	public TileEnergyCell()
-	{
-		this.getProxy().setIdlePowerUsage( 0 );
-	}
+    @Override
+    public void onReady() {
+        super.onReady();
+        this.currentMeta = (byte
+        ) this.worldObj.getBlockMetadata(this.xCoord, this.yCoord, this.zCoord);
+        this.changePowerLevel();
+    }
 
-	@Override
-	public AECableType getCableConnectionType( final ForgeDirection dir )
-	{
-		return AECableType.COVERED;
-	}
+    private void changePowerLevel() {
+        if (this.notLoaded()) {
+            return;
+        }
 
-	@Override
-	public void onReady()
-	{
-		super.onReady();
-		this.currentMeta = (byte) this.worldObj.getBlockMetadata( this.xCoord, this.yCoord, this.zCoord );
-		this.changePowerLevel();
-	}
+        byte boundMetadata
+            = (byte) (8.0 * (this.internalCurrentPower / this.getInternalMaxPower()));
 
-	private void changePowerLevel()
-	{
-		if( this.notLoaded() )
-		{
-			return;
-		}
+        if (boundMetadata > 7) {
+            boundMetadata = 7;
+        }
+        if (boundMetadata < 0) {
+            boundMetadata = 0;
+        }
 
-		byte boundMetadata = (byte) ( 8.0 * ( this.internalCurrentPower / this.getInternalMaxPower() ) );
+        if (this.currentMeta != boundMetadata) {
+            this.currentMeta = boundMetadata;
+            this.worldObj.setBlockMetadataWithNotify(
+                this.xCoord, this.yCoord, this.zCoord, this.currentMeta, 2
+            );
+        }
+    }
 
-		if( boundMetadata > 7 )
-		{
-			boundMetadata = 7;
-		}
-		if( boundMetadata < 0 )
-		{
-			boundMetadata = 0;
-		}
+    @TileEvent(TileEventType.WORLD_NBT_WRITE)
+    public void writeToNBT_TileEnergyCell(final NBTTagCompound data) {
+        if (!this.worldObj.isRemote) {
+            data.setDouble("internalCurrentPower", this.internalCurrentPower);
+        }
+    }
 
-		if( this.currentMeta != boundMetadata )
-		{
-			this.currentMeta = boundMetadata;
-			this.worldObj.setBlockMetadataWithNotify( this.xCoord, this.yCoord, this.zCoord, this.currentMeta, 2 );
-		}
-	}
+    @TileEvent(TileEventType.WORLD_NBT_READ)
+    public void readFromNBT_TileEnergyCell(final NBTTagCompound data) {
+        this.internalCurrentPower = data.getDouble("internalCurrentPower");
+    }
 
-	@TileEvent( TileEventType.WORLD_NBT_WRITE )
-	public void writeToNBT_TileEnergyCell( final NBTTagCompound data )
-	{
-		if( !this.worldObj.isRemote )
-		{
-			data.setDouble( "internalCurrentPower", this.internalCurrentPower );
-		}
-	}
+    @Override
+    public boolean canBeRotated() {
+        return false;
+    }
 
-	@TileEvent( TileEventType.WORLD_NBT_READ )
-	public void readFromNBT_TileEnergyCell( final NBTTagCompound data )
-	{
-		this.internalCurrentPower = data.getDouble( "internalCurrentPower" );
-	}
+    @Override
+    public void uploadSettings(final SettingsFrom from, final NBTTagCompound compound) {
+        if (from == SettingsFrom.DISMANTLE_ITEM) {
+            this.internalCurrentPower = compound.getDouble("internalCurrentPower");
+        }
+    }
 
-	@Override
-	public boolean canBeRotated()
-	{
-		return false;
-	}
+    @Override
+    public NBTTagCompound downloadSettings(final SettingsFrom from) {
+        if (from == SettingsFrom.DISMANTLE_ITEM) {
+            final NBTTagCompound tag = new NBTTagCompound();
+            tag.setDouble("internalCurrentPower", this.internalCurrentPower);
+            tag.setDouble(
+                "internalMaxPower", this.getInternalMaxPower()
+            ); // used for tool tip.
+            return tag;
+        }
+        return null;
+    }
 
-	@Override
-	public void uploadSettings( final SettingsFrom from, final NBTTagCompound compound )
-	{
-		if( from == SettingsFrom.DISMANTLE_ITEM )
-		{
-			this.internalCurrentPower = compound.getDouble( "internalCurrentPower" );
-		}
-	}
+    @Override
+    public final double injectAEPower(double amt, final Actionable mode) {
+        if (mode == Actionable.SIMULATE) {
+            final double fakeBattery = this.internalCurrentPower + amt;
+            if (fakeBattery > this.getInternalMaxPower()) {
+                return fakeBattery - this.getInternalMaxPower();
+            }
 
-	@Override
-	public NBTTagCompound downloadSettings( final SettingsFrom from )
-	{
-		if( from == SettingsFrom.DISMANTLE_ITEM )
-		{
-			final NBTTagCompound tag = new NBTTagCompound();
-			tag.setDouble( "internalCurrentPower", this.internalCurrentPower );
-			tag.setDouble( "internalMaxPower", this.getInternalMaxPower() ); // used for tool tip.
-			return tag;
-		}
-		return null;
-	}
+            return 0;
+        }
 
-	@Override
-	public final double injectAEPower( double amt, final Actionable mode )
-	{
-		if( mode == Actionable.SIMULATE )
-		{
-			final double fakeBattery = this.internalCurrentPower + amt;
-			if( fakeBattery > this.getInternalMaxPower() )
-			{
-				return fakeBattery - this.getInternalMaxPower();
-			}
+        if (this.internalCurrentPower < 0.01 && amt > 0.01) {
+            this.getProxy().getNode().getGrid().postEvent(
+                new MENetworkPowerStorage(this, PowerEventType.PROVIDE_POWER)
+            );
+        }
 
-			return 0;
-		}
+        this.internalCurrentPower += amt;
+        if (this.internalCurrentPower > this.getInternalMaxPower()) {
+            amt = this.internalCurrentPower - this.getInternalMaxPower();
+            this.internalCurrentPower = this.getInternalMaxPower();
 
-		if( this.internalCurrentPower < 0.01 && amt > 0.01 )
-		{
-			this.getProxy().getNode().getGrid().postEvent( new MENetworkPowerStorage( this, PowerEventType.PROVIDE_POWER ) );
-		}
+            this.changePowerLevel();
+            return amt;
+        }
 
-		this.internalCurrentPower += amt;
-		if( this.internalCurrentPower > this.getInternalMaxPower() )
-		{
-			amt = this.internalCurrentPower - this.getInternalMaxPower();
-			this.internalCurrentPower = this.getInternalMaxPower();
+        this.changePowerLevel();
+        return 0;
+    }
 
-			this.changePowerLevel();
-			return amt;
-		}
+    @Override
+    public double getAEMaxPower() {
+        return this.getInternalMaxPower();
+    }
 
-		this.changePowerLevel();
-		return 0;
-	}
+    @Override
+    public double getAECurrentPower() {
+        return this.internalCurrentPower;
+    }
 
-	@Override
-	public double getAEMaxPower()
-	{
-		return this.getInternalMaxPower();
-	}
+    @Override
+    public boolean isAEPublicPowerStorage() {
+        return true;
+    }
 
-	@Override
-	public double getAECurrentPower()
-	{
-		return this.internalCurrentPower;
-	}
+    @Override
+    public AccessRestriction getPowerFlow() {
+        return AccessRestriction.READ_WRITE;
+    }
 
-	@Override
-	public boolean isAEPublicPowerStorage()
-	{
-		return true;
-	}
+    @Override
+    public final double
+    extractAEPower(final double amt, final Actionable mode, final PowerMultiplier pm) {
+        return pm.divide(this.extractAEPower(pm.multiply(amt), mode));
+    }
 
-	@Override
-	public AccessRestriction getPowerFlow()
-	{
-		return AccessRestriction.READ_WRITE;
-	}
+    private double extractAEPower(double amt, final Actionable mode) {
+        if (mode == Actionable.SIMULATE) {
+            if (this.internalCurrentPower > amt) {
+                return amt;
+            }
+            return this.internalCurrentPower;
+        }
 
-	@Override
-	public final double extractAEPower( final double amt, final Actionable mode, final PowerMultiplier pm )
-	{
-		return pm.divide( this.extractAEPower( pm.multiply( amt ), mode ) );
-	}
+        final boolean wasFull
+            = this.internalCurrentPower >= this.getInternalMaxPower() - 0.001;
 
-	private double extractAEPower( double amt, final Actionable mode )
-	{
-		if( mode == Actionable.SIMULATE )
-		{
-			if( this.internalCurrentPower > amt )
-			{
-				return amt;
-			}
-			return this.internalCurrentPower;
-		}
+        if (wasFull && amt > 0.001) {
+            try {
+                this.getProxy().getGrid().postEvent(
+                    new MENetworkPowerStorage(this, PowerEventType.REQUEST_POWER)
+                );
+            } catch (final GridAccessException ignored) {}
+        }
 
-		final boolean wasFull = this.internalCurrentPower >= this.getInternalMaxPower() - 0.001;
+        if (this.internalCurrentPower > amt) {
+            this.internalCurrentPower -= amt;
 
-		if( wasFull && amt > 0.001 )
-		{
-			try
-			{
-				this.getProxy().getGrid().postEvent( new MENetworkPowerStorage( this, PowerEventType.REQUEST_POWER ) );
-			}
-			catch( final GridAccessException ignored )
-			{
+            this.changePowerLevel();
+            return amt;
+        }
 
-			}
-		}
+        amt = this.internalCurrentPower;
+        this.internalCurrentPower = 0;
 
-		if( this.internalCurrentPower > amt )
-		{
-			this.internalCurrentPower -= amt;
+        this.changePowerLevel();
+        return amt;
+    }
 
-			this.changePowerLevel();
-			return amt;
-		}
+    private double getInternalMaxPower() {
+        return this.internalMaxPower;
+    }
 
-		amt = this.internalCurrentPower;
-		this.internalCurrentPower = 0;
-
-		this.changePowerLevel();
-		return amt;
-	}
-
-	private double getInternalMaxPower()
-	{
-		return this.internalMaxPower;
-	}
-
-	void setInternalMaxPower( final double internalMaxPower )
-	{
-		this.internalMaxPower = internalMaxPower;
-	}
+    void setInternalMaxPower(final double internalMaxPower) {
+        this.internalMaxPower = internalMaxPower;
+    }
 }

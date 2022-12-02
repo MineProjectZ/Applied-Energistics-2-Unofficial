@@ -18,36 +18,28 @@
 
 package appeng.util.prioitylist;
 
-
 import appeng.api.storage.data.IAEStack;
 import appeng.api.storage.data.IItemList;
 
+public class PrecisePriorityList<T extends IAEStack<T>> implements IPartitionList<T> {
+    private final IItemList<T> list;
 
-public class PrecisePriorityList<T extends IAEStack<T>> implements IPartitionList<T>
-{
+    public PrecisePriorityList(final IItemList<T> in) {
+        this.list = in;
+    }
 
-	private final IItemList<T> list;
+    @Override
+    public boolean isListed(final T input) {
+        return this.list.findPrecise(input) != null;
+    }
 
-	public PrecisePriorityList( final IItemList<T> in )
-	{
-		this.list = in;
-	}
+    @Override
+    public boolean isEmpty() {
+        return this.list.isEmpty();
+    }
 
-	@Override
-	public boolean isListed( final T input )
-	{
-		return this.list.findPrecise( input ) != null;
-	}
-
-	@Override
-	public boolean isEmpty()
-	{
-		return this.list.isEmpty();
-	}
-
-	@Override
-	public Iterable<T> getItems()
-	{
-		return this.list;
-	}
+    @Override
+    public Iterable<T> getItems() {
+        return this.list;
+    }
 }

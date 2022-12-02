@@ -18,6 +18,7 @@
 
 package appeng.tile.inventory;
 
+import java.util.Iterator;
 
 import appeng.api.AEApi;
 import appeng.api.storage.data.IAEItemStack;
@@ -31,251 +32,198 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
-import java.util.Iterator;
+public class AppEngInternalAEInventory implements IInventory, Iterable<ItemStack> {
+    private final IAEAppEngInventory te;
+    private final IAEItemStack[] inv;
+    private final int size;
+    private int maxStack;
 
+    public AppEngInternalAEInventory(final IAEAppEngInventory te, final int s) {
+        this.te = te;
+        this.size = s;
+        this.maxStack = 64;
+        this.inv = new IAEItemStack[s];
+    }
 
-public class AppEngInternalAEInventory implements IInventory, Iterable<ItemStack>
-{
+    public boolean isEmpty() {
+        for (int x = 0; x < this.size; x++) {
+            if (this.getStackInSlot(x) != null) {
+                return false;
+            }
+        }
+        return true;
+    }
 
-	private final IAEAppEngInventory te;
-	private final IAEItemStack[] inv;
-	private final int size;
-	private int maxStack;
+    public void setMaxStackSize(final int s) {
+        this.maxStack = s;
+    }
 
-	public AppEngInternalAEInventory( final IAEAppEngInventory te, final int s )
-	{
-		this.te = te;
-		this.size = s;
-		this.maxStack = 64;
-		this.inv = new IAEItemStack[s];
-	}
+    public IAEItemStack getAEStackInSlot(final int var1) {
+        return this.inv[var1];
+    }
 
-	public boolean isEmpty()
-	{
-		for( int x = 0; x < this.size; x++ )
-		{
-			if( this.getStackInSlot( x ) != null )
-			{
-				return false;
-			}
-		}
-		return true;
-	}
+    public void writeToNBT(final NBTTagCompound data, final String name) {
+        final NBTTagCompound c = new NBTTagCompound();
+        this.writeToNBT(c);
+        data.setTag(name, c);
+    }
 
-	public void setMaxStackSize( final int s )
-	{
-		this.maxStack = s;
-	}
+    private void writeToNBT(final NBTTagCompound target) {
+        for (int x = 0; x < this.size; x++) {
+            try {
+                final NBTTagCompound c = new NBTTagCompound();
 
-	public IAEItemStack getAEStackInSlot( final int var1 )
-	{
-		return this.inv[var1];
-	}
+                if (this.inv[x] != null) {
+                    this.inv[x].writeToNBT(c);
+                }
 
-	public void writeToNBT( final NBTTagCompound data, final String name )
-	{
-		final NBTTagCompound c = new NBTTagCompound();
-		this.writeToNBT( c );
-		data.setTag( name, c );
-	}
+                target.setTag("#" + x, c);
+            } catch (final Exception ignored) {}
+        }
+    }
 
-	private void writeToNBT( final NBTTagCompound target )
-	{
-		for( int x = 0; x < this.size; x++ )
-		{
-			try
-			{
-				final NBTTagCompound c = new NBTTagCompound();
+    public void readFromNBT(final NBTTagCompound data, final String name) {
+        final NBTTagCompound c = data.getCompoundTag(name);
+        if (c != null) {
+            this.readFromNBT(c);
+        }
+    }
 
-				if( this.inv[x] != null )
-				{
-					this.inv[x].writeToNBT( c );
-				}
+    private void readFromNBT(final NBTTagCompound target) {
+        for (int x = 0; x < this.size; x++) {
+            try {
+                final NBTTagCompound c = target.getCompoundTag("#" + x);
 
-				target.setTag( "#" + x, c );
-			}
-			catch( final Exception ignored )
-			{
-			}
-		}
-	}
+                if (c != null) {
+                    this.inv[x] = AEItemStack.loadItemStackFromNBT(c);
+                }
+            } catch (final Exception e) {
+                AELog.debug(e);
+            }
+        }
+    }
 
-	public void readFromNBT( final NBTTagCompound data, final String name )
-	{
-		final NBTTagCompound c = data.getCompoundTag( name );
-		if( c != null )
-		{
-			this.readFromNBT( c );
-		}
-	}
+    @Override
+    public int getSizeInventory() {
+        return this.size;
+    }
 
-	private void readFromNBT( final NBTTagCompound target )
-	{
-		for( int x = 0; x < this.size; x++ )
-		{
-			try
-			{
-				final NBTTagCompound c = target.getCompoundTag( "#" + x );
+    @Override
+    public ItemStack getStackInSlot(final int var1) {
+        if (this.inv[var1] == null) {
+            return null;
+        }
 
-				if( c != null )
-				{
-					this.inv[x] = AEItemStack.loadItemStackFromNBT( c );
-				}
-			}
-			catch( final Exception e )
-			{
-				AELog.debug( e );
-			}
-		}
-	}
+        return this.inv[var1].getItemStack();
+    }
 
-	@Override
-	public int getSizeInventory()
-	{
-		return this.size;
-	}
+    @Override
+    public ItemStack decrStackSize(final int slot, final int qty) {
+        if (this.inv[slot] != null) {
+            final ItemStack split = this.getStackInSlot(slot);
+            ItemStack ns = null;
 
-	@Override
-	public ItemStack getStackInSlot( final int var1 )
-	{
-		if( this.inv[var1] == null )
-		{
-			return null;
-		}
+            if (qty >= split.stackSize) {
+                ns = this.getStackInSlot(slot);
+                this.inv[slot] = null;
+            } else {
+                ns = split.splitStack(qty);
+            }
 
-		return this.inv[var1].getItemStack();
-	}
+            if (this.te != null && Platform.isServer()) {
+                this.te.onChangeInventory(
+                    this, slot, InvOperation.decreaseStackSize, ns, null
+                );
+                this.te.saveChanges();
+            }
 
-	@Override
-	public ItemStack decrStackSize( final int slot, final int qty )
-	{
-		if( this.inv[slot] != null )
-		{
-			final ItemStack split = this.getStackInSlot( slot );
-			ItemStack ns = null;
+            return ns;
+        }
 
-			if( qty >= split.stackSize )
-			{
-				ns = this.getStackInSlot( slot );
-				this.inv[slot] = null;
-			}
-			else
-			{
-				ns = split.splitStack( qty );
-			}
+        return null;
+    }
 
-			if( this.te != null && Platform.isServer() )
-			{
-				this.te.onChangeInventory( this, slot, InvOperation.decreaseStackSize, ns, null );
-				this.te.saveChanges();
-			}
+    @Override
+    public ItemStack getStackInSlotOnClosing(final int var1) {
+        return null;
+    }
 
-			return ns;
-		}
+    @Override
+    public void setInventorySlotContents(final int slot, final ItemStack newItemStack) {
+        final ItemStack oldStack = this.getStackInSlot(slot);
+        this.inv[slot] = AEApi.instance().storage().createItemStack(newItemStack);
 
-		return null;
-	}
+        if (this.te != null && Platform.isServer()) {
+            ItemStack removed = oldStack;
+            ItemStack added = newItemStack;
 
-	@Override
-	public ItemStack getStackInSlotOnClosing( final int var1 )
-	{
-		return null;
-	}
+            if (oldStack != null && newItemStack != null
+                && Platform.isSameItem(oldStack, newItemStack)) {
+                if (oldStack.stackSize > newItemStack.stackSize) {
+                    removed = removed.copy();
+                    removed.stackSize -= newItemStack.stackSize;
+                    added = null;
+                } else if (oldStack.stackSize < newItemStack.stackSize) {
+                    added = added.copy();
+                    added.stackSize -= oldStack.stackSize;
+                    removed = null;
+                } else {
+                    removed = added = null;
+                }
+            }
 
-	@Override
-	public void setInventorySlotContents( final int slot, final ItemStack newItemStack )
-	{
-		final ItemStack oldStack = this.getStackInSlot( slot );
-		this.inv[slot] = AEApi.instance().storage().createItemStack( newItemStack );
+            this.te.onChangeInventory(
+                this, slot, InvOperation.setInventorySlotContents, removed, added
+            );
+            this.te.saveChanges();
+        }
+    }
 
-		if( this.te != null && Platform.isServer() )
-		{
-			ItemStack removed = oldStack;
-			ItemStack added = newItemStack;
+    @Override
+    public String getInventoryName() {
+        return "appeng-internal";
+    }
 
-			if( oldStack != null && newItemStack != null && Platform.isSameItem( oldStack, newItemStack ) )
-			{
-				if( oldStack.stackSize > newItemStack.stackSize )
-				{
-					removed = removed.copy();
-					removed.stackSize -= newItemStack.stackSize;
-					added = null;
-				}
-				else if( oldStack.stackSize < newItemStack.stackSize )
-				{
-					added = added.copy();
-					added.stackSize -= oldStack.stackSize;
-					removed = null;
-				}
-				else
-				{
-					removed = added = null;
-				}
-			}
+    @Override
+    public boolean hasCustomInventoryName() {
+        return false;
+    }
 
-			this.te.onChangeInventory( this, slot, InvOperation.setInventorySlotContents, removed, added );
-			this.te.saveChanges();
-		}
-	}
+    @Override
+    public int getInventoryStackLimit() {
+        return this.maxStack > 64 ? 64 : this.maxStack;
+    }
 
-	@Override
-	public String getInventoryName()
-	{
-		return "appeng-internal";
-	}
+    @Override
+    public void markDirty() {
+        if (this.te != null && Platform.isServer()) {
+            this.te.onChangeInventory(this, -1, InvOperation.markDirty, null, null);
+            this.te.saveChanges();
+        }
+    }
 
-	@Override
-	public boolean hasCustomInventoryName()
-	{
-		return false;
-	}
+    @Override
+    public boolean isUseableByPlayer(final EntityPlayer var1) {
+        return true;
+    }
 
-	@Override
-	public int getInventoryStackLimit()
-	{
-		return this.maxStack > 64 ? 64 : this.maxStack;
-	}
+    @Override
+    public void openInventory() {}
 
-	@Override
-	public void markDirty()
-	{
-		if( this.te != null && Platform.isServer() )
-		{
-			this.te.onChangeInventory( this, -1, InvOperation.markDirty, null, null );
-			this.te.saveChanges();
-		}
-	}
+    @Override
+    public void closeInventory() {}
 
-	@Override
-	public boolean isUseableByPlayer( final EntityPlayer var1 )
-	{
-		return true;
-	}
+    @Override
+    public boolean isItemValidForSlot(final int i, final ItemStack itemstack) {
+        return true;
+    }
 
-	@Override
-	public void openInventory()
-	{
-	}
+    @Override
+    public Iterator<ItemStack> iterator() {
+        return new InvIterator(this);
+    }
 
-	@Override
-	public void closeInventory()
-	{
-	}
-
-	@Override
-	public boolean isItemValidForSlot( final int i, final ItemStack itemstack )
-	{
-		return true;
-	}
-
-	@Override
-	public Iterator<ItemStack> iterator()
-	{
-		return new InvIterator( this );
-	}
-
-	public Iterator<IAEItemStack> getNewAEIterator()
-	{
-		return new AEInvIterator( this );
-	}
+    public Iterator<IAEItemStack> getNewAEIterator() {
+        return new AEInvIterator(this);
+    }
 }

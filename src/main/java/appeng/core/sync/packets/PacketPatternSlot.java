@@ -18,6 +18,7 @@
 
 package appeng.core.sync.packets;
 
+import java.io.IOException;
 
 import appeng.api.AEApi;
 import appeng.api.storage.data.IAEItemStack;
@@ -31,88 +32,76 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
 
-import java.io.IOException;
+public class PacketPatternSlot extends AppEngPacket {
+    public final IAEItemStack slotItem;
 
+    public final IAEItemStack[] pattern = new IAEItemStack[9];
 
-public class PacketPatternSlot extends AppEngPacket
-{
+    public final boolean shift;
 
-	public final IAEItemStack slotItem;
+    // automatic.
+    public PacketPatternSlot(final ByteBuf stream) throws IOException {
+        this.shift = stream.readBoolean();
 
-	public final IAEItemStack[] pattern = new IAEItemStack[9];
+        this.slotItem = this.readItem(stream);
 
-	public final boolean shift;
+        for (int x = 0; x < 9; x++) {
+            this.pattern[x] = this.readItem(stream);
+        }
+    }
 
-	// automatic.
-	public PacketPatternSlot( final ByteBuf stream ) throws IOException
-	{
+    private IAEItemStack readItem(final ByteBuf stream) throws IOException {
+        final boolean hasItem = stream.readBoolean();
 
-		this.shift = stream.readBoolean();
+        if (hasItem) {
+            return AEItemStack.loadItemStackFromPacket(stream);
+        }
 
-		this.slotItem = this.readItem( stream );
+        return null;
+    }
 
-		for( int x = 0; x < 9; x++ )
-		{
-			this.pattern[x] = this.readItem( stream );
-		}
-	}
+    // api
+    public PacketPatternSlot(
+        final IInventory pat, final IAEItemStack slotItem, final boolean shift
+    ) throws IOException {
+        this.slotItem = slotItem;
+        this.shift = shift;
 
-	private IAEItemStack readItem( final ByteBuf stream ) throws IOException
-	{
-		final boolean hasItem = stream.readBoolean();
+        final ByteBuf data = Unpooled.buffer();
 
-		if( hasItem )
-		{
-			return AEItemStack.loadItemStackFromPacket( stream );
-		}
+        data.writeInt(this.getPacketID());
 
-		return null;
-	}
+        data.writeBoolean(shift);
 
-	// api
-	public PacketPatternSlot( final IInventory pat, final IAEItemStack slotItem, final boolean shift ) throws IOException
-	{
+        this.writeItem(slotItem, data);
+        for (int x = 0; x < 9; x++) {
+            this.pattern[x]
+                = AEApi.instance().storage().createItemStack(pat.getStackInSlot(x));
+            this.writeItem(this.pattern[x], data);
+        }
 
-		this.slotItem = slotItem;
-		this.shift = shift;
+        this.configureWrite(data);
+    }
 
-		final ByteBuf data = Unpooled.buffer();
+    private void writeItem(final IAEItemStack slotItem, final ByteBuf data)
+        throws IOException {
+        if (slotItem == null) {
+            data.writeBoolean(false);
+        } else {
+            data.writeBoolean(true);
+            slotItem.writeToPacket(data);
+        }
+    }
 
-		data.writeInt( this.getPacketID() );
-
-		data.writeBoolean( shift );
-
-		this.writeItem( slotItem, data );
-		for( int x = 0; x < 9; x++ )
-		{
-			this.pattern[x] = AEApi.instance().storage().createItemStack( pat.getStackInSlot( x ) );
-			this.writeItem( this.pattern[x], data );
-		}
-
-		this.configureWrite( data );
-	}
-
-	private void writeItem( final IAEItemStack slotItem, final ByteBuf data ) throws IOException
-	{
-		if( slotItem == null )
-		{
-			data.writeBoolean( false );
-		}
-		else
-		{
-			data.writeBoolean( true );
-			slotItem.writeToPacket( data );
-		}
-	}
-
-	@Override
-	public void serverPacketData( final INetworkInfo manager, final AppEngPacket packet, final EntityPlayer player )
-	{
-		final EntityPlayerMP sender = (EntityPlayerMP) player;
-		if( sender.openContainer instanceof ContainerPatternTerm )
-		{
-			final ContainerPatternTerm patternTerminal = (ContainerPatternTerm) sender.openContainer;
-			patternTerminal.craftOrGetItem( this );
-		}
-	}
+    @Override
+    public void serverPacketData(
+        final INetworkInfo manager, final AppEngPacket packet, final EntityPlayer player
+    ) {
+        final EntityPlayerMP sender = (EntityPlayerMP) player;
+        if (sender.openContainer instanceof ContainerPatternTerm) {
+            final ContainerPatternTerm patternTerminal
+                = (ContainerPatternTerm) sender.openContainer;
+            patternTerminal.craftOrGetItem(this);
+        }
+    }
 }

@@ -18,6 +18,8 @@
 
 package appeng.debug;
 
+import java.util.EnumSet;
+import java.util.List;
 
 import appeng.block.AEBaseTileBlock;
 import appeng.core.AppEng;
@@ -29,30 +31,21 @@ import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.ForgeChunkManager.LoadingCallback;
 import net.minecraftforge.common.ForgeChunkManager.Ticket;
 
-import java.util.EnumSet;
-import java.util.List;
+public class BlockChunkloader extends AEBaseTileBlock implements LoadingCallback {
+    public BlockChunkloader() {
+        super(Material.iron);
+        this.setTileEntity(TileChunkLoader.class);
+        ForgeChunkManager.setForcedChunkLoadingCallback(AppEng.instance(), this);
+        this.setFeature(
+            EnumSet.of(AEFeature.UnsupportedDeveloperTools, AEFeature.Creative)
+        );
+    }
 
+    @Override
+    public void ticketsLoaded(final List<Ticket> tickets, final World world) {}
 
-public class BlockChunkloader extends AEBaseTileBlock implements LoadingCallback
-{
-
-	public BlockChunkloader()
-	{
-		super( Material.iron );
-		this.setTileEntity( TileChunkLoader.class );
-		ForgeChunkManager.setForcedChunkLoadingCallback( AppEng.instance(), this );
-		this.setFeature( EnumSet.of( AEFeature.UnsupportedDeveloperTools, AEFeature.Creative ) );
-	}
-
-	@Override
-	public void ticketsLoaded( final List<Ticket> tickets, final World world )
-	{
-
-	}
-
-	@Override
-	public void registerBlockIcons( final IIconRegister iconRegistry )
-	{
-		this.registerNoIcons();
-	}
+    @Override
+    public void registerBlockIcons(final IIconRegister iconRegistry) {
+        this.registerNoIcons();
+    }
 }

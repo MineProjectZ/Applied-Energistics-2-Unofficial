@@ -18,6 +18,7 @@
 
 package appeng.container.implementations;
 
+import javax.annotation.Nonnull;
 
 import appeng.api.config.SecurityPermissions;
 import appeng.api.networking.IGrid;
@@ -33,58 +34,48 @@ import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.world.World;
 
-import javax.annotation.Nonnull;
+public class ContainerCraftAmount extends AEBaseContainer {
+    private final Slot craftingItem;
+    private IAEItemStack itemToCreate;
 
+    public ContainerCraftAmount(final InventoryPlayer ip, final ITerminalHost te) {
+        super(ip, te);
 
-public class ContainerCraftAmount extends AEBaseContainer
-{
+        this.craftingItem
+            = new SlotInaccessible(new AppEngInternalInventory(null, 1), 0, 34, 53);
+        this.addSlotToContainer(this.getCraftingItem());
+    }
 
-	private final Slot craftingItem;
-	private IAEItemStack itemToCreate;
+    @Override
+    public void detectAndSendChanges() {
+        super.detectAndSendChanges();
+        this.verifyPermissions(SecurityPermissions.CRAFT, false);
+    }
 
-	public ContainerCraftAmount( final InventoryPlayer ip, final ITerminalHost te )
-	{
-		super( ip, te );
+    public IGrid getGrid() {
+        final IActionHost h = ((IActionHost) this.getTarget());
+        return h.getActionableNode().getGrid();
+    }
 
-		this.craftingItem = new SlotInaccessible( new AppEngInternalInventory( null, 1 ), 0, 34, 53 );
-		this.addSlotToContainer( this.getCraftingItem() );
-	}
+    public World getWorld() {
+        return this.getPlayerInv().player.worldObj;
+    }
 
-	@Override
-	public void detectAndSendChanges()
-	{
-		super.detectAndSendChanges();
-		this.verifyPermissions( SecurityPermissions.CRAFT, false );
-	}
+    public BaseActionSource getActionSrc() {
+        return new PlayerSource(
+            this.getPlayerInv().player, (IActionHost) this.getTarget()
+        );
+    }
 
-	public IGrid getGrid()
-	{
-		final IActionHost h = ( (IActionHost) this.getTarget() );
-		return h.getActionableNode().getGrid();
-	}
+    public Slot getCraftingItem() {
+        return this.craftingItem;
+    }
 
-	public World getWorld()
-	{
-		return this.getPlayerInv().player.worldObj;
-	}
+    public IAEItemStack getItemToCraft() {
+        return this.itemToCreate;
+    }
 
-	public BaseActionSource getActionSrc()
-	{
-		return new PlayerSource( this.getPlayerInv().player, (IActionHost) this.getTarget() );
-	}
-
-	public Slot getCraftingItem()
-	{
-		return this.craftingItem;
-	}
-
-	public IAEItemStack getItemToCraft()
-	{
-		return this.itemToCreate;
-	}
-
-	public void setItemToCraft( @Nonnull final IAEItemStack itemToCreate )
-	{
-		this.itemToCreate = itemToCreate;
-	}
+    public void setItemToCraft(@Nonnull final IAEItemStack itemToCreate) {
+        this.itemToCreate = itemToCreate;
+    }
 }

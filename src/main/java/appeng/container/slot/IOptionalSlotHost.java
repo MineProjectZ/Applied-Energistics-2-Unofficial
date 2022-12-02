@@ -18,9 +18,6 @@
 
 package appeng.container.slot;
 
-
-public interface IOptionalSlotHost
-{
-
-	boolean isSlotEnabled( int idx );
+public interface IOptionalSlotHost {
+    boolean isSlotEnabled(int idx);
 }

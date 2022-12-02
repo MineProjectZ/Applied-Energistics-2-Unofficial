@@ -18,94 +18,77 @@
 
 package appeng.util.inv;
 
+import java.util.Collection;
+import java.util.Iterator;
 
 import appeng.api.config.FuzzyMode;
 import appeng.api.storage.data.IAEStack;
 import appeng.api.storage.data.IItemList;
 
-import java.util.Collection;
-import java.util.Iterator;
+public class ItemListIgnoreCrafting<T extends IAEStack> implements IItemList<T> {
+    private final IItemList<T> target;
 
+    public ItemListIgnoreCrafting(final IItemList<T> cla) {
+        this.target = cla;
+    }
 
-public class ItemListIgnoreCrafting<T extends IAEStack> implements IItemList<T>
-{
+    @Override
+    public void add(T option) {
+        if (option != null && option.isCraftable()) {
+            option = (T) option.copy();
+            option.setCraftable(false);
+        }
 
-	private final IItemList<T> target;
+        this.target.add(option);
+    }
 
-	public ItemListIgnoreCrafting( final IItemList<T> cla )
-	{
-		this.target = cla;
-	}
+    @Override
+    public T findPrecise(final T i) {
+        return this.target.findPrecise(i);
+    }
 
-	@Override
-	public void add( T option )
-	{
-		if( option != null && option.isCraftable() )
-		{
-			option = (T) option.copy();
-			option.setCraftable( false );
-		}
+    @Override
+    public Collection<T> findFuzzy(final T input, final FuzzyMode fuzzy) {
+        return this.target.findFuzzy(input, fuzzy);
+    }
 
-		this.target.add( option );
-	}
+    @Override
+    public boolean isEmpty() {
+        return this.target.isEmpty();
+    }
 
-	@Override
-	public T findPrecise( final T i )
-	{
-		return this.target.findPrecise( i );
-	}
+    @Override
+    public void addStorage(final T option) {
+        this.target.addStorage(option);
+    }
 
-	@Override
-	public Collection<T> findFuzzy( final T input, final FuzzyMode fuzzy )
-	{
-		return this.target.findFuzzy( input, fuzzy );
-	}
+    @Override
+    public void addCrafting(final T option) {
+        // nothing.
+    }
 
-	@Override
-	public boolean isEmpty()
-	{
-		return this.target.isEmpty();
-	}
+    @Override
+    public void addRequestable(final T option) {
+        this.target.addRequestable(option);
+    }
 
-	@Override
-	public void addStorage( final T option )
-	{
-		this.target.addStorage( option );
-	}
+    @Override
+    public T getFirstItem() {
+        return this.target.getFirstItem();
+    }
 
-	@Override
-	public void addCrafting( final T option )
-	{
-		// nothing.
-	}
+    @Override
+    public int size() {
+        return this.target.size();
+    }
 
-	@Override
-	public void addRequestable( final T option )
-	{
-		this.target.addRequestable( option );
-	}
+    @Override
+    public Iterator<T> iterator() {
+        return this.target.iterator();
+    }
 
-	@Override
-	public T getFirstItem()
-	{
-		return this.target.getFirstItem();
-	}
-
-	@Override
-	public int size()
-	{
-		return this.target.size();
-	}
-
-	@Override
-	public Iterator<T> iterator()
-	{
-		return this.target.iterator();
-	}
-
-	@Override
-	public void resetStatus()
-	{
-		this.target.resetStatus();
-	}
+    @Override
+    public void resetStatus() {
+        this.target.resetStatus();
+    }
 }

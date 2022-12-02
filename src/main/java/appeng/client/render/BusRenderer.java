@@ -18,6 +18,9 @@
 
 package appeng.client.render;
 
+import java.util.HashMap;
+import java.util.Map;
+import javax.annotation.Nullable;
 
 import appeng.api.parts.IAlphaPassItem;
 import appeng.api.parts.IFacadePart;
@@ -37,153 +40,137 @@ import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.common.util.ForgeDirection;
 import org.lwjgl.opengl.GL11;
 
-import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.Map;
+@SideOnly(Side.CLIENT)
+public class BusRenderer implements IItemRenderer {
+    public static final BusRenderer INSTANCE = new BusRenderer();
+    private static final Map<Integer, IPart> RENDER_PART = new HashMap<Integer, IPart>();
+    private final RenderBlocksWorkaround renderer = new RenderBlocksWorkaround();
 
+    @Override
+    public boolean handleRenderType(final ItemStack item, final ItemRenderType type) {
+        return true;
+    }
 
-@SideOnly( Side.CLIENT )
-public class BusRenderer implements IItemRenderer
-{
+    @Override
+    public boolean shouldUseRenderHelper(
+        final ItemRenderType type, final ItemStack item, final ItemRendererHelper helper
+    ) {
+        return true;
+    }
 
-	public static final BusRenderer INSTANCE = new BusRenderer();
-	private static final Map<Integer, IPart> RENDER_PART = new HashMap<Integer, IPart>();
-	private final RenderBlocksWorkaround renderer = new RenderBlocksWorkaround();
+    @Override
+    public void
+    renderItem(final ItemRenderType type, final ItemStack item, final Object... data) {
+        if (item == null) {
+            return;
+        }
 
-	@Override
-	public boolean handleRenderType( final ItemStack item, final ItemRenderType type )
-	{
-		return true;
-	}
+        GL11.glPushMatrix();
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT);
+        GL11.glEnable(GL11.GL_DEPTH_TEST);
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL11.glEnable(GL11.GL_LIGHTING);
 
-	@Override
-	public boolean shouldUseRenderHelper( final ItemRenderType type, final ItemStack item, final ItemRendererHelper helper )
-	{
-		return true;
-	}
+        if (AEConfig.instance.isFeatureEnabled(AEFeature.AlphaPass)
+            && item.getItem() instanceof IAlphaPassItem
+            && ((IAlphaPassItem) item.getItem()).useAlphaPass(item)) {
+            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+            GL11.glDisable(GL11.GL_ALPHA_TEST);
+            GL11.glEnable(GL11.GL_BLEND);
+        } else {
+            GL11.glAlphaFunc(GL11.GL_GREATER, 0.4f);
+            GL11.glEnable(GL11.GL_ALPHA_TEST);
+            GL11.glDisable(GL11.GL_BLEND);
+        }
 
-	@Override
-	public void renderItem( final ItemRenderType type, final ItemStack item, final Object... data )
-	{
-		if( item == null )
-		{
-			return;
-		}
+        if (type == ItemRenderType.EQUIPPED_FIRST_PERSON) {
+            GL11.glTranslatef(-0.2f, -0.1f, -0.3f);
+        }
 
-		GL11.glPushMatrix();
-		GL11.glPushAttrib( GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT );
-		GL11.glEnable( GL11.GL_DEPTH_TEST );
-		GL11.glEnable( GL11.GL_TEXTURE_2D );
-		GL11.glEnable( GL11.GL_LIGHTING );
+        if (type == ItemRenderType.ENTITY) {
+            GL11.glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+            GL11.glScalef(0.8f, 0.8f, 0.8f);
+            GL11.glTranslatef(-0.8f, -0.87f, -0.7f);
+        }
 
-		if( AEConfig.instance.isFeatureEnabled( AEFeature.AlphaPass ) && item.getItem() instanceof IAlphaPassItem && ( (IAlphaPassItem) item.getItem() ).useAlphaPass( item ) )
-		{
-			GL11.glBlendFunc( GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA );
-			GL11.glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-			GL11.glDisable( GL11.GL_ALPHA_TEST );
-			GL11.glEnable( GL11.GL_BLEND );
-		}
-		else
-		{
-			GL11.glAlphaFunc( GL11.GL_GREATER, 0.4f );
-			GL11.glEnable( GL11.GL_ALPHA_TEST );
-			GL11.glDisable( GL11.GL_BLEND );
-		}
+        if (type == ItemRenderType.INVENTORY) {
+            GL11.glTranslatef(0.0f, -0.1f, 0.0f);
+        }
 
-		if( type == ItemRenderType.EQUIPPED_FIRST_PERSON )
-		{
-			GL11.glTranslatef( -0.2f, -0.1f, -0.3f );
-		}
+        GL11.glTranslated(0.2, 0.3, 0.1);
+        GL11.glScaled(1.2, 1.2, 1.);
 
-		if( type == ItemRenderType.ENTITY )
-		{
-			GL11.glRotatef( 90.0f, 0.0f, 1.0f, 0.0f );
-			GL11.glScalef( 0.8f, 0.8f, 0.8f );
-			GL11.glTranslatef( -0.8f, -0.87f, -0.7f );
-		}
+        GL11.glColor4f(1, 1, 1, 1);
+        Tessellator.instance.setColorOpaque_F(1, 1, 1);
+        Tessellator.instance.setBrightness(14 << 20 | 14 << 4);
 
-		if( type == ItemRenderType.INVENTORY )
-		{
-			GL11.glTranslatef( 0.0f, -0.1f, 0.0f );
-		}
+        BusRenderHelper.INSTANCE.setBounds(0, 0, 0, 1, 1, 1);
+        BusRenderHelper.INSTANCE.setTexture(null);
+        BusRenderHelper.INSTANCE.setInvColor(0xffffff);
+        this.getRenderer().blockAccess = ClientHelper.proxy.getWorld();
 
-		GL11.glTranslated( 0.2, 0.3, 0.1 );
-		GL11.glScaled( 1.2, 1.2, 1. );
+        BusRenderHelper.INSTANCE.setOrientation(
+            ForgeDirection.EAST, ForgeDirection.UP, ForgeDirection.SOUTH
+        );
 
-		GL11.glColor4f( 1, 1, 1, 1 );
-		Tessellator.instance.setColorOpaque_F( 1, 1, 1 );
-		Tessellator.instance.setBrightness( 14 << 20 | 14 << 4 );
+        this.getRenderer().uvRotateBottom = this.getRenderer().uvRotateEast
+            = this.getRenderer().uvRotateNorth = this.getRenderer().uvRotateSouth
+            = this.getRenderer().uvRotateTop = this.getRenderer().uvRotateWest = 0;
+        this.getRenderer().useInventoryTint = false;
+        this.getRenderer().overrideBlockTexture = null;
 
-		BusRenderHelper.INSTANCE.setBounds( 0, 0, 0, 1, 1, 1 );
-		BusRenderHelper.INSTANCE.setTexture( null );
-		BusRenderHelper.INSTANCE.setInvColor( 0xffffff );
-		this.getRenderer().blockAccess = ClientHelper.proxy.getWorld();
+        if (item.getItem() instanceof IFacadeItem) {
+            final IFacadeItem fi = (IFacadeItem) item.getItem();
+            final IFacadePart fp = fi.createPartFromItemStack(item, ForgeDirection.SOUTH);
 
-		BusRenderHelper.INSTANCE.setOrientation( ForgeDirection.EAST, ForgeDirection.UP, ForgeDirection.SOUTH );
+            if (type == ItemRenderType.EQUIPPED_FIRST_PERSON) {
+                GL11.glRotatef(160.0f, 0.0f, 1.0f, 0.0f);
+                GL11.glTranslated(-0.4, 0.1, -1.6);
+            }
 
-		this.getRenderer().uvRotateBottom = this.getRenderer().uvRotateEast = this.getRenderer().uvRotateNorth = this.getRenderer().uvRotateSouth = this.getRenderer().uvRotateTop = this.getRenderer().uvRotateWest = 0;
-		this.getRenderer().useInventoryTint = false;
-		this.getRenderer().overrideBlockTexture = null;
+            if (fp != null) {
+                fp.renderInventory(BusRenderHelper.INSTANCE, this.getRenderer());
+            }
+        } else {
+            final IPart ip = this.getRenderer(item, (IPartItem) item.getItem());
 
-		if( item.getItem() instanceof IFacadeItem )
-		{
-			final IFacadeItem fi = (IFacadeItem) item.getItem();
-			final IFacadePart fp = fi.createPartFromItemStack( item, ForgeDirection.SOUTH );
+            if (ip != null) {
+                if (type == ItemRenderType.ENTITY) {
+                    final int depth = ip.cableConnectionRenderTo();
+                    GL11.glTranslatef(0.0f, 0.0f, -0.04f * (8 - depth) - 0.06f);
+                }
 
-			if( type == ItemRenderType.EQUIPPED_FIRST_PERSON )
-			{
-				GL11.glRotatef( 160.0f, 0.0f, 1.0f, 0.0f );
-				GL11.glTranslated( -0.4, 0.1, -1.6 );
-			}
+                ip.renderInventory(BusRenderHelper.INSTANCE, this.getRenderer());
+            }
+        }
 
-			if( fp != null )
-			{
-				fp.renderInventory( BusRenderHelper.INSTANCE, this.getRenderer() );
-			}
-		}
-		else
-		{
-			final IPart ip = this.getRenderer( item, (IPartItem) item.getItem() );
+        this.getRenderer().uvRotateBottom = this.getRenderer().uvRotateEast
+            = this.getRenderer().uvRotateNorth = this.getRenderer().uvRotateSouth
+            = this.getRenderer().uvRotateTop = this.getRenderer().uvRotateWest = 0;
 
-			if( ip != null )
-			{
-				if( type == ItemRenderType.ENTITY )
-				{
-					final int depth = ip.cableConnectionRenderTo();
-					GL11.glTranslatef( 0.0f, 0.0f, -0.04f * ( 8 - depth ) - 0.06f );
-				}
+        GL11.glPopAttrib();
+        GL11.glPopMatrix();
+    }
 
-				ip.renderInventory( BusRenderHelper.INSTANCE, this.getRenderer() );
-			}
-		}
+    @Nullable
+    private IPart getRenderer(final ItemStack is, final IPartItem c) {
+        final int id = (Item.getIdFromItem(is.getItem()) << Platform.DEF_OFFSET)
+            | is.getItemDamage();
 
-		this.getRenderer().uvRotateBottom = this.getRenderer().uvRotateEast = this.getRenderer().uvRotateNorth = this.getRenderer().uvRotateSouth = this.getRenderer().uvRotateTop = this.getRenderer().uvRotateWest = 0;
+        IPart part = RENDER_PART.get(id);
 
-		GL11.glPopAttrib();
-		GL11.glPopMatrix();
-	}
+        if (part == null) {
+            part = c.createPartFromItemStack(is);
+            if (part != null) {
+                RENDER_PART.put(id, part);
+            }
+        }
 
-	@Nullable
-	private IPart getRenderer( final ItemStack is, final IPartItem c )
-	{
-		final int id = ( Item.getIdFromItem( is.getItem() ) << Platform.DEF_OFFSET ) | is.getItemDamage();
+        return part;
+    }
 
-		IPart part = RENDER_PART.get( id );
-
-		if( part == null )
-		{
-			part = c.createPartFromItemStack( is );
-			if( part != null )
-			{
-				RENDER_PART.put( id, part );
-			}
-		}
-
-		return part;
-	}
-
-	public RenderBlocksWorkaround getRenderer()
-	{
-		return this.renderer;
-	}
+    public RenderBlocksWorkaround getRenderer() {
+        return this.renderer;
+    }
 }

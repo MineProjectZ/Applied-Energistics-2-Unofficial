@@ -18,7 +18,6 @@
 
 package appeng.container.implementations;
 
-
 import appeng.api.config.CondenserOutput;
 import appeng.api.config.Settings;
 import appeng.container.AEBaseContainer;
@@ -30,65 +29,71 @@ import appeng.tile.misc.TileCondenser;
 import appeng.util.Platform;
 import net.minecraft.entity.player.InventoryPlayer;
 
+public class ContainerCondenser extends AEBaseContainer implements IProgressProvider {
+    private final TileCondenser condenser;
+    @GuiSync(0)
+    public long requiredEnergy = 0;
+    @GuiSync(1)
+    public long storedPower = 0;
+    @GuiSync(2)
+    public CondenserOutput output = CondenserOutput.TRASH;
 
-public class ContainerCondenser extends AEBaseContainer implements IProgressProvider
-{
+    public ContainerCondenser(final InventoryPlayer ip, final TileCondenser condenser) {
+        super(ip, condenser, null);
+        this.condenser = condenser;
 
-	private final TileCondenser condenser;
-	@GuiSync( 0 )
-	public long requiredEnergy = 0;
-	@GuiSync( 1 )
-	public long storedPower = 0;
-	@GuiSync( 2 )
-	public CondenserOutput output = CondenserOutput.TRASH;
+        this.addSlotToContainer(new SlotRestrictedInput(
+            SlotRestrictedInput.PlacableItemType.TRASH, condenser, 0, 51, 52, ip
+        ));
+        this.addSlotToContainer(new SlotOutput(condenser, 1, 105, 52, -1));
+        this.addSlotToContainer(
+            (new SlotRestrictedInput(
+                 SlotRestrictedInput.PlacableItemType.STORAGE_COMPONENT,
+                 condenser.getInternalInventory(),
+                 2,
+                 101,
+                 26,
+                 ip
+             ))
+                .setStackLimit(1)
+        );
 
-	public ContainerCondenser( final InventoryPlayer ip, final TileCondenser condenser )
-	{
-		super( ip, condenser, null );
-		this.condenser = condenser;
+        this.bindPlayerInventory(ip, 0, 197 - /* height of player inventory */ 82);
+    }
 
-		this.addSlotToContainer( new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.TRASH, condenser, 0, 51, 52, ip ) );
-		this.addSlotToContainer( new SlotOutput( condenser, 1, 105, 52, -1 ) );
-		this.addSlotToContainer( ( new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.STORAGE_COMPONENT, condenser.getInternalInventory(), 2, 101, 26, ip ) ).setStackLimit( 1 ) );
+    @Override
+    public void detectAndSendChanges() {
+        if (Platform.isServer()) {
+            final double maxStorage = this.condenser.getStorage();
+            final double requiredEnergy = this.condenser.getRequiredPower();
 
-		this.bindPlayerInventory( ip, 0, 197 - /* height of player inventory */82 );
-	}
+            this.requiredEnergy = requiredEnergy == 0
+                ? (int) maxStorage
+                : (int) Math.min(requiredEnergy, maxStorage);
+            this.storedPower = (int) this.condenser.getStoredPower();
+            this.setOutput((CondenserOutput) this.condenser.getConfigManager().getSetting(
+                Settings.CONDENSER_OUTPUT
+            ));
+        }
 
-	@Override
-	public void detectAndSendChanges()
-	{
-		if( Platform.isServer() )
-		{
-			final double maxStorage = this.condenser.getStorage();
-			final double requiredEnergy = this.condenser.getRequiredPower();
+        super.detectAndSendChanges();
+    }
 
-			this.requiredEnergy = requiredEnergy == 0 ? (int) maxStorage : (int) Math.min( requiredEnergy, maxStorage );
-			this.storedPower = (int) this.condenser.getStoredPower();
-			this.setOutput( (CondenserOutput) this.condenser.getConfigManager().getSetting( Settings.CONDENSER_OUTPUT ) );
-		}
+    @Override
+    public int getCurrentProgress() {
+        return (int) this.storedPower;
+    }
 
-		super.detectAndSendChanges();
-	}
+    @Override
+    public int getMaxProgress() {
+        return (int) this.requiredEnergy;
+    }
 
-	@Override
-	public int getCurrentProgress()
-	{
-		return (int) this.storedPower;
-	}
+    public CondenserOutput getOutput() {
+        return this.output;
+    }
 
-	@Override
-	public int getMaxProgress()
-	{
-		return (int) this.requiredEnergy;
-	}
-
-	public CondenserOutput getOutput()
-	{
-		return this.output;
-	}
-
-	private void setOutput( final CondenserOutput output )
-	{
-		this.output = output;
-	}
+    private void setOutput(final CondenserOutput output) {
+        this.output = output;
+    }
 }

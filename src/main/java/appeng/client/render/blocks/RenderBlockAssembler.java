@@ -18,6 +18,7 @@
 
 package appeng.client.render.blocks;
 
+import java.util.EnumSet;
 
 import appeng.api.networking.IGridHost;
 import appeng.api.parts.IBoxProvider;
@@ -43,250 +44,407 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.EnumSet;
+public class RenderBlockAssembler
+    extends BaseBlockRender<BlockMolecularAssembler, TileMolecularAssembler>
+    implements IBoxProvider {
+    public RenderBlockAssembler() {
+        super(false, 20);
+    }
 
+    @Override
+    public void renderInventory(
+        final BlockMolecularAssembler blk,
+        final ItemStack is,
+        final RenderBlocks renderer,
+        final ItemRenderType type,
+        final Object[] obj
+    ) {
+        renderer.setOverrideBlockTexture(blk.getIcon(0, 0));
 
-public class RenderBlockAssembler extends BaseBlockRender<BlockMolecularAssembler, TileMolecularAssembler> implements IBoxProvider
-{
+        this.setInvRenderBounds(renderer, 2, 14, 0, 14, 16, 2);
+        this.renderInvBlock(
+            EnumSet.allOf(ForgeDirection.class),
+            blk,
+            is,
+            Tessellator.instance,
+            0xffffff,
+            renderer
+        );
 
-	public RenderBlockAssembler()
-	{
-		super( false, 20 );
-	}
+        this.setInvRenderBounds(renderer, 0, 14, 2, 2, 16, 14);
+        this.renderInvBlock(
+            EnumSet.allOf(ForgeDirection.class),
+            blk,
+            is,
+            Tessellator.instance,
+            0xffffff,
+            renderer
+        );
 
-	@Override
-	public void renderInventory( final BlockMolecularAssembler blk, final ItemStack is, final RenderBlocks renderer, final ItemRenderType type, final Object[] obj )
-	{
-		renderer.setOverrideBlockTexture( blk.getIcon( 0, 0 ) );
+        this.setInvRenderBounds(renderer, 2, 0, 14, 14, 2, 16);
+        this.renderInvBlock(
+            EnumSet.allOf(ForgeDirection.class),
+            blk,
+            is,
+            Tessellator.instance,
+            0xffffff,
+            renderer
+        );
 
-		this.setInvRenderBounds( renderer, 2, 14, 0, 14, 16, 2 );
-		this.renderInvBlock( EnumSet.allOf( ForgeDirection.class ), blk, is, Tessellator.instance, 0xffffff, renderer );
+        this.setInvRenderBounds(renderer, 14, 0, 2, 16, 2, 14);
+        this.renderInvBlock(
+            EnumSet.allOf(ForgeDirection.class),
+            blk,
+            is,
+            Tessellator.instance,
+            0xffffff,
+            renderer
+        );
 
-		this.setInvRenderBounds( renderer, 0, 14, 2, 2, 16, 14 );
-		this.renderInvBlock( EnumSet.allOf( ForgeDirection.class ), blk, is, Tessellator.instance, 0xffffff, renderer );
+        this.setInvRenderBounds(renderer, 0, 0, 0, 16, 2, 2);
+        this.renderInvBlock(
+            EnumSet.allOf(ForgeDirection.class),
+            blk,
+            is,
+            Tessellator.instance,
+            0xffffff,
+            renderer
+        );
 
-		this.setInvRenderBounds( renderer, 2, 0, 14, 14, 2, 16 );
-		this.renderInvBlock( EnumSet.allOf( ForgeDirection.class ), blk, is, Tessellator.instance, 0xffffff, renderer );
+        this.setInvRenderBounds(renderer, 0, 2, 0, 2, 16, 2);
+        this.renderInvBlock(
+            EnumSet.allOf(ForgeDirection.class),
+            blk,
+            is,
+            Tessellator.instance,
+            0xffffff,
+            renderer
+        );
 
-		this.setInvRenderBounds( renderer, 14, 0, 2, 16, 2, 14 );
-		this.renderInvBlock( EnumSet.allOf( ForgeDirection.class ), blk, is, Tessellator.instance, 0xffffff, renderer );
+        this.setInvRenderBounds(renderer, 0, 0, 2, 2, 2, 16);
+        this.renderInvBlock(
+            EnumSet.allOf(ForgeDirection.class),
+            blk,
+            is,
+            Tessellator.instance,
+            0xffffff,
+            renderer
+        );
 
-		this.setInvRenderBounds( renderer, 0, 0, 0, 16, 2, 2 );
-		this.renderInvBlock( EnumSet.allOf( ForgeDirection.class ), blk, is, Tessellator.instance, 0xffffff, renderer );
+        this.setInvRenderBounds(renderer, 0, 14, 14, 16, 16, 16);
+        this.renderInvBlock(
+            EnumSet.allOf(ForgeDirection.class),
+            blk,
+            is,
+            Tessellator.instance,
+            0xffffff,
+            renderer
+        );
 
-		this.setInvRenderBounds( renderer, 0, 2, 0, 2, 16, 2 );
-		this.renderInvBlock( EnumSet.allOf( ForgeDirection.class ), blk, is, Tessellator.instance, 0xffffff, renderer );
+        this.setInvRenderBounds(renderer, 14, 0, 14, 16, 14, 16);
+        this.renderInvBlock(
+            EnumSet.allOf(ForgeDirection.class),
+            blk,
+            is,
+            Tessellator.instance,
+            0xffffff,
+            renderer
+        );
 
-		this.setInvRenderBounds( renderer, 0, 0, 2, 2, 2, 16 );
-		this.renderInvBlock( EnumSet.allOf( ForgeDirection.class ), blk, is, Tessellator.instance, 0xffffff, renderer );
+        this.setInvRenderBounds(renderer, 14, 14, 0, 16, 16, 14);
+        this.renderInvBlock(
+            EnumSet.allOf(ForgeDirection.class),
+            blk,
+            is,
+            Tessellator.instance,
+            0xffffff,
+            renderer
+        );
 
-		this.setInvRenderBounds( renderer, 0, 14, 14, 16, 16, 16 );
-		this.renderInvBlock( EnumSet.allOf( ForgeDirection.class ), blk, is, Tessellator.instance, 0xffffff, renderer );
+        this.setInvRenderBounds(renderer, 14, 2, 0, 16, 14, 2);
+        this.renderInvBlock(
+            EnumSet.allOf(ForgeDirection.class),
+            blk,
+            is,
+            Tessellator.instance,
+            0xffffff,
+            renderer
+        );
 
-		this.setInvRenderBounds( renderer, 14, 0, 14, 16, 14, 16 );
-		this.renderInvBlock( EnumSet.allOf( ForgeDirection.class ), blk, is, Tessellator.instance, 0xffffff, renderer );
+        this.setInvRenderBounds(renderer, 0, 2, 14, 2, 14, 16);
+        this.renderInvBlock(
+            EnumSet.allOf(ForgeDirection.class),
+            blk,
+            is,
+            Tessellator.instance,
+            0xffffff,
+            renderer
+        );
 
-		this.setInvRenderBounds( renderer, 14, 14, 0, 16, 16, 14 );
-		this.renderInvBlock( EnumSet.allOf( ForgeDirection.class ), blk, is, Tessellator.instance, 0xffffff, renderer );
+        this.setInvRenderBounds(renderer, 1, 1, 1, 15, 15, 15);
+        this.renderInvBlock(
+            EnumSet.allOf(ForgeDirection.class),
+            blk,
+            is,
+            Tessellator.instance,
+            0xffffff,
+            renderer
+        );
 
-		this.setInvRenderBounds( renderer, 14, 2, 0, 16, 14, 2 );
-		this.renderInvBlock( EnumSet.allOf( ForgeDirection.class ), blk, is, Tessellator.instance, 0xffffff, renderer );
+        renderer.setOverrideBlockTexture(null);
+    }
 
-		this.setInvRenderBounds( renderer, 0, 2, 14, 2, 14, 16 );
-		this.renderInvBlock( EnumSet.allOf( ForgeDirection.class ), blk, is, Tessellator.instance, 0xffffff, renderer );
+    @Override
+    public boolean renderInWorld(
+        final BlockMolecularAssembler maBlock,
+        final IBlockAccess world,
+        final int x,
+        final int y,
+        final int z,
+        RenderBlocks renderer
+    ) {
+        final TileMolecularAssembler tma = maBlock.getTileEntity(world, x, y, z);
 
-		this.setInvRenderBounds( renderer, 1, 1, 1, 15, 15, 15 );
-		this.renderInvBlock( EnumSet.allOf( ForgeDirection.class ), blk, is, Tessellator.instance, 0xffffff, renderer );
+        if (BlockMolecularAssembler.isBooleanAlphaPass()) {
+            if (tma.isPowered()) {
+                this.renderBlockBounds(
+                    renderer,
+                    1,
+                    1,
+                    1,
+                    15,
+                    15,
+                    15,
+                    ForgeDirection.WEST,
+                    ForgeDirection.UP,
+                    ForgeDirection.SOUTH
+                );
+                final TaughtIcon lights = new TaughtIcon(
+                    ExtraBlockTextures.BlockMolecularAssemblerLights.getIcon(), -2.0f
+                );
+                Tessellator.instance.setColorRGBA_F(1, 1, 1, 0.3f);
+                Tessellator.instance.setBrightness(14 << 20 | 14 << 4);
+                renderer.renderFaceXNeg(maBlock, x, y, z, lights);
+                renderer.renderFaceXPos(maBlock, x, y, z, lights);
+                renderer.renderFaceYNeg(maBlock, x, y, z, lights);
+                renderer.renderFaceYPos(maBlock, x, y, z, lights);
+                renderer.renderFaceZNeg(maBlock, x, y, z, lights);
+                renderer.renderFaceZPos(maBlock, x, y, z, lights);
+                return true;
+            }
+            return false;
+        }
 
-		renderer.setOverrideBlockTexture( null );
-	}
+        BusRenderer.INSTANCE.getRenderer().blockAccess = renderer.blockAccess;
+        renderer = BusRenderer.INSTANCE.getRenderer();
 
-	@Override
-	public boolean renderInWorld( final BlockMolecularAssembler maBlock, final IBlockAccess world, final int x, final int y, final int z, RenderBlocks renderer )
-	{
-		final TileMolecularAssembler tma = maBlock.getTileEntity( world, x, y, z );
+        this.preRenderInWorld(maBlock, world, x, y, z, renderer);
 
-		if( BlockMolecularAssembler.isBooleanAlphaPass() )
-		{
-			if( tma.isPowered() )
-			{
-				this.renderBlockBounds( renderer, 1, 1, 1, 15, 15, 15, ForgeDirection.WEST, ForgeDirection.UP, ForgeDirection.SOUTH );
-				final TaughtIcon lights = new TaughtIcon( ExtraBlockTextures.BlockMolecularAssemblerLights.getIcon(), -2.0f );
-				Tessellator.instance.setColorRGBA_F( 1, 1, 1, 0.3f );
-				Tessellator.instance.setBrightness( 14 << 20 | 14 << 4 );
-				renderer.renderFaceXNeg( maBlock, x, y, z, lights );
-				renderer.renderFaceXPos( maBlock, x, y, z, lights );
-				renderer.renderFaceYNeg( maBlock, x, y, z, lights );
-				renderer.renderFaceYPos( maBlock, x, y, z, lights );
-				renderer.renderFaceZNeg( maBlock, x, y, z, lights );
-				renderer.renderFaceZPos( maBlock, x, y, z, lights );
-				return true;
-			}
-			return false;
-		}
+        tma.setLightCache(BusRenderHelper.INSTANCE.useSimplifiedRendering(
+            x, y, z, this, tma.getLightCache()
+        ));
 
-		BusRenderer.INSTANCE.getRenderer().blockAccess = renderer.blockAccess;
-		renderer = BusRenderer.INSTANCE.getRenderer();
+        BusRenderer.INSTANCE.getRenderer().setFacade(true);
+        final IOrientable te = this.getOrientable(maBlock, world, x, y, z);
 
-		this.preRenderInWorld( maBlock, world, x, y, z, renderer );
+        final ForgeDirection fdy = te.getUp();
+        final ForgeDirection fdz = te.getForward();
+        final ForgeDirection fdx = Platform.crossProduct(fdz, fdy).getOpposite();
 
-		tma.setLightCache( BusRenderHelper.INSTANCE.useSimplifiedRendering( x, y, z, this, tma.getLightCache() ) );
+        renderer.renderAllFaces = true;
 
-		BusRenderer.INSTANCE.getRenderer().setFacade( true );
-		final IOrientable te = this.getOrientable( maBlock, world, x, y, z );
+        this.renderCableAt(0.11D, world, x, y, z, maBlock, renderer, 0.141D, false);
+        this.renderCableAt(0.188D, world, x, y, z, maBlock, renderer, 0.1875D, true);
 
-		final ForgeDirection fdy = te.getUp();
-		final ForgeDirection fdz = te.getForward();
-		final ForgeDirection fdx = Platform.crossProduct( fdz, fdy ).getOpposite();
+        maBlock.getRendererInstance().setTemporaryRenderIcon(maBlock.getIcon(0, 0));
 
-		renderer.renderAllFaces = true;
+        this.renderBlockBounds(renderer, 2, 14, 0, 14, 16, 2, fdx, fdy, fdz);
+        renderer.renderStandardBlock(maBlock, x, y, z);
 
-		this.renderCableAt( 0.11D, world, x, y, z, maBlock, renderer, 0.141D, false );
-		this.renderCableAt( 0.188D, world, x, y, z, maBlock, renderer, 0.1875D, true );
+        this.renderBlockBounds(renderer, 0, 14, 2, 2, 16, 14, fdx, fdy, fdz);
+        renderer.renderStandardBlock(maBlock, x, y, z);
 
-		maBlock.getRendererInstance().setTemporaryRenderIcon( maBlock.getIcon( 0, 0 ) );
+        this.renderBlockBounds(renderer, 2, 0, 14, 14, 2, 16, fdx, fdy, fdz);
+        renderer.renderStandardBlock(maBlock, x, y, z);
 
-		this.renderBlockBounds( renderer, 2, 14, 0, 14, 16, 2, fdx, fdy, fdz );
-		renderer.renderStandardBlock( maBlock, x, y, z );
+        this.renderBlockBounds(renderer, 14, 0, 2, 16, 2, 14, fdx, fdy, fdz);
+        renderer.renderStandardBlock(maBlock, x, y, z);
 
-		this.renderBlockBounds( renderer, 0, 14, 2, 2, 16, 14, fdx, fdy, fdz );
-		renderer.renderStandardBlock( maBlock, x, y, z );
+        // sides...
+        this.renderBlockBounds(renderer, 0, 0, 0, 16, 2, 2, fdx, fdy, fdz);
+        renderer.renderStandardBlock(maBlock, x, y, z);
 
-		this.renderBlockBounds( renderer, 2, 0, 14, 14, 2, 16, fdx, fdy, fdz );
-		renderer.renderStandardBlock( maBlock, x, y, z );
+        this.renderBlockBounds(renderer, 0, 2, 0, 2, 16, 2, fdx, fdy, fdz);
+        renderer.renderStandardBlock(maBlock, x, y, z);
 
-		this.renderBlockBounds( renderer, 14, 0, 2, 16, 2, 14, fdx, fdy, fdz );
-		renderer.renderStandardBlock( maBlock, x, y, z );
+        this.renderBlockBounds(renderer, 0, 0, 2, 2, 2, 16, fdx, fdy, fdz);
+        renderer.renderStandardBlock(maBlock, x, y, z);
 
-		// sides...
-		this.renderBlockBounds( renderer, 0, 0, 0, 16, 2, 2, fdx, fdy, fdz );
-		renderer.renderStandardBlock( maBlock, x, y, z );
+        this.renderBlockBounds(renderer, 0, 14, 14, 16, 16, 16, fdx, fdy, fdz);
+        renderer.renderStandardBlock(maBlock, x, y, z);
 
-		this.renderBlockBounds( renderer, 0, 2, 0, 2, 16, 2, fdx, fdy, fdz );
-		renderer.renderStandardBlock( maBlock, x, y, z );
+        this.renderBlockBounds(renderer, 14, 0, 14, 16, 14, 16, fdx, fdy, fdz);
+        renderer.renderStandardBlock(maBlock, x, y, z);
 
-		this.renderBlockBounds( renderer, 0, 0, 2, 2, 2, 16, fdx, fdy, fdz );
-		renderer.renderStandardBlock( maBlock, x, y, z );
+        this.renderBlockBounds(renderer, 14, 14, 0, 16, 16, 14, fdx, fdy, fdz);
+        renderer.renderStandardBlock(maBlock, x, y, z);
 
-		this.renderBlockBounds( renderer, 0, 14, 14, 16, 16, 16, fdx, fdy, fdz );
-		renderer.renderStandardBlock( maBlock, x, y, z );
+        this.renderBlockBounds(renderer, 14, 2, 0, 16, 14, 2, fdx, fdy, fdz);
+        renderer.renderStandardBlock(maBlock, x, y, z);
 
-		this.renderBlockBounds( renderer, 14, 0, 14, 16, 14, 16, fdx, fdy, fdz );
-		renderer.renderStandardBlock( maBlock, x, y, z );
+        this.renderBlockBounds(renderer, 0, 2, 14, 2, 14, 16, fdx, fdy, fdz);
+        renderer.renderStandardBlock(maBlock, x, y, z);
 
-		this.renderBlockBounds( renderer, 14, 14, 0, 16, 16, 14, fdx, fdy, fdz );
-		renderer.renderStandardBlock( maBlock, x, y, z );
+        this.renderBlockBounds(renderer, 1, 1, 1, 15, 15, 15, fdx, fdy, fdz);
+        renderer.renderStandardBlock(maBlock, x, y, z);
 
-		this.renderBlockBounds( renderer, 14, 2, 0, 16, 14, 2, fdx, fdy, fdz );
-		renderer.renderStandardBlock( maBlock, x, y, z );
+        BusRenderHelper.INSTANCE.normalRendering();
 
-		this.renderBlockBounds( renderer, 0, 2, 14, 2, 14, 16, fdx, fdy, fdz );
-		renderer.renderStandardBlock( maBlock, x, y, z );
+        maBlock.getRendererInstance().setTemporaryRenderIcon(null);
 
-		this.renderBlockBounds( renderer, 1, 1, 1, 15, 15, 15, fdx, fdy, fdz );
-		renderer.renderStandardBlock( maBlock, x, y, z );
+        renderer.renderAllFaces = false;
+        BusRenderer.INSTANCE.getRenderer().setFacade(false);
 
-		BusRenderHelper.INSTANCE.normalRendering();
+        this.postRenderInWorld(renderer);
 
-		maBlock.getRendererInstance().setTemporaryRenderIcon( null );
+        return true;
+    }
 
-		renderer.renderAllFaces = false;
-		BusRenderer.INSTANCE.getRenderer().setFacade( false );
+    private void renderCableAt(
+        final double thickness,
+        final IBlockAccess world,
+        final int x,
+        final int y,
+        final int z,
+        final BlockMolecularAssembler block,
+        final RenderBlocks renderer,
+        final double pull,
+        final boolean covered
+    ) {
+        IIcon texture = null;
 
-		this.postRenderInWorld( renderer );
+        texture = this.getConnectedCable(world, x, y, z, ForgeDirection.WEST, covered);
+        block.getRendererInstance().setTemporaryRenderIcon(texture);
+        if (texture != null) {
+            renderer.setRenderBounds(
+                0.0D,
+                0.5D - thickness,
+                0.5D - thickness,
+                0.5D - thickness - pull,
+                0.5D + thickness,
+                0.5D + thickness
+            );
+            renderer.renderStandardBlock(block, x, y, z);
+        }
 
-		return true;
-	}
+        texture = this.getConnectedCable(world, x, y, z, ForgeDirection.EAST, covered);
+        block.getRendererInstance().setTemporaryRenderIcon(texture);
+        if (texture != null) {
+            renderer.setRenderBounds(
+                0.5D + thickness + pull,
+                0.5D - thickness,
+                0.5D - thickness,
+                1.0D,
+                0.5D + thickness,
+                0.5D + thickness
+            );
+            renderer.renderStandardBlock(block, x, y, z);
+        }
 
-	private void renderCableAt( final double thickness, final IBlockAccess world, final int x, final int y, final int z, final BlockMolecularAssembler block, final RenderBlocks renderer, final double pull, final boolean covered )
-	{
-		IIcon texture = null;
+        texture = this.getConnectedCable(world, x, y, z, ForgeDirection.NORTH, covered);
+        block.getRendererInstance().setTemporaryRenderIcon(texture);
+        if (texture != null) {
+            renderer.setRenderBounds(
+                0.5D - thickness,
+                0.5D - thickness,
+                0.0D,
+                0.5D + thickness,
+                0.5D + thickness,
+                0.5D - thickness - pull
+            );
+            renderer.renderStandardBlock(block, x, y, z);
+        }
 
-		texture = this.getConnectedCable( world, x, y, z, ForgeDirection.WEST, covered );
-		block.getRendererInstance().setTemporaryRenderIcon( texture );
-		if( texture != null )
-		{
-			renderer.setRenderBounds( 0.0D, 0.5D - thickness, 0.5D - thickness, 0.5D - thickness - pull, 0.5D + thickness, 0.5D + thickness );
-			renderer.renderStandardBlock( block, x, y, z );
-		}
+        texture = this.getConnectedCable(world, x, y, z, ForgeDirection.SOUTH, covered);
+        block.getRendererInstance().setTemporaryRenderIcon(texture);
+        if (texture != null) {
+            renderer.setRenderBounds(
+                0.5D - thickness,
+                0.5D - thickness,
+                0.5D + thickness + pull,
+                0.5D + thickness,
+                0.5D + thickness,
+                1.0D
+            );
+            renderer.renderStandardBlock(block, x, y, z);
+        }
 
-		texture = this.getConnectedCable( world, x, y, z, ForgeDirection.EAST, covered );
-		block.getRendererInstance().setTemporaryRenderIcon( texture );
-		if( texture != null )
-		{
-			renderer.setRenderBounds( 0.5D + thickness + pull, 0.5D - thickness, 0.5D - thickness, 1.0D, 0.5D + thickness, 0.5D + thickness );
-			renderer.renderStandardBlock( block, x, y, z );
-		}
+        texture = this.getConnectedCable(world, x, y, z, ForgeDirection.DOWN, covered);
+        block.getRendererInstance().setTemporaryRenderIcon(texture);
+        if (texture != null) {
+            renderer.setRenderBounds(
+                0.5D - thickness,
+                0.0D,
+                0.5D - thickness,
+                0.5D + thickness,
+                0.5D - thickness - pull,
+                0.5D + thickness
+            );
+            renderer.renderStandardBlock(block, x, y, z);
+        }
 
-		texture = this.getConnectedCable( world, x, y, z, ForgeDirection.NORTH, covered );
-		block.getRendererInstance().setTemporaryRenderIcon( texture );
-		if( texture != null )
-		{
-			renderer.setRenderBounds( 0.5D - thickness, 0.5D - thickness, 0.0D, 0.5D + thickness, 0.5D + thickness, 0.5D - thickness - pull );
-			renderer.renderStandardBlock( block, x, y, z );
-		}
+        texture = this.getConnectedCable(world, x, y, z, ForgeDirection.UP, covered);
+        block.getRendererInstance().setTemporaryRenderIcon(texture);
+        if (texture != null) {
+            renderer.setRenderBounds(
+                0.5D - thickness,
+                0.5D + thickness + pull,
+                0.5D - thickness,
+                0.5D + thickness,
+                1.0D,
+                0.5D + thickness
+            );
+            renderer.renderStandardBlock(block, x, y, z);
+        }
 
-		texture = this.getConnectedCable( world, x, y, z, ForgeDirection.SOUTH, covered );
-		block.getRendererInstance().setTemporaryRenderIcon( texture );
-		if( texture != null )
-		{
-			renderer.setRenderBounds( 0.5D - thickness, 0.5D - thickness, 0.5D + thickness + pull, 0.5D + thickness, 0.5D + thickness, 1.0D );
-			renderer.renderStandardBlock( block, x, y, z );
-		}
+        block.getRendererInstance().setTemporaryRenderIcon(null);
+    }
 
-		texture = this.getConnectedCable( world, x, y, z, ForgeDirection.DOWN, covered );
-		block.getRendererInstance().setTemporaryRenderIcon( texture );
-		if( texture != null )
-		{
-			renderer.setRenderBounds( 0.5D - thickness, 0.0D, 0.5D - thickness, 0.5D + thickness, 0.5D - thickness - pull, 0.5D + thickness );
-			renderer.renderStandardBlock( block, x, y, z );
-		}
+    private IIcon getConnectedCable(
+        final IBlockAccess world,
+        final int x,
+        final int y,
+        final int z,
+        final ForgeDirection side,
+        final boolean covered
+    ) {
+        final int tileYPos = y + side.offsetY;
 
-		texture = this.getConnectedCable( world, x, y, z, ForgeDirection.UP, covered );
-		block.getRendererInstance().setTemporaryRenderIcon( texture );
-		if( texture != null )
-		{
-			renderer.setRenderBounds( 0.5D - thickness, 0.5D + thickness + pull, 0.5D - thickness, 0.5D + thickness, 1.0D, 0.5D + thickness );
-			renderer.renderStandardBlock( block, x, y, z );
-		}
+        if (-1 < tileYPos && tileYPos < 256) {
+            final TileEntity ne
+                = world.getTileEntity(x + side.offsetX, tileYPos, z + side.offsetZ);
+            if (ne instanceof IGridHost && ne instanceof IPartHost) {
+                final IPartHost ph = (IPartHost) ne;
+                final IPart pcx = ph.getPart(ForgeDirection.UNKNOWN);
 
-		block.getRendererInstance().setTemporaryRenderIcon( null );
-	}
+                if (pcx instanceof PartCable) {
+                    final PartCable pc = (PartCable) pcx;
 
-	private IIcon getConnectedCable( final IBlockAccess world, final int x, final int y, final int z, final ForgeDirection side, final boolean covered )
-	{
-		final int tileYPos = y + side.offsetY;
+                    if (pc.isConnected(side.getOpposite())) {
+                        if (covered) {
+                            return pc.getCoveredTexture(pc.getCableColor());
+                        }
+                        return pc.getGlassTexture(pc.getCableColor());
+                    }
+                }
+            }
+        }
 
-		if( -1 < tileYPos && tileYPos < 256 )
-		{
-			final TileEntity ne = world.getTileEntity( x + side.offsetX, tileYPos, z + side.offsetZ );
-			if( ne instanceof IGridHost && ne instanceof IPartHost )
-			{
-				final IPartHost ph = (IPartHost) ne;
-				final IPart pcx = ph.getPart( ForgeDirection.UNKNOWN );
+        return null;
+    }
 
-				if( pcx instanceof PartCable )
-				{
-					final PartCable pc = (PartCable) pcx;
-
-					if( pc.isConnected( side.getOpposite() ) )
-					{
-						if( covered )
-						{
-							return pc.getCoveredTexture( pc.getCableColor() );
-						}
-						return pc.getGlassTexture( pc.getCableColor() );
-					}
-				}
-			}
-		}
-
-		return null;
-	}
-
-	@Override
-	public void getBoxes( final IPartCollisionHelper bch )
-	{
-		bch.addBox( 0, 0, 0, 16, 16, 16 );
-	}
+    @Override
+    public void getBoxes(final IPartCollisionHelper bch) {
+        bch.addBox(0, 0, 0, 16, 16, 16);
+    }
 }

@@ -23,179 +23,175 @@
 
 package appeng.api.storage.data;
 
+import java.io.IOException;
 
 import appeng.api.config.FuzzyMode;
 import appeng.api.storage.StorageChannel;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.nbt.NBTTagCompound;
 
-import java.io.IOException;
+public interface IAEStack<StackType extends IAEStack> {
+    /**
+     * add two stacks together
+     *
+     * @param is added item
+     */
+    void add(StackType is);
 
+    /**
+     * number of items in the stack.
+     *
+     * @return basically ItemStack.stackSize
+     */
+    long getStackSize();
 
-public interface IAEStack<StackType extends IAEStack>
-{
+    /**
+     * changes the number of items in the stack.
+     *
+     * @param stackSize , ItemStack.stackSize = N
+     */
+    StackType setStackSize(long stackSize);
 
-	/**
-	 * add two stacks together
-	 *
-	 * @param is added item
-	 */
-	void add( StackType is );
+    /**
+     * Same as getStackSize, but for requestable items. ( LP )
+     *
+     * @return basically itemStack.stackSize but for requestable items.
+     */
+    long getCountRequestable();
 
-	/**
-	 * number of items in the stack.
-	 *
-	 * @return basically ItemStack.stackSize
-	 */
-	long getStackSize();
+    /**
+     * Same as setStackSize, but for requestable items. ( LP )
+     *
+     * @return basically itemStack.stackSize = N but for setStackSize items.
+     */
+    StackType setCountRequestable(long countRequestable);
 
-	/**
-	 * changes the number of items in the stack.
-	 *
-	 * @param stackSize , ItemStack.stackSize = N
-	 */
-	StackType setStackSize( long stackSize );
+    /**
+     * true, if the item can be crafted.
+     *
+     * @return true, if it can be crafted.
+     */
+    boolean isCraftable();
 
-	/**
-	 * Same as getStackSize, but for requestable items. ( LP )
-	 *
-	 * @return basically itemStack.stackSize but for requestable items.
-	 */
-	long getCountRequestable();
+    /**
+     * change weather the item can be crafted.
+     *
+     * @param isCraftable can item be crafted
+     */
+    StackType setCraftable(boolean isCraftable);
 
-	/**
-	 * Same as setStackSize, but for requestable items. ( LP )
-	 *
-	 * @return basically itemStack.stackSize = N but for setStackSize items.
-	 */
-	StackType setCountRequestable( long countRequestable );
+    /**
+     * clears, requestable, craftable, and stack sizes.
+     */
+    StackType reset();
 
-	/**
-	 * true, if the item can be crafted.
-	 *
-	 * @return true, if it can be crafted.
-	 */
-	boolean isCraftable();
+    /**
+     * returns true, if the item can be crafted, requested, or extracted.
+     *
+     * @return isThisRecordMeaningful
+     */
+    boolean isMeaningful();
 
-	/**
-	 * change weather the item can be crafted.
-	 *
-	 * @param isCraftable can item be crafted
-	 */
-	StackType setCraftable( boolean isCraftable );
+    /**
+     * Adds more to the stack size...
+     *
+     * @param i additional stack size
+     */
+    void incStackSize(long i);
 
-	/**
-	 * clears, requestable, craftable, and stack sizes.
-	 */
-	StackType reset();
+    /**
+     * removes some from the stack size.
+     */
+    void decStackSize(long i);
 
-	/**
-	 * returns true, if the item can be crafted, requested, or extracted.
-	 *
-	 * @return isThisRecordMeaningful
-	 */
-	boolean isMeaningful();
+    /**
+     * adds items to the requestable
+     *
+     * @param i increased amount of requested items
+     */
+    void incCountRequestable(long i);
 
-	/**
-	 * Adds more to the stack size...
-	 *
-	 * @param i additional stack size
-	 */
-	void incStackSize( long i );
+    /**
+     * removes items from the requestable
+     *
+     * @param i decreased amount of requested items
+     */
+    void decCountRequestable(long i);
 
-	/**
-	 * removes some from the stack size.
-	 */
-	void decStackSize( long i );
+    /**
+     * write to a NBTTagCompound.
+     *
+     * @param i to be written data
+     */
+    void writeToNBT(NBTTagCompound i);
 
-	/**
-	 * adds items to the requestable
-	 *
-	 * @param i increased amount of requested items
-	 */
-	void incCountRequestable( long i );
+    /**
+     * Compare stacks using precise logic.
+     * <p>
+     * a IAEItemStack to another AEItemStack or a ItemStack.
+     * <p>
+     * or
+     * <p>
+     * IAEFluidStack, FluidStack
+     *
+     * @param obj compared object
+     * @return true if they are the same.
+     */
+    @Override
+    boolean equals(Object obj);
 
-	/**
-	 * removes items from the requestable
-	 *
-	 * @param i decreased amount of requested items
-	 */
-	void decCountRequestable( long i );
+    /**
+     * compare stacks using fuzzy logic
+     * <p>
+     * a IAEItemStack to another AEItemStack or a ItemStack.
+     *
+     * @param st   stacks
+     * @param mode used fuzzy mode
+     * @return true if two stacks are equal based on AE Fuzzy Comparison.
+     */
+    boolean fuzzyComparison(Object st, FuzzyMode mode);
 
-	/**
-	 * write to a NBTTagCompound.
-	 *
-	 * @param i to be written data
-	 */
-	void writeToNBT( NBTTagCompound i );
+    /**
+     * Slower for disk saving, but smaller/more efficient for packets.
+     *
+     * @param data to be written data
+     * @throws IOException
+     */
+    void writeToPacket(ByteBuf data) throws IOException;
 
-	/**
-	 * Compare stacks using precise logic.
-	 * <p>
-	 * a IAEItemStack to another AEItemStack or a ItemStack.
-	 * <p>
-	 * or
-	 * <p>
-	 * IAEFluidStack, FluidStack
-	 *
-	 * @param obj compared object
-	 * @return true if they are the same.
-	 */
-	@Override
-	boolean equals( Object obj );
+    /**
+     * Clone the Item / Fluid Stack
+     *
+     * @return a new Stack, which is copied from the original.
+     */
+    StackType copy();
 
-	/**
-	 * compare stacks using fuzzy logic
-	 * <p>
-	 * a IAEItemStack to another AEItemStack or a ItemStack.
-	 *
-	 * @param st   stacks
-	 * @param mode used fuzzy mode
-	 * @return true if two stacks are equal based on AE Fuzzy Comparison.
-	 */
-	boolean fuzzyComparison( Object st, FuzzyMode mode );
+    /**
+     * create an empty stack.
+     *
+     * @return a new stack, which represents an empty copy of the original.
+     */
+    StackType empty();
 
-	/**
-	 * Slower for disk saving, but smaller/more efficient for packets.
-	 *
-	 * @param data to be written data
-	 * @throws IOException
-	 */
-	void writeToPacket( ByteBuf data ) throws IOException;
+    /**
+     * obtain the NBT Data for the item.
+     *
+     * @return nbt data
+     */
+    IAETagCompound getTagCompound();
 
-	/**
-	 * Clone the Item / Fluid Stack
-	 *
-	 * @return a new Stack, which is copied from the original.
-	 */
-	StackType copy();
+    /**
+     * @return true if the stack is a {@link IAEItemStack}
+     */
+    boolean isItem();
 
-	/**
-	 * create an empty stack.
-	 *
-	 * @return a new stack, which represents an empty copy of the original.
-	 */
-	StackType empty();
+    /**
+     * @return true if the stack is a {@link IAEFluidStack}
+     */
+    boolean isFluid();
 
-	/**
-	 * obtain the NBT Data for the item.
-	 *
-	 * @return nbt data
-	 */
-	IAETagCompound getTagCompound();
-
-	/**
-	 * @return true if the stack is a {@link IAEItemStack}
-	 */
-	boolean isItem();
-
-	/**
-	 * @return true if the stack is a {@link IAEFluidStack}
-	 */
-	boolean isFluid();
-
-	/**
-	 * @return ITEM or FLUID
-	 */
-	StorageChannel getChannel();
+    /**
+     * @return ITEM or FLUID
+     */
+    StorageChannel getChannel();
 }

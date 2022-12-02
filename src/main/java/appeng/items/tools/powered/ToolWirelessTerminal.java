@@ -18,6 +18,8 @@
 
 package appeng.items.tools.powered;
 
+import java.util.EnumSet;
+import java.util.List;
 
 import appeng.api.AEApi;
 import appeng.api.config.Settings;
@@ -43,114 +45,104 @@ import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.event.ForgeEventFactory;
 
-import java.util.EnumSet;
-import java.util.List;
+public class ToolWirelessTerminal
+    extends AEBasePoweredItem implements IWirelessTermHandler {
+    public ToolWirelessTerminal() {
+        super(AEConfig.instance.wirelessTerminalBattery, Optional.<String>absent());
+        this.setFeature(
+            EnumSet.of(AEFeature.WirelessAccessTerminal, AEFeature.PoweredTools)
+        );
+    }
 
+    @Override
+    public ItemStack
+    onItemRightClick(final ItemStack item, final World w, final EntityPlayer player) {
+        if (ForgeEventFactory.onItemUseStart(player, item, 1) > 0)
+            AEApi.instance().registries().wireless().openWirelessTerminalGui(
+                item, w, player
+            );
+        return item;
+    }
 
-public class ToolWirelessTerminal extends AEBasePoweredItem implements IWirelessTermHandler
-{
+    @SideOnly(Side.CLIENT)
+    @Override
+    public boolean isFull3D() {
+        return false;
+    }
 
-	public ToolWirelessTerminal()
-	{
-		super( AEConfig.instance.wirelessTerminalBattery, Optional.<String>absent() );
-		this.setFeature( EnumSet.of( AEFeature.WirelessAccessTerminal, AEFeature.PoweredTools ) );
-	}
+    @Override
+    public void addCheckedInformation(
+        final ItemStack stack,
+        final EntityPlayer player,
+        final List<String> lines,
+        final boolean displayMoreInfo
+    ) {
+        super.addCheckedInformation(stack, player, lines, displayMoreInfo);
 
-	@Override
-	public ItemStack onItemRightClick( final ItemStack item, final World w, final EntityPlayer player )
-	{
-		if( ForgeEventFactory.onItemUseStart( player, item, 1 ) > 0 )
-			AEApi.instance().registries().wireless().openWirelessTerminalGui( item, w, player );
-		return item;
-	}
+        if (stack.hasTagCompound()) {
+            final NBTTagCompound tag = Platform.openNbtData(stack);
+            if (tag != null) {
+                final String encKey = tag.getString("encryptionKey");
 
-	@SideOnly( Side.CLIENT )
-	@Override
-	public boolean isFull3D()
-	{
-		return false;
-	}
+                if (encKey == null || encKey.isEmpty()) {
+                    lines.add(GuiText.Unlinked.getLocal());
+                } else {
+                    lines.add(GuiText.Linked.getLocal());
+                }
+            }
+        } else {
+            lines.add(StatCollector.translateToLocal("AppEng.GuiITooltip.Unlinked"));
+        }
+    }
 
-	@Override
-	public void addCheckedInformation( final ItemStack stack, final EntityPlayer player, final List<String> lines, final boolean displayMoreInfo )
-	{
-		super.addCheckedInformation( stack, player, lines, displayMoreInfo );
+    @Override
+    public boolean canHandle(final ItemStack is) {
+        return AEApi.instance().definitions().items().wirelessTerminal().isSameAs(is);
+    }
 
-		if( stack.hasTagCompound() )
-		{
-			final NBTTagCompound tag = Platform.openNbtData( stack );
-			if( tag != null )
-			{
-				final String encKey = tag.getString( "encryptionKey" );
+    @Override
+    public boolean
+    usePower(final EntityPlayer player, final double amount, final ItemStack is) {
+        return this.extractAEPower(is, amount) >= amount - 0.5;
+    }
 
-				if( encKey == null || encKey.isEmpty() )
-				{
-					lines.add( GuiText.Unlinked.getLocal() );
-				}
-				else
-				{
-					lines.add( GuiText.Linked.getLocal() );
-				}
-			}
-		}
-		else
-		{
-			lines.add( StatCollector.translateToLocal( "AppEng.GuiITooltip.Unlinked" ) );
-		}
-	}
+    @Override
+    public boolean
+    hasPower(final EntityPlayer player, final double amt, final ItemStack is) {
+        return this.getAECurrentPower(is) >= amt;
+    }
 
-	@Override
-	public boolean canHandle( final ItemStack is )
-	{
-		return AEApi.instance().definitions().items().wirelessTerminal().isSameAs( is );
-	}
+    @Override
+    public IConfigManager getConfigManager(final ItemStack target) {
+        final ConfigManager out = new ConfigManager(new IConfigManagerHost() {
+            @Override
+            public void updateSetting(
+                final IConfigManager manager, final Enum settingName, final Enum newValue
+            ) {
+                final NBTTagCompound data = Platform.openNbtData(target);
+                manager.writeToNBT(data);
+            }
+        });
 
-	@Override
-	public boolean usePower( final EntityPlayer player, final double amount, final ItemStack is )
-	{
-		return this.extractAEPower( is, amount ) >= amount - 0.5;
-	}
+        out.registerSetting(Settings.SORT_BY, SortOrder.NAME);
+        out.registerSetting(Settings.VIEW_MODE, ViewItems.ALL);
+        out.registerSetting(Settings.SORT_DIRECTION, SortDir.ASCENDING);
 
-	@Override
-	public boolean hasPower( final EntityPlayer player, final double amt, final ItemStack is )
-	{
-		return this.getAECurrentPower( is ) >= amt;
-	}
+        out.readFromNBT((NBTTagCompound) Platform.openNbtData(target).copy());
+        return out;
+    }
 
-	@Override
-	public IConfigManager getConfigManager( final ItemStack target )
-	{
-		final ConfigManager out = new ConfigManager( new IConfigManagerHost()
-		{
+    @Override
+    public String getEncryptionKey(final ItemStack item) {
+        final NBTTagCompound tag = Platform.openNbtData(item);
+        return tag.getString("encryptionKey");
+    }
 
-			@Override
-			public void updateSetting( final IConfigManager manager, final Enum settingName, final Enum newValue )
-			{
-				final NBTTagCompound data = Platform.openNbtData( target );
-				manager.writeToNBT( data );
-			}
-		} );
-
-		out.registerSetting( Settings.SORT_BY, SortOrder.NAME );
-		out.registerSetting( Settings.VIEW_MODE, ViewItems.ALL );
-		out.registerSetting( Settings.SORT_DIRECTION, SortDir.ASCENDING );
-
-		out.readFromNBT( (NBTTagCompound) Platform.openNbtData( target ).copy() );
-		return out;
-	}
-
-	@Override
-	public String getEncryptionKey( final ItemStack item )
-	{
-		final NBTTagCompound tag = Platform.openNbtData( item );
-		return tag.getString( "encryptionKey" );
-	}
-
-	@Override
-	public void setEncryptionKey( final ItemStack item, final String encKey, final String name )
-	{
-		final NBTTagCompound tag = Platform.openNbtData( item );
-		tag.setString( "encryptionKey", encKey );
-		tag.setString( "name", name );
-	}
+    @Override
+    public void
+    setEncryptionKey(final ItemStack item, final String encKey, final String name) {
+        final NBTTagCompound tag = Platform.openNbtData(item);
+        tag.setString("encryptionKey", encKey);
+        tag.setString("name", name);
+    }
 }

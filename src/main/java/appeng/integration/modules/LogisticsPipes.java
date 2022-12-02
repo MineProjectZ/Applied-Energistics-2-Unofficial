@@ -18,6 +18,7 @@
 
 package appeng.integration.modules;
 
+import javax.annotation.Nonnull;
 
 import appeng.api.AEApi;
 import appeng.helpers.Reflected;
@@ -25,15 +26,10 @@ import appeng.integration.IIntegrationModule;
 import appeng.integration.IntegrationHelper;
 import appeng.integration.abstraction.ILogisticsPipes;
 import appeng.integration.modules.LPHelpers.LPPipeHandler;
-
 import buildcraft.api.transport.IInjectable;
-
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.ForgeDirection;
-
-import javax.annotation.Nonnull;
-
 
 /**
  * @author Second_Fry
@@ -41,46 +37,46 @@ import javax.annotation.Nonnull;
  * @since rv3 12.06.2015
  */
 @Reflected
-public class LogisticsPipes implements ILogisticsPipes, IIntegrationModule
-{
+public class LogisticsPipes implements ILogisticsPipes, IIntegrationModule {
     @Reflected
     public static LogisticsPipes instance;
 
     @Reflected
-    public LogisticsPipes()
-    {
-        IntegrationHelper.testClassExistence( this, logisticspipes.api.ILPPipe.class );
-        IntegrationHelper.testClassExistence( this, logisticspipes.api.ILPPipeTile.class );
-        IntegrationHelper.testClassExistence( this, logisticspipes.api.IRequestAPI.class );
-        IntegrationHelper.testClassExistence( this, logisticspipes.pipes.basic.CoreRoutedPipe.class );
-        IntegrationHelper.testClassExistence( this, logisticspipes.proxy.SimpleServiceLocator.class );
-        IntegrationHelper.testClassExistence( this, logisticspipes.routing.ExitRoute.class );
-        IntegrationHelper.testClassExistence( this, logisticspipes.utils.AdjacentTile.class );
-        IntegrationHelper.testClassExistence( this, logisticspipes.utils.item.ItemIdentifier.class );
+    public LogisticsPipes() {
+        IntegrationHelper.testClassExistence(this, logisticspipes.api.ILPPipe.class);
+        IntegrationHelper.testClassExistence(this, logisticspipes.api.ILPPipeTile.class);
+        IntegrationHelper.testClassExistence(this, logisticspipes.api.IRequestAPI.class);
+        IntegrationHelper
+            .testClassExistence(this, logisticspipes.pipes.basic.CoreRoutedPipe.class);
+        IntegrationHelper
+            .testClassExistence(this, logisticspipes.proxy.SimpleServiceLocator.class);
+        IntegrationHelper
+            .testClassExistence(this, logisticspipes.routing.ExitRoute.class);
+        IntegrationHelper
+            .testClassExistence(this, logisticspipes.utils.AdjacentTile.class);
+        IntegrationHelper
+            .testClassExistence(this, logisticspipes.utils.item.ItemIdentifier.class);
     }
 
     @Override
-    public void init() throws Throwable
-    {
+    public void init() throws Throwable {}
+
+    @Override
+    public void postInit() {
+        AEApi.instance().registries().externalStorage().addExternalStorageInterface(
+            new LPPipeHandler()
+        );
     }
 
     @Override
-    public void postInit()
-    {
-        AEApi.instance().registries().externalStorage().addExternalStorageInterface( new LPPipeHandler() );
-    }
-
-    @Override
-    public boolean canAddItemsToPipe( final TileEntity te, final ItemStack is, final ForgeDirection direction )
-    {
-        if( is != null && te != null && te instanceof IInjectable )
-        {
+    public boolean canAddItemsToPipe(
+        final TileEntity te, final ItemStack is, final ForgeDirection direction
+    ) {
+        if (is != null && te != null && te instanceof IInjectable) {
             final IInjectable pt = (IInjectable) te;
-            if( pt.canInjectItems( direction ) )
-            {
-                final int amt = pt.injectItem( is, false, direction, null );
-                if( amt == is.stackSize )
-                {
+            if (pt.canInjectItems(direction)) {
+                final int amt = pt.injectItem(is, false, direction, null);
+                if (amt == is.stackSize) {
                     return true;
                 }
             }
@@ -90,17 +86,15 @@ public class LogisticsPipes implements ILogisticsPipes, IIntegrationModule
     }
 
     @Override
-    public boolean addItemsToPipe( final TileEntity te, final ItemStack is, @Nonnull final ForgeDirection direction )
-    {
-        if( is != null && te != null && te instanceof IInjectable )
-        {
+    public boolean addItemsToPipe(
+        final TileEntity te, final ItemStack is, @Nonnull final ForgeDirection direction
+    ) {
+        if (is != null && te != null && te instanceof IInjectable) {
             final IInjectable pt = (IInjectable) te;
-            if( pt.canInjectItems( direction ) )
-            {
-                final int amt = pt.injectItem( is, false, direction, null );
-                if( amt == is.stackSize )
-                {
-                    pt.injectItem( is, true, direction, null );
+            if (pt.canInjectItems(direction)) {
+                final int amt = pt.injectItem(is, false, direction, null);
+                if (amt == is.stackSize) {
+                    pt.injectItem(is, true, direction, null);
                     return true;
                 }
             }

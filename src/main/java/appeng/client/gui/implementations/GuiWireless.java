@@ -18,7 +18,6 @@
 
 package appeng.client.gui.implementations;
 
-
 import appeng.api.config.Settings;
 import appeng.client.gui.AEBaseGui;
 import appeng.client.gui.widgets.GuiImgButton;
@@ -31,65 +30,71 @@ import net.minecraft.client.gui.GuiButton;
 import net.minecraft.entity.player.InventoryPlayer;
 import org.lwjgl.input.Mouse;
 
+public class GuiWireless extends AEBaseGui {
+    private GuiImgButton units;
 
-public class GuiWireless extends AEBaseGui
-{
+    public GuiWireless(final InventoryPlayer inventoryPlayer, final TileWireless te) {
+        super(new ContainerWireless(inventoryPlayer, te));
+        this.ySize = 166;
+    }
 
-	private GuiImgButton units;
+    @Override
+    protected void actionPerformed(final GuiButton btn) {
+        super.actionPerformed(btn);
 
-	public GuiWireless( final InventoryPlayer inventoryPlayer, final TileWireless te )
-	{
-		super( new ContainerWireless( inventoryPlayer, te ) );
-		this.ySize = 166;
-	}
+        final boolean backwards = Mouse.isButtonDown(1);
 
-	@Override
-	protected void actionPerformed( final GuiButton btn )
-	{
-		super.actionPerformed( btn );
+        if (btn == this.units) {
+            AEConfig.instance.nextPowerUnit(backwards);
+            this.units.set(AEConfig.instance.selectedPowerUnit());
+        }
+    }
 
-		final boolean backwards = Mouse.isButtonDown( 1 );
+    @Override
+    public void initGui() {
+        super.initGui();
 
-		if( btn == this.units )
-		{
-			AEConfig.instance.nextPowerUnit( backwards );
-			this.units.set( AEConfig.instance.selectedPowerUnit() );
-		}
-	}
+        this.units = new GuiImgButton(
+            this.guiLeft - 18,
+            this.guiTop + 8,
+            Settings.POWER_UNITS,
+            AEConfig.instance.selectedPowerUnit()
+        );
+        this.buttonList.add(this.units);
+    }
 
-	@Override
-	public void initGui()
-	{
-		super.initGui();
+    @Override
+    public void
+    drawFG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
+        this.fontRendererObj.drawString(
+            this.getGuiDisplayName(GuiText.Wireless.getLocal()), 8, 6, 4210752
+        );
+        this.fontRendererObj.drawString(
+            GuiText.inventory.getLocal(), 8, this.ySize - 96 + 3, 4210752
+        );
 
-		this.units = new GuiImgButton( this.guiLeft - 18, this.guiTop + 8, Settings.POWER_UNITS, AEConfig.instance.selectedPowerUnit() );
-		this.buttonList.add( this.units );
-	}
+        final ContainerWireless cw = (ContainerWireless) this.inventorySlots;
 
-	@Override
-	public void drawFG( final int offsetX, final int offsetY, final int mouseX, final int mouseY )
-	{
-		this.fontRendererObj.drawString( this.getGuiDisplayName( GuiText.Wireless.getLocal() ), 8, 6, 4210752 );
-		this.fontRendererObj.drawString( GuiText.inventory.getLocal(), 8, this.ySize - 96 + 3, 4210752 );
+        if (cw.getRange() > 0) {
+            final String firstMessage
+                = GuiText.Range.getLocal() + ": " + (cw.getRange() / 10.0) + " m";
+            final String secondMessage = GuiText.PowerUsageRate.getLocal() + ": "
+                + Platform.formatPowerLong(cw.getDrain(), true);
 
-		final ContainerWireless cw = (ContainerWireless) this.inventorySlots;
+            final int strWidth = Math.max(
+                this.fontRendererObj.getStringWidth(firstMessage),
+                this.fontRendererObj.getStringWidth(secondMessage)
+            );
+            final int cOffset = (this.xSize / 2) - (strWidth / 2);
+            this.fontRendererObj.drawString(firstMessage, cOffset, 20, 4210752);
+            this.fontRendererObj.drawString(secondMessage, cOffset, 20 + 12, 4210752);
+        }
+    }
 
-		if( cw.getRange() > 0 )
-		{
-			final String firstMessage = GuiText.Range.getLocal() + ": " + ( cw.getRange() / 10.0 ) + " m";
-			final String secondMessage = GuiText.PowerUsageRate.getLocal() + ": " + Platform.formatPowerLong( cw.getDrain(), true );
-
-			final int strWidth = Math.max( this.fontRendererObj.getStringWidth( firstMessage ), this.fontRendererObj.getStringWidth( secondMessage ) );
-			final int cOffset = ( this.xSize / 2 ) - ( strWidth / 2 );
-			this.fontRendererObj.drawString( firstMessage, cOffset, 20, 4210752 );
-			this.fontRendererObj.drawString( secondMessage, cOffset, 20 + 12, 4210752 );
-		}
-	}
-
-	@Override
-	public void drawBG( final int offsetX, final int offsetY, final int mouseX, final int mouseY )
-	{
-		this.bindTexture( "guis/wireless.png" );
-		this.drawTexturedModalRect( offsetX, offsetY, 0, 0, this.xSize, this.ySize );
-	}
+    @Override
+    public void
+    drawBG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
+        this.bindTexture("guis/wireless.png");
+        this.drawTexturedModalRect(offsetX, offsetY, 0, 0, this.xSize, this.ySize);
+    }
 }

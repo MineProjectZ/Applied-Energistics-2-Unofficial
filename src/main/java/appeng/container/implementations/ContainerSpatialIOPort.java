@@ -18,7 +18,6 @@
 
 package appeng.container.implementations;
 
-
 import appeng.api.config.SecurityPermissions;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.energy.IEnergyGrid;
@@ -32,100 +31,98 @@ import appeng.util.Platform;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraftforge.common.util.ForgeDirection;
 
+public class ContainerSpatialIOPort extends AEBaseContainer {
+    @GuiSync(0)
+    public long currentPower;
+    @GuiSync(1)
+    public long maxPower;
+    @GuiSync(2)
+    public long reqPower;
+    @GuiSync(3)
+    public long eff;
+    private IGrid network;
+    private int delay = 40;
 
-public class ContainerSpatialIOPort extends AEBaseContainer
-{
+    public ContainerSpatialIOPort(
+        final InventoryPlayer ip, final TileSpatialIOPort spatialIOPort
+    ) {
+        super(ip, spatialIOPort, null);
 
-	@GuiSync( 0 )
-	public long currentPower;
-	@GuiSync( 1 )
-	public long maxPower;
-	@GuiSync( 2 )
-	public long reqPower;
-	@GuiSync( 3 )
-	public long eff;
-	private IGrid network;
-	private int delay = 40;
+        if (Platform.isServer()) {
+            this.network = spatialIOPort.getGridNode(ForgeDirection.UNKNOWN).getGrid();
+        }
 
-	public ContainerSpatialIOPort( final InventoryPlayer ip, final TileSpatialIOPort spatialIOPort )
-	{
-		super( ip, spatialIOPort, null );
+        this.addSlotToContainer(new SlotRestrictedInput(
+            SlotRestrictedInput.PlacableItemType.SPATIAL_STORAGE_CELLS,
+            spatialIOPort,
+            0,
+            52,
+            48,
+            this.getInventoryPlayer()
+        ));
+        this.addSlotToContainer(new SlotOutput(
+            spatialIOPort,
+            1,
+            113,
+            48,
+            SlotRestrictedInput.PlacableItemType.SPATIAL_STORAGE_CELLS.IIcon
+        ));
 
-		if( Platform.isServer() )
-		{
-			this.network = spatialIOPort.getGridNode( ForgeDirection.UNKNOWN ).getGrid();
-		}
+        this.bindPlayerInventory(ip, 0, 197 - /* height of player inventory */ 82);
+    }
 
-		this.addSlotToContainer( new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.SPATIAL_STORAGE_CELLS, spatialIOPort, 0, 52, 48, this.getInventoryPlayer() ) );
-		this.addSlotToContainer( new SlotOutput( spatialIOPort, 1, 113, 48, SlotRestrictedInput.PlacableItemType.SPATIAL_STORAGE_CELLS.IIcon ) );
+    @Override
+    public void detectAndSendChanges() {
+        this.verifyPermissions(SecurityPermissions.BUILD, false);
 
-		this.bindPlayerInventory( ip, 0, 197 - /* height of player inventory */82 );
-	}
+        if (Platform.isServer()) {
+            this.delay++;
+            if (this.delay > 15 && this.network != null) {
+                this.delay = 0;
 
-	@Override
-	public void detectAndSendChanges()
-	{
-		this.verifyPermissions( SecurityPermissions.BUILD, false );
+                final IEnergyGrid eg = this.network.getCache(IEnergyGrid.class);
+                final ISpatialCache sc = this.network.getCache(ISpatialCache.class);
+                if (eg != null) {
+                    this.setCurrentPower((long) (100.0 * eg.getStoredPower()));
+                    this.setMaxPower((long) (100.0 * eg.getMaxStoredPower()));
+                    this.setRequiredPower((long) (100.0 * sc.requiredPower()));
+                    this.setEfficency((long) (100.0f * sc.currentEfficiency()));
+                }
+            }
+        }
 
-		if( Platform.isServer() )
-		{
-			this.delay++;
-			if( this.delay > 15 && this.network != null )
-			{
-				this.delay = 0;
+        super.detectAndSendChanges();
+    }
 
-				final IEnergyGrid eg = this.network.getCache( IEnergyGrid.class );
-				final ISpatialCache sc = this.network.getCache( ISpatialCache.class );
-				if( eg != null )
-				{
-					this.setCurrentPower( (long) ( 100.0 * eg.getStoredPower() ) );
-					this.setMaxPower( (long) ( 100.0 * eg.getMaxStoredPower() ) );
-					this.setRequiredPower( (long) ( 100.0 * sc.requiredPower() ) );
-					this.setEfficency( (long) ( 100.0f * sc.currentEfficiency() ) );
-				}
-			}
-		}
+    public long getCurrentPower() {
+        return this.currentPower;
+    }
 
-		super.detectAndSendChanges();
-	}
+    private void setCurrentPower(final long currentPower) {
+        this.currentPower = currentPower;
+    }
 
-	public long getCurrentPower()
-	{
-		return this.currentPower;
-	}
+    public long getMaxPower() {
+        return this.maxPower;
+    }
 
-	private void setCurrentPower( final long currentPower )
-	{
-		this.currentPower = currentPower;
-	}
+    private void setMaxPower(final long maxPower) {
+        this.maxPower = maxPower;
+    }
 
-	public long getMaxPower()
-	{
-		return this.maxPower;
-	}
+    public long getRequiredPower() {
+        return this.reqPower;
+    }
 
-	private void setMaxPower( final long maxPower )
-	{
-		this.maxPower = maxPower;
-	}
+    private void setRequiredPower(final long reqPower) {
+        this.reqPower = reqPower;
+    }
 
-	public long getRequiredPower()
-	{
-		return this.reqPower;
-	}
+    public long getEfficency() {
+        return this.eff;
+    }
 
-	private void setRequiredPower( final long reqPower )
-	{
-		this.reqPower = reqPower;
-	}
-
-	public long getEfficency()
-	{
-		return this.eff;
-	}
-
-	private void setEfficency( final long eff )
-	{
-		this.eff = eff;
-	}
+    private void setEfficency(final long eff) {
+        this.eff = eff;
+    }
 }

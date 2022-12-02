@@ -18,7 +18,6 @@
 
 package appeng.core.sync.packets;
 
-
 import appeng.client.render.effects.MatterCannonFX;
 import appeng.core.sync.AppEngPacket;
 import appeng.core.sync.network.INetworkInfo;
@@ -32,75 +31,79 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.world.World;
 
+public class PacketMatterCannon extends AppEngPacket {
+    private final double x;
+    private final double y;
+    private final double z;
+    private final double dx;
+    private final double dy;
+    private final double dz;
+    private final byte len;
 
-public class PacketMatterCannon extends AppEngPacket
-{
+    // automatic.
+    public PacketMatterCannon(final ByteBuf stream) {
+        this.x = stream.readFloat();
+        this.y = stream.readFloat();
+        this.z = stream.readFloat();
+        this.dx = stream.readFloat();
+        this.dy = stream.readFloat();
+        this.dz = stream.readFloat();
+        this.len = stream.readByte();
+    }
 
-	private final double x;
-	private final double y;
-	private final double z;
-	private final double dx;
-	private final double dy;
-	private final double dz;
-	private final byte len;
+    // api
+    public PacketMatterCannon(
+        final double x,
+        final double y,
+        final double z,
+        final float dx,
+        final float dy,
+        final float dz,
+        final byte len
+    ) {
+        final float dl = dx * dx + dy * dy + dz * dz;
+        final float dlz = (float) Math.sqrt(dl);
 
-	// automatic.
-	public PacketMatterCannon( final ByteBuf stream )
-	{
-		this.x = stream.readFloat();
-		this.y = stream.readFloat();
-		this.z = stream.readFloat();
-		this.dx = stream.readFloat();
-		this.dy = stream.readFloat();
-		this.dz = stream.readFloat();
-		this.len = stream.readByte();
-	}
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.dx = dx / dlz;
+        this.dy = dy / dlz;
+        this.dz = dz / dlz;
+        this.len = len;
 
-	// api
-	public PacketMatterCannon( final double x, final double y, final double z, final float dx, final float dy, final float dz, final byte len )
-	{
-		final float dl = dx * dx + dy * dy + dz * dz;
-		final float dlz = (float) Math.sqrt( dl );
+        final ByteBuf data = Unpooled.buffer();
 
-		this.x = x;
-		this.y = y;
-		this.z = z;
-		this.dx = dx / dlz;
-		this.dy = dy / dlz;
-		this.dz = dz / dlz;
-		this.len = len;
+        data.writeInt(this.getPacketID());
+        data.writeFloat((float) x);
+        data.writeFloat((float) y);
+        data.writeFloat((float) z);
+        data.writeFloat((float) this.dx);
+        data.writeFloat((float) this.dy);
+        data.writeFloat((float) this.dz);
+        data.writeByte(len);
 
-		final ByteBuf data = Unpooled.buffer();
+        this.configureWrite(data);
+    }
 
-		data.writeInt( this.getPacketID() );
-		data.writeFloat( (float) x );
-		data.writeFloat( (float) y );
-		data.writeFloat( (float) z );
-		data.writeFloat( (float) this.dx );
-		data.writeFloat( (float) this.dy );
-		data.writeFloat( (float) this.dz );
-		data.writeByte( len );
+    @Override
+    @SideOnly(Side.CLIENT)
+    public void clientPacketData(
+        final INetworkInfo network, final AppEngPacket packet, final EntityPlayer player
+    ) {
+        try {
+            final World world = FMLClientHandler.instance().getClient().theWorld;
+            for (int a = 1; a < this.len; a++) {
+                final MatterCannonFX fx = new MatterCannonFX(
+                    world,
+                    this.x + this.dx * a,
+                    this.y + this.dy * a,
+                    this.z + this.dz * a,
+                    Items.diamond
+                );
 
-		this.configureWrite( data );
-	}
-
-	@Override
-	@SideOnly( Side.CLIENT )
-	public void clientPacketData( final INetworkInfo network, final AppEngPacket packet, final EntityPlayer player )
-	{
-		try
-		{
-
-			final World world = FMLClientHandler.instance().getClient().theWorld;
-			for( int a = 1; a < this.len; a++ )
-			{
-				final MatterCannonFX fx = new MatterCannonFX( world, this.x + this.dx * a, this.y + this.dy * a, this.z + this.dz * a, Items.diamond );
-
-				Minecraft.getMinecraft().effectRenderer.addEffect( fx );
-			}
-		}
-		catch( final Exception ignored )
-		{
-		}
-	}
+                Minecraft.getMinecraft().effectRenderer.addEffect(fx);
+            }
+        } catch (final Exception ignored) {}
+    }
 }
