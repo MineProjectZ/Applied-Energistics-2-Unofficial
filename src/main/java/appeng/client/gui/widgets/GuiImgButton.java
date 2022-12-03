@@ -580,7 +580,7 @@ public class GuiImgButton extends GuiButton implements ITooltip {
                 }
 
                 par1Minecraft.renderEngine.bindTexture(
-                    ExtraBlockTextures.GuiTexture("guis/states.png")
+                    ExtraBlockTextures.guiTexture("guis/states.png")
                 );
                 this.field_146123_n = par2 >= this.xPosition && par3 >= this.yPosition
                     && par2 < this.xPosition + this.width
@@ -602,7 +602,7 @@ public class GuiImgButton extends GuiButton implements ITooltip {
                 }
 
                 par1Minecraft.renderEngine.bindTexture(
-                    ExtraBlockTextures.GuiTexture("guis/states.png")
+                    ExtraBlockTextures.guiTexture("guis/states.png")
                 );
                 this.field_146123_n = par2 >= this.xPosition && par3 >= this.yPosition
                     && par2 < this.xPosition + this.width

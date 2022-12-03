@@ -33,6 +33,7 @@ import appeng.block.legacy.BlockCraftMonitor;
 import appeng.block.legacy.BlockCraftTerminal;
 import appeng.block.legacy.BlockLegacyController;
 import appeng.block.legacy.BlockTerminal;
+import appeng.block.legacy.BlockTransitionPlane;
 import appeng.block.legacy.BlockWirelessAccessPoint;
 import appeng.block.misc.*;
 import appeng.block.networking.*;
@@ -137,6 +138,7 @@ public final class ApiBlocks implements IBlocks {
     private final ITileDefinition craftMonitor;
     private final ITileDefinition legacyController;
     private final ITileDefinition legacyWirelessAccessPoint;
+    private final ITileDefinition transitionPlane;
 
     public ApiBlocks(final DefinitionConstructor constructor) {
         final BlockLightDetector lightDetector = new BlockLightDetector();
@@ -312,6 +314,8 @@ public final class ApiBlocks implements IBlocks {
             = constructor.registerTileDefinition(new BlockLegacyController());
         this.legacyWirelessAccessPoint
             = constructor.registerTileDefinition(new BlockWirelessAccessPoint());
+        this.transitionPlane
+            = constructor.registerTileDefinition(new BlockTransitionPlane());
     }
 
     @Override

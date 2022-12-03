@@ -80,7 +80,7 @@ public class GuiTabButton extends GuiButton implements ITooltip {
         if (this.visible) {
             GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
             minecraft.renderEngine.bindTexture(
-                ExtraBlockTextures.GuiTexture("guis/states.png")
+                ExtraBlockTextures.guiTexture("guis/states.png")
             );
             this.field_146123_n = x >= this.xPosition && y >= this.yPosition
                 && x < this.xPosition + this.width && y < this.yPosition + this.height;

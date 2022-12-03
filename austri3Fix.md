@@ -1,0 +1,2 @@
+- we demultiblocked the transition plane
+- transition plane doesn't collect items
