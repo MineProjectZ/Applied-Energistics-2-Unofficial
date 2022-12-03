@@ -18,6 +18,7 @@
 
 package appeng.block.misc;
 
+import java.util.EnumSet;
 
 import appeng.block.AEBaseTileBlock;
 import appeng.core.features.AEFeature;
@@ -29,37 +30,42 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.EnumSet;
+public class BlockCellWorkbench extends AEBaseTileBlock {
+    public BlockCellWorkbench() {
+        super(Material.iron);
 
+        this.setTileEntity(TileCellWorkbench.class);
+        this.setFeature(EnumSet.of(AEFeature.StorageCells));
+    }
 
-public class BlockCellWorkbench extends AEBaseTileBlock
-{
+    @Override
+    public boolean onActivated(
+        final World w,
+        final int x,
+        final int y,
+        final int z,
+        final EntityPlayer p,
+        final int side,
+        final float hitX,
+        final float hitY,
+        final float hitZ
+    ) {
+        if (p.isSneaking()) {
+            return false;
+        }
 
-	public BlockCellWorkbench()
-	{
-		super( Material.iron );
-
-		this.setTileEntity( TileCellWorkbench.class );
-		this.setFeature( EnumSet.of( AEFeature.StorageCells ) );
-	}
-
-	@Override
-	public boolean onActivated( final World w, final int x, final int y, final int z, final EntityPlayer p, final int side, final float hitX, final float hitY, final float hitZ )
-	{
-		if( p.isSneaking() )
-		{
-			return false;
-		}
-
-		final TileCellWorkbench tg = this.getTileEntity( w, x, y, z );
-		if( tg != null )
-		{
-			if( Platform.isServer() )
-			{
-				Platform.openGUI( p, tg, ForgeDirection.getOrientation( side ), GuiBridge.GUI_CELL_WORKBENCH );
-			}
-			return true;
-		}
-		return false;
-	}
+        final TileCellWorkbench tg = this.getTileEntity(w, x, y, z);
+        if (tg != null) {
+            if (Platform.isServer()) {
+                Platform.openGUI(
+                    p,
+                    tg,
+                    ForgeDirection.getOrientation(side),
+                    GuiBridge.GUI_CELL_WORKBENCH
+                );
+            }
+            return true;
+        }
+        return false;
+    }
 }

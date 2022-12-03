@@ -18,6 +18,7 @@
 
 package appeng.util;
 
+import java.util.ArrayList;
 
 import appeng.api.config.FuzzyMode;
 import appeng.integration.IntegrationRegistry;
@@ -31,75 +32,73 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntityChest;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.ArrayList;
+public abstract class InventoryAdaptor implements Iterable<ItemSlot> {
+    // returns an appropriate adaptor, or null
+    public static InventoryAdaptor getAdaptor(final Object te, final ForgeDirection d) {
+        if (te == null) {
+            return null;
+        }
 
+        final IBetterStorage bs = (IBetterStorage
+        ) (IntegrationRegistry.INSTANCE.isEnabled(IntegrationType.BetterStorage)
+               ? IntegrationRegistry.INSTANCE.getInstance(IntegrationType.BetterStorage)
+               : null);
 
-public abstract class InventoryAdaptor implements Iterable<ItemSlot>
-{
+        if (te instanceof EntityPlayer) {
+            return new AdaptorIInventory(
+                new AdaptorPlayerInventory(((EntityPlayer) te).inventory, false)
+            );
+        } else if (te instanceof ArrayList) {
+            @SuppressWarnings("unchecked")
+            final ArrayList<ItemStack> list = (ArrayList<ItemStack>) te;
 
-	// returns an appropriate adaptor, or null
-	public static InventoryAdaptor getAdaptor( final Object te, final ForgeDirection d )
-	{
-		if( te == null )
-		{
-			return null;
-		}
+            return new AdaptorList(list);
+        } else if (bs != null && bs.isStorageCrate(te)) {
+            return bs.getAdaptor(te, d);
+        } else if (te instanceof TileEntityChest) {
+            return new AdaptorIInventory(Platform.GetChestInv(te));
+        } else if (te instanceof ISidedInventory) {
+            final ISidedInventory si = (ISidedInventory) te;
+            final int[] slots = si.getAccessibleSlotsFromSide(d.ordinal());
+            if (si.getSizeInventory() > 0 && slots != null && slots.length > 0) {
+                return new AdaptorIInventory(new WrapperMCISidedInventory(si, d));
+            }
+        } else if (te instanceof IInventory) {
+            final IInventory i = (IInventory) te;
+            if (i.getSizeInventory() > 0) {
+                return new AdaptorIInventory(i);
+            }
+        }
 
-		final IBetterStorage bs = (IBetterStorage) ( IntegrationRegistry.INSTANCE.isEnabled( IntegrationType.BetterStorage ) ? IntegrationRegistry.INSTANCE.getInstance( IntegrationType.BetterStorage ) : null );
+        return null;
+    }
 
-		if( te instanceof EntityPlayer )
-		{
-			return new AdaptorIInventory( new AdaptorPlayerInventory( ( (EntityPlayer) te ).inventory, false ) );
-		}
-		else if( te instanceof ArrayList )
-		{
-			@SuppressWarnings( "unchecked" )            final ArrayList<ItemStack> list = (ArrayList<ItemStack>) te;
+    // return what was extracted.
+    public abstract ItemStack
+    removeItems(int amount, ItemStack filter, IInventoryDestination destination);
 
-			return new AdaptorList( list );
-		}
-		else if( bs != null && bs.isStorageCrate( te ) )
-		{
-			return bs.getAdaptor( te, d );
-		}
-		else if( te instanceof TileEntityChest )
-		{
-			return new AdaptorIInventory( Platform.GetChestInv( te ) );
-		}
-		else if( te instanceof ISidedInventory )
-		{
-			final ISidedInventory si = (ISidedInventory) te;
-			final int[] slots = si.getAccessibleSlotsFromSide( d.ordinal() );
-			if( si.getSizeInventory() > 0 && slots != null && slots.length > 0 )
-			{
-				return new AdaptorIInventory( new WrapperMCISidedInventory( si, d ) );
-			}
-		}
-		else if( te instanceof IInventory )
-		{
-			final IInventory i = (IInventory) te;
-			if( i.getSizeInventory() > 0 )
-			{
-				return new AdaptorIInventory( i );
-			}
-		}
+    public abstract ItemStack
+    simulateRemove(int amount, ItemStack filter, IInventoryDestination destination);
 
-		return null;
-	}
+    // return what was extracted.
+    public abstract ItemStack removeSimilarItems(
+        int amount,
+        ItemStack filter,
+        FuzzyMode fuzzyMode,
+        IInventoryDestination destination
+    );
 
-	// return what was extracted.
-	public abstract ItemStack removeItems( int amount, ItemStack filter, IInventoryDestination destination );
+    public abstract ItemStack simulateSimilarRemove(
+        int amount,
+        ItemStack filter,
+        FuzzyMode fuzzyMode,
+        IInventoryDestination destination
+    );
 
-	public abstract ItemStack simulateRemove( int amount, ItemStack filter, IInventoryDestination destination );
+    // return what isn't used...
+    public abstract ItemStack addItems(ItemStack toBeAdded);
 
-	// return what was extracted.
-	public abstract ItemStack removeSimilarItems( int amount, ItemStack filter, FuzzyMode fuzzyMode, IInventoryDestination destination );
+    public abstract ItemStack simulateAdd(ItemStack toBeSimulated);
 
-	public abstract ItemStack simulateSimilarRemove( int amount, ItemStack filter, FuzzyMode fuzzyMode, IInventoryDestination destination );
-
-	// return what isn't used...
-	public abstract ItemStack addItems( ItemStack toBeAdded );
-
-	public abstract ItemStack simulateAdd( ItemStack toBeSimulated );
-
-	public abstract boolean containsItems();
+    public abstract boolean containsItems();
 }

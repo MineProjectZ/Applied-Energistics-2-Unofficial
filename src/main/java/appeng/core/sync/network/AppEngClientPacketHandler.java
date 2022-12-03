@@ -18,6 +18,7 @@
 
 package appeng.core.sync.network;
 
+import java.lang.reflect.InvocationTargetException;
 
 import appeng.core.AELog;
 import appeng.core.sync.AppEngPacket;
@@ -27,40 +28,29 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 
-import java.lang.reflect.InvocationTargetException;
+public class AppEngClientPacketHandler
+    extends AppEngPacketHandlerBase implements IPacketHandler {
+    @Override
+    public void onPacketData(
+        final INetworkInfo network, final FMLProxyPacket packet, EntityPlayer player
+    ) {
+        final ByteBuf stream = packet.payload();
 
+        player = Minecraft.getMinecraft().thePlayer;
 
-public class AppEngClientPacketHandler extends AppEngPacketHandlerBase implements IPacketHandler
-{
-
-	@Override
-	public void onPacketData( final INetworkInfo network, final FMLProxyPacket packet, EntityPlayer player )
-	{
-		final ByteBuf stream = packet.payload();
-
-		player = Minecraft.getMinecraft().thePlayer;
-
-		try
-		{
-			final int packetType = stream.readInt();
-			final AppEngPacket pack = PacketTypes.getPacket( packetType ).parsePacket( stream );
-			pack.clientPacketData( network, pack, player );
-		}
-		catch( final InstantiationException e )
-		{
-			AELog.debug( e );
-		}
-		catch( final IllegalAccessException e )
-		{
-			AELog.debug( e );
-		}
-		catch( final IllegalArgumentException e )
-		{
-			AELog.debug( e );
-		}
-		catch( final InvocationTargetException e )
-		{
-			AELog.debug( e );
-		}
-	}
+        try {
+            final int packetType = stream.readInt();
+            final AppEngPacket pack
+                = PacketTypes.getPacket(packetType).parsePacket(stream);
+            pack.clientPacketData(network, pack, player);
+        } catch (final InstantiationException e) {
+            AELog.debug(e);
+        } catch (final IllegalAccessException e) {
+            AELog.debug(e);
+        } catch (final IllegalArgumentException e) {
+            AELog.debug(e);
+        } catch (final InvocationTargetException e) {
+            AELog.debug(e);
+        }
+    }
 }

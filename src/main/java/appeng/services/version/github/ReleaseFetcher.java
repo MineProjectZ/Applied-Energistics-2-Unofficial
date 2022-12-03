@@ -18,6 +18,12 @@
 
 package appeng.services.version.github;
 
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.List;
+import javax.annotation.Nonnull;
 
 import appeng.core.AELog;
 import appeng.services.version.Channel;
@@ -29,91 +35,72 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.io.IOUtils;
 
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.List;
+public final class ReleaseFetcher {
+    private static final String GITHUB_RELEASES_URL
+        = "https://api.github.com/repos/xsun2001/Applied-Energistics-2-Unofficial/releases";
+    private static final FormattedRelease EXCEPTIONAL_RELEASE
+        = new MissingFormattedRelease();
 
+    @Nonnull
+    private final VersionCheckerConfig config;
+    @Nonnull
+    private final VersionParser parser;
 
-public final class ReleaseFetcher
-{
-	private static final String GITHUB_RELEASES_URL = "https://api.github.com/repos/xsun2001/Applied-Energistics-2-Unofficial/releases";
-	private static final FormattedRelease EXCEPTIONAL_RELEASE = new MissingFormattedRelease();
+    public ReleaseFetcher(
+        @Nonnull final VersionCheckerConfig config, @Nonnull final VersionParser parser
+    ) {
+        this.config = config;
+        this.parser = parser;
+    }
 
-	@Nonnull
-	private final VersionCheckerConfig config;
-	@Nonnull
-	private final VersionParser parser;
+    public FormattedRelease get() {
+        final Gson gson = new Gson();
+        final Type type = new ReleasesTypeToken().getType();
 
-	public ReleaseFetcher( @Nonnull final VersionCheckerConfig config, @Nonnull final VersionParser parser )
-	{
-		this.config = config;
-		this.parser = parser;
-	}
+        try {
+            final URL releasesURL = new URL(GITHUB_RELEASES_URL);
+            final String rawReleases = this.getRawReleases(releasesURL);
 
-	public FormattedRelease get()
-	{
-		final Gson gson = new Gson();
-		final Type type = new ReleasesTypeToken().getType();
+            this.config.updateLastCheck();
 
-		try
-		{
-			final URL releasesURL = new URL( GITHUB_RELEASES_URL );
-			final String rawReleases = this.getRawReleases( releasesURL );
+            final List<Release> releases = gson.fromJson(rawReleases, type);
+            final FormattedRelease latestFitRelease = this.getLatestFitRelease(releases);
 
-			this.config.updateLastCheck();
+            return latestFitRelease;
+        } catch (final VersionCheckerException e) {
+            AELog.debug(e);
+        } catch (MalformedURLException e) {
+            AELog.debug(e);
+        } catch (IOException e) {
+            AELog.debug(e);
+        }
 
-			final List<Release> releases = gson.fromJson( rawReleases, type );
-			final FormattedRelease latestFitRelease = this.getLatestFitRelease( releases );
+        return EXCEPTIONAL_RELEASE;
+    }
 
-			return latestFitRelease;
-		}
-		catch( final VersionCheckerException e )
-		{
-			AELog.debug( e );
-		}
-		catch( MalformedURLException e )
-		{
-			AELog.debug( e );
-		}
-		catch( IOException e )
-		{
-			AELog.debug( e );
-		}
+    private String getRawReleases(final URL url) throws IOException {
+        return IOUtils.toString(url);
+    }
 
-		return EXCEPTIONAL_RELEASE;
-	}
+    private FormattedRelease getLatestFitRelease(final Iterable<Release> releases)
+        throws VersionCheckerException {
+        final String levelInConfig = this.config.level();
+        final Channel level = Channel.valueOf(levelInConfig);
+        final int levelOrdinal = level.ordinal();
 
-	private String getRawReleases( final URL url ) throws IOException
-	{
-		return IOUtils.toString( url );
-	}
+        for (final Release release : releases) {
+            final String rawVersion = release.tag_name;
+            final String changelog = release.body;
 
-	private FormattedRelease getLatestFitRelease( final Iterable<Release> releases ) throws VersionCheckerException
-	{
-		final String levelInConfig = this.config.level();
-		final Channel level = Channel.valueOf( levelInConfig );
-		final int levelOrdinal = level.ordinal();
+            final Version version = this.parser.parse(rawVersion);
 
-		for( final Release release : releases )
-		{
-			final String rawVersion = release.tag_name;
-			final String changelog = release.body;
+            if (version.channel().ordinal() >= levelOrdinal) {
+                return new DefaultFormattedRelease(version, changelog);
+            }
+        }
 
-			final Version version = this.parser.parse( rawVersion );
+        return EXCEPTIONAL_RELEASE;
+    }
 
-			if( version.channel().ordinal() >= levelOrdinal )
-			{
-				return new DefaultFormattedRelease( version, changelog );
-			}
-		}
-
-		return EXCEPTIONAL_RELEASE;
-	}
-
-	private static final class ReleasesTypeToken extends TypeToken<List<Release>>
-	{
-	}
+    private static final class ReleasesTypeToken extends TypeToken<List<Release>> {}
 }

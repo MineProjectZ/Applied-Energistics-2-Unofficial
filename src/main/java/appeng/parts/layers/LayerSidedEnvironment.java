@@ -18,6 +18,7 @@
 
 package appeng.parts.layers;
 
+import javax.annotation.Nullable;
 
 import appeng.api.parts.IPart;
 import appeng.api.parts.LayerBase;
@@ -28,35 +29,27 @@ import li.cil.oc.api.network.Node;
 import li.cil.oc.api.network.SidedEnvironment;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import javax.annotation.Nullable;
-
-
 /**
  * Reflected in {@link Registration#initialize(FMLInitializationEvent)}
  */
 @Reflected
-public class LayerSidedEnvironment extends LayerBase implements SidedEnvironment
-{
-	@Nullable
-	@Override
-	public Node sidedNode( final ForgeDirection side )
-	{
-		final IPart part = this.getPart( side );
-		if( part instanceof SidedEnvironment )
-		{
-			return ( (SidedEnvironment) part ).sidedNode( side );
-		}
-		return null;
-	}
+public class LayerSidedEnvironment extends LayerBase implements SidedEnvironment {
+    @Nullable
+    @Override
+    public Node sidedNode(final ForgeDirection side) {
+        final IPart part = this.getPart(side);
+        if (part instanceof SidedEnvironment) {
+            return ((SidedEnvironment) part).sidedNode(side);
+        }
+        return null;
+    }
 
-	@Override
-	public boolean canConnect( final ForgeDirection side )
-	{
-		final IPart part = this.getPart( side );
-		if( part instanceof SidedEnvironment )
-		{
-			return ( (SidedEnvironment) part ).canConnect( side );
-		}
-		return false;
-	}
+    @Override
+    public boolean canConnect(final ForgeDirection side) {
+        final IPart part = this.getPart(side);
+        if (part instanceof SidedEnvironment) {
+            return ((SidedEnvironment) part).canConnect(side);
+        }
+        return false;
+    }
 }

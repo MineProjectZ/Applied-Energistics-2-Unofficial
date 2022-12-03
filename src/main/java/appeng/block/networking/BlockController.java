@@ -18,6 +18,7 @@
 
 package appeng.block.networking;
 
+import java.util.EnumSet;
 
 import appeng.block.AEBaseTileBlock;
 import appeng.client.render.blocks.RenderBlockController;
@@ -29,34 +30,27 @@ import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.world.World;
 
-import java.util.EnumSet;
+public class BlockController extends AEBaseTileBlock {
+    public BlockController() {
+        super(Material.iron);
+        this.setTileEntity(TileController.class);
+        this.setHardness(6);
+        this.setFeature(EnumSet.of(AEFeature.Core));
+    }
 
+    @Override
+    public void onNeighborBlockChange(
+        final World w, final int x, final int y, final int z, final Block neighborBlock
+    ) {
+        final TileController tc = this.getTileEntity(w, x, y, z);
+        if (tc != null) {
+            tc.onNeighborChange(false);
+        }
+    }
 
-public class BlockController extends AEBaseTileBlock
-{
-
-	public BlockController()
-	{
-		super( Material.iron );
-		this.setTileEntity( TileController.class );
-		this.setHardness( 6 );
-		this.setFeature( EnumSet.of( AEFeature.Core ) );
-	}
-
-	@Override
-	public void onNeighborBlockChange( final World w, final int x, final int y, final int z, final Block neighborBlock )
-	{
-		final TileController tc = this.getTileEntity( w, x, y, z );
-		if( tc != null )
-		{
-			tc.onNeighborChange( false );
-		}
-	}
-
-	@Override
-	@SideOnly( Side.CLIENT )
-	protected RenderBlockController getRenderer()
-	{
-		return new RenderBlockController();
-	}
+    @Override
+    @SideOnly(Side.CLIENT)
+    protected RenderBlockController getRenderer() {
+        return new RenderBlockController();
+    }
 }

@@ -18,7 +18,6 @@
 
 package appeng.integration.modules.helpers;
 
-
 import appeng.api.config.Actionable;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.storage.IMEInventory;
@@ -30,146 +29,123 @@ import appeng.util.item.AEItemStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 
+public class FactorizationBarrel implements IMEInventory<IAEItemStack> {
+    private final IFZ fProxy;
+    private final TileEntity te;
 
-public class FactorizationBarrel implements IMEInventory<IAEItemStack>
-{
+    public FactorizationBarrel(final IFZ proxy, final TileEntity tile) {
+        this.te = tile;
+        this.fProxy = proxy;
+    }
 
-	private final IFZ fProxy;
-	private final TileEntity te;
+    public long remainingItemCount() {
+        return this.fProxy.barrelGetMaxItemCount(this.te)
+            - this.fProxy.barrelGetItemCount(this.te);
+    }
 
-	public FactorizationBarrel( final IFZ proxy, final TileEntity tile )
-	{
-		this.te = tile;
-		this.fProxy = proxy;
-	}
+    @Override
+    public IAEItemStack injectItems(
+        final IAEItemStack input, final Actionable mode, final BaseActionSource src
+    ) {
+        if (input == null) {
+            return null;
+        }
+        if (input.getStackSize() == 0) {
+            return null;
+        }
 
-	public long remainingItemCount()
-	{
-		return this.fProxy.barrelGetMaxItemCount( this.te ) - this.fProxy.barrelGetItemCount( this.te );
-	}
+        final ItemStack shared = input.getItemStack();
+        if (shared.isItemDamaged()) {
+            return input;
+        }
 
-	@Override
-	public IAEItemStack injectItems( final IAEItemStack input, final Actionable mode, final BaseActionSource src )
-	{
-		if( input == null )
-		{
-			return null;
-		}
-		if( input.getStackSize() == 0 )
-		{
-			return null;
-		}
+        if (this.remainingItemTypes() > 0) {
+            if (mode == Actionable.MODULATE) {
+                this.fProxy.setItemType(this.te, input.getItemStack());
+            }
+        }
 
-		final ItemStack shared = input.getItemStack();
-		if( shared.isItemDamaged() )
-		{
-			return input;
-		}
+        if (this.containsItemType(input, mode == Actionable.SIMULATE)) {
+            final int max = this.fProxy.barrelGetMaxItemCount(this.te);
+            final int newTotal
+                = (int) this.storedItemCount() + (int) input.getStackSize();
+            if (newTotal > max) {
+                if (mode == Actionable.MODULATE) {
+                    this.fProxy.barrelSetCount(this.te, max);
+                }
+                final IAEItemStack result = input.copy();
+                result.setStackSize(newTotal - max);
+                return result;
+            } else {
+                if (mode == Actionable.MODULATE) {
+                    this.fProxy.barrelSetCount(this.te, newTotal);
+                }
+                return null;
+            }
+        }
 
-		if( this.remainingItemTypes() > 0 )
-		{
-			if( mode == Actionable.MODULATE )
-			{
-				this.fProxy.setItemType( this.te, input.getItemStack() );
-			}
-		}
+        return input;
+    }
 
-		if( this.containsItemType( input, mode == Actionable.SIMULATE ) )
-		{
-			final int max = this.fProxy.barrelGetMaxItemCount( this.te );
-			final int newTotal = (int) this.storedItemCount() + (int) input.getStackSize();
-			if( newTotal > max )
-			{
-				if( mode == Actionable.MODULATE )
-				{
-					this.fProxy.barrelSetCount( this.te, max );
-				}
-				final IAEItemStack result = input.copy();
-				result.setStackSize( newTotal - max );
-				return result;
-			}
-			else
-			{
-				if( mode == Actionable.MODULATE )
-				{
-					this.fProxy.barrelSetCount( this.te, newTotal );
-				}
-				return null;
-			}
-		}
+    private long remainingItemTypes() {
+        return this.fProxy.barrelGetItem(this.te) == null ? 1 : 0;
+    }
 
-		return input;
-	}
+    private boolean containsItemType(final IAEItemStack i, final boolean acceptEmpty) {
+        final ItemStack currentItem = this.fProxy.barrelGetItem(this.te);
 
-	private long remainingItemTypes()
-	{
-		return this.fProxy.barrelGetItem( this.te ) == null ? 1 : 0;
-	}
+        // empty barrels want your love too!
+        if (acceptEmpty && currentItem == null) {
+            return true;
+        }
 
-	private boolean containsItemType( final IAEItemStack i, final boolean acceptEmpty )
-	{
-		final ItemStack currentItem = this.fProxy.barrelGetItem( this.te );
+        return i.equals(currentItem);
+    }
 
-		// empty barrels want your love too!
-		if( acceptEmpty && currentItem == null )
-		{
-			return true;
-		}
+    private long storedItemCount() {
+        return this.fProxy.barrelGetItemCount(this.te);
+    }
 
-		return i.equals( currentItem );
-	}
+    @Override
+    public IAEItemStack extractItems(
+        final IAEItemStack request, final Actionable mode, final BaseActionSource src
+    ) {
+        if (this.containsItemType(request, false)) {
+            final int howMany = (int) this.storedItemCount();
+            if (request.getStackSize() >= howMany) {
+                if (mode == Actionable.MODULATE) {
+                    this.fProxy.setItemType(this.te, null);
+                    this.fProxy.barrelSetCount(this.te, 0);
+                }
 
-	private long storedItemCount()
-	{
-		return this.fProxy.barrelGetItemCount( this.te );
-	}
+                final IAEItemStack r = request.copy();
+                r.setStackSize(howMany);
+                return r;
+            } else {
+                if (mode == Actionable.MODULATE) {
+                    this.fProxy.barrelSetCount(
+                        this.te, (int) (howMany - request.getStackSize())
+                    );
+                }
+                return request.copy();
+            }
+        }
+        return null;
+    }
 
-	@Override
-	public IAEItemStack extractItems( final IAEItemStack request, final Actionable mode, final BaseActionSource src )
-	{
-		if( this.containsItemType( request, false ) )
-		{
-			final int howMany = (int) this.storedItemCount();
-			if( request.getStackSize() >= howMany )
-			{
-				if( mode == Actionable.MODULATE )
-				{
-					this.fProxy.setItemType( this.te, null );
-					this.fProxy.barrelSetCount( this.te, 0 );
-				}
+    @Override
+    public IItemList<IAEItemStack> getAvailableItems(final IItemList out) {
+        final ItemStack i = this.fProxy.barrelGetItem(this.te);
+        if (i != null) {
+            i.stackSize = this.fProxy.barrelGetItemCount(this.te);
+            out.addStorage(AEItemStack.create(i));
+        }
 
-				final IAEItemStack r = request.copy();
-				r.setStackSize( howMany );
-				return r;
-			}
-			else
-			{
-				if( mode == Actionable.MODULATE )
-				{
-					this.fProxy.barrelSetCount( this.te, (int) ( howMany - request.getStackSize() ) );
-				}
-				return request.copy();
-			}
-		}
-		return null;
-	}
+        return out;
+    }
 
-	@Override
-	public IItemList<IAEItemStack> getAvailableItems( final IItemList out )
-	{
-		final ItemStack i = this.fProxy.barrelGetItem( this.te );
-		if( i != null )
-		{
-			i.stackSize = this.fProxy.barrelGetItemCount( this.te );
-			out.addStorage( AEItemStack.create( i ) );
-		}
-
-		return out;
-	}
-
-	@Override
-	public StorageChannel getChannel()
-	{
-		return StorageChannel.ITEMS;
-	}
+    @Override
+    public StorageChannel getChannel() {
+        return StorageChannel.ITEMS;
+    }
 }

@@ -18,6 +18,7 @@
 
 package appeng.core.sync.packets;
 
+import java.io.IOException;
 
 import appeng.api.storage.data.IAEItemStack;
 import appeng.client.EffectType;
@@ -31,53 +32,58 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.minecraft.entity.player.EntityPlayer;
 
-import java.io.IOException;
+public class PacketAssemblerAnimation extends AppEngPacket {
+    private final int x;
+    private final int y;
+    private final int z;
+    public final byte rate;
+    public final IAEItemStack is;
 
+    // automatic.
+    public PacketAssemblerAnimation(final ByteBuf stream) throws IOException {
+        this.x = stream.readInt();
+        this.y = stream.readInt();
+        this.z = stream.readInt();
+        this.rate = stream.readByte();
+        this.is = AEItemStack.loadItemStackFromPacket(stream);
+    }
 
-public class PacketAssemblerAnimation extends AppEngPacket
-{
+    // api
+    public PacketAssemblerAnimation(
+        final int x, final int y, final int z, final byte rate, final IAEItemStack is
+    ) throws IOException {
+        final ByteBuf data = Unpooled.buffer();
 
-	private final int x;
-	private final int y;
-	private final int z;
-	public final byte rate;
-	public final IAEItemStack is;
+        data.writeInt(this.getPacketID());
+        data.writeInt(this.x = x);
+        data.writeInt(this.y = y);
+        data.writeInt(this.z = z);
+        data.writeByte(this.rate = rate);
+        is.writeToPacket(data);
+        this.is = is;
 
-	// automatic.
-	public PacketAssemblerAnimation( final ByteBuf stream ) throws IOException
-	{
-		this.x = stream.readInt();
-		this.y = stream.readInt();
-		this.z = stream.readInt();
-		this.rate = stream.readByte();
-		this.is = AEItemStack.loadItemStackFromPacket( stream );
-	}
+        this.configureWrite(data);
+    }
 
-	// api
-	public PacketAssemblerAnimation( final int x, final int y, final int z, final byte rate, final IAEItemStack is ) throws IOException
-	{
+    @Override
+    @SideOnly(Side.CLIENT)
+    public void clientPacketData(
+        final INetworkInfo network, final AppEngPacket packet, final EntityPlayer player
+    ) {
+        final double d0
+            = 0.5d; // + ((double) (Platform.getRandomFloat() - 0.5F) * 0.26D);
+        final double d1
+            = 0.5d; // + ((double) (Platform.getRandomFloat() - 0.5F) * 0.26D);
+        final double d2
+            = 0.5d; // + ((double) (Platform.getRandomFloat() - 0.5F) * 0.26D);
 
-		final ByteBuf data = Unpooled.buffer();
-
-		data.writeInt( this.getPacketID() );
-		data.writeInt( this.x = x );
-		data.writeInt( this.y = y );
-		data.writeInt( this.z = z );
-		data.writeByte( this.rate = rate );
-		is.writeToPacket( data );
-		this.is = is;
-
-		this.configureWrite( data );
-	}
-
-	@Override
-	@SideOnly( Side.CLIENT )
-	public void clientPacketData( final INetworkInfo network, final AppEngPacket packet, final EntityPlayer player )
-	{
-		final double d0 = 0.5d;// + ((double) (Platform.getRandomFloat() - 0.5F) * 0.26D);
-		final double d1 = 0.5d;// + ((double) (Platform.getRandomFloat() - 0.5F) * 0.26D);
-		final double d2 = 0.5d;// + ((double) (Platform.getRandomFloat() - 0.5F) * 0.26D);
-
-		CommonHelper.proxy.spawnEffect( EffectType.Assembler, player.getEntityWorld(), this.x + d0, this.y + d1, this.z + d2, this );
-	}
+        CommonHelper.proxy.spawnEffect(
+            EffectType.Assembler,
+            player.getEntityWorld(),
+            this.x + d0,
+            this.y + d1,
+            this.z + d2,
+            this
+        );
+    }
 }

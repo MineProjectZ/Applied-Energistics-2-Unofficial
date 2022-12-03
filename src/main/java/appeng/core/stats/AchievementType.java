@@ -18,10 +18,11 @@
 
 package appeng.core.stats;
 
+public enum AchievementType {
 
-public enum AchievementType
-{
-
-	Craft, CraftItem, Pickup, Custom
+    Craft,
+    CraftItem,
+    Pickup,
+    Custom
 
 }

@@ -18,6 +18,8 @@
 
 package appeng.block.networking;
 
+import java.util.EnumSet;
+import java.util.List;
 
 import appeng.block.AEBaseItemBlock;
 import appeng.block.AEBaseItemBlockChargeable;
@@ -36,75 +38,64 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.IIcon;
 
-import java.util.EnumSet;
-import java.util.List;
+public class BlockEnergyCell extends AEBaseTileBlock {
+    public BlockEnergyCell() {
+        super(AEGlassMaterial.INSTANCE);
 
+        this.setTileEntity(TileEnergyCell.class);
+        this.setFeature(EnumSet.of(AEFeature.Core));
+    }
 
-public class BlockEnergyCell extends AEBaseTileBlock
-{
+    @Override
+    @SideOnly(Side.CLIENT)
+    protected RenderBlockEnergyCube getRenderer() {
+        return new RenderBlockEnergyCube();
+    }
 
-	public BlockEnergyCell()
-	{
-		super( AEGlassMaterial.INSTANCE );
+    @Override
+    public IIcon getIcon(final int direction, final int metadata) {
+        switch (metadata) {
+            case 0:
+                return ExtraBlockTextures.MEEnergyCell0.getIcon();
+            case 1:
+                return ExtraBlockTextures.MEEnergyCell1.getIcon();
+            case 2:
+                return ExtraBlockTextures.MEEnergyCell2.getIcon();
+            case 3:
+                return ExtraBlockTextures.MEEnergyCell3.getIcon();
+            case 4:
+                return ExtraBlockTextures.MEEnergyCell4.getIcon();
+            case 5:
+                return ExtraBlockTextures.MEEnergyCell5.getIcon();
+            case 6:
+                return ExtraBlockTextures.MEEnergyCell6.getIcon();
+            case 7:
+                return ExtraBlockTextures.MEEnergyCell7.getIcon();
+        }
+        return super.getIcon(direction, metadata);
+    }
 
-		this.setTileEntity( TileEnergyCell.class );
-		this.setFeature( EnumSet.of( AEFeature.Core ) );
-	}
+    @Override
+    @SideOnly(Side.CLIENT)
+    public void getCheckedSubBlocks(
+        final Item item, final CreativeTabs tabs, final List<ItemStack> itemStacks
+    ) {
+        super.getCheckedSubBlocks(item, tabs, itemStacks);
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	protected RenderBlockEnergyCube getRenderer()
-	{
-		return new RenderBlockEnergyCube();
-	}
+        final ItemStack charged = new ItemStack(this, 1);
+        final NBTTagCompound tag = Platform.openNbtData(charged);
+        tag.setDouble("internalCurrentPower", this.getMaxPower());
+        tag.setDouble("internalMaxPower", this.getMaxPower());
 
-	@Override
-	public IIcon getIcon( final int direction, final int metadata )
-	{
-		switch( metadata )
-		{
-			case 0:
-				return ExtraBlockTextures.MEEnergyCell0.getIcon();
-			case 1:
-				return ExtraBlockTextures.MEEnergyCell1.getIcon();
-			case 2:
-				return ExtraBlockTextures.MEEnergyCell2.getIcon();
-			case 3:
-				return ExtraBlockTextures.MEEnergyCell3.getIcon();
-			case 4:
-				return ExtraBlockTextures.MEEnergyCell4.getIcon();
-			case 5:
-				return ExtraBlockTextures.MEEnergyCell5.getIcon();
-			case 6:
-				return ExtraBlockTextures.MEEnergyCell6.getIcon();
-			case 7:
-				return ExtraBlockTextures.MEEnergyCell7.getIcon();
-		}
-		return super.getIcon( direction, metadata );
-	}
+        itemStacks.add(charged);
+    }
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	public void getCheckedSubBlocks( final Item item, final CreativeTabs tabs, final List<ItemStack> itemStacks )
-	{
-		super.getCheckedSubBlocks( item, tabs, itemStacks );
+    public double getMaxPower() {
+        return 200000.0;
+    }
 
-		final ItemStack charged = new ItemStack( this, 1 );
-		final NBTTagCompound tag = Platform.openNbtData( charged );
-		tag.setDouble( "internalCurrentPower", this.getMaxPower() );
-		tag.setDouble( "internalMaxPower", this.getMaxPower() );
-
-		itemStacks.add( charged );
-	}
-
-	public double getMaxPower()
-	{
-		return 200000.0;
-	}
-
-	@Override
-	public Class<? extends AEBaseItemBlock> getItemBlockClass()
-	{
-		return AEBaseItemBlockChargeable.class;
-	}
+    @Override
+    public Class<? extends AEBaseItemBlock> getItemBlockClass() {
+        return AEBaseItemBlockChargeable.class;
+    }
 }

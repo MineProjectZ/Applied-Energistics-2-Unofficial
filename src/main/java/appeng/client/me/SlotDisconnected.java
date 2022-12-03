@@ -18,7 +18,6 @@
 
 package appeng.client.me;
 
-
 import appeng.container.slot.AppEngSlot;
 import appeng.items.misc.ItemEncodedPattern;
 import appeng.util.Platform;
@@ -26,86 +25,70 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 
+public class SlotDisconnected extends AppEngSlot {
+    private final ClientDCInternalInv mySlot;
 
-public class SlotDisconnected extends AppEngSlot
-{
+    public SlotDisconnected(
+        final ClientDCInternalInv me, final int which, final int x, final int y
+    ) {
+        super(me.getInventory(), which, x, y);
+        this.mySlot = me;
+    }
 
-	private final ClientDCInternalInv mySlot;
+    @Override
+    public boolean isItemValid(final ItemStack par1ItemStack) {
+        return false;
+    }
 
-	public SlotDisconnected( final ClientDCInternalInv me, final int which, final int x, final int y )
-	{
-		super( me.getInventory(), which, x, y );
-		this.mySlot = me;
-	}
+    @Override
+    public void putStack(final ItemStack par1ItemStack) {}
 
-	@Override
-	public boolean isItemValid( final ItemStack par1ItemStack )
-	{
-		return false;
-	}
+    @Override
+    public boolean canTakeStack(final EntityPlayer par1EntityPlayer) {
+        return false;
+    }
 
-	@Override
-	public void putStack( final ItemStack par1ItemStack )
-	{
+    @Override
+    public ItemStack getDisplayStack() {
+        if (Platform.isClient()) {
+            final ItemStack is = super.getStack();
+            if (is != null && is.getItem() instanceof ItemEncodedPattern) {
+                final ItemEncodedPattern iep = (ItemEncodedPattern) is.getItem();
+                final ItemStack out = iep.getOutput(is);
+                if (out != null) {
+                    return out;
+                }
+            }
+        }
+        return super.getStack();
+    }
 
-	}
+    @Override
+    public void
+    onPickupFromSlot(final EntityPlayer par1EntityPlayer, final ItemStack par2ItemStack) {
+    }
 
-	@Override
-	public boolean canTakeStack( final EntityPlayer par1EntityPlayer )
-	{
-		return false;
-	}
+    @Override
+    public boolean getHasStack() {
+        return this.getStack() != null;
+    }
 
-	@Override
-	public ItemStack getDisplayStack()
-	{
-		if( Platform.isClient() )
-		{
-			final ItemStack is = super.getStack();
-			if( is != null && is.getItem() instanceof ItemEncodedPattern )
-			{
-				final ItemEncodedPattern iep = (ItemEncodedPattern) is.getItem();
-				final ItemStack out = iep.getOutput( is );
-				if( out != null )
-				{
-					return out;
-				}
-			}
-		}
-		return super.getStack();
-	}
+    @Override
+    public int getSlotStackLimit() {
+        return 0;
+    }
 
-	@Override
-	public void onPickupFromSlot( final EntityPlayer par1EntityPlayer, final ItemStack par2ItemStack )
-	{
-	}
+    @Override
+    public ItemStack decrStackSize(final int par1) {
+        return null;
+    }
 
-	@Override
-	public boolean getHasStack()
-	{
-		return this.getStack() != null;
-	}
+    @Override
+    public boolean isSlotInInventory(final IInventory par1iInventory, final int par2) {
+        return false;
+    }
 
-	@Override
-	public int getSlotStackLimit()
-	{
-		return 0;
-	}
-
-	@Override
-	public ItemStack decrStackSize( final int par1 )
-	{
-		return null;
-	}
-
-	@Override
-	public boolean isSlotInInventory( final IInventory par1iInventory, final int par2 )
-	{
-		return false;
-	}
-
-	public ClientDCInternalInv getSlot()
-	{
-		return this.mySlot;
-	}
+    public ClientDCInternalInv getSlot() {
+        return this.mySlot;
+    }
 }

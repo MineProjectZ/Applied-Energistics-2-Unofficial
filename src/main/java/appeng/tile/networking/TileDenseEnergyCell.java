@@ -18,12 +18,8 @@
 
 package appeng.tile.networking;
 
-
-public class TileDenseEnergyCell extends TileEnergyCell
-{
-
-	public TileDenseEnergyCell()
-	{
-		this.setInternalMaxPower( 200000 * 8 );
-	}
+public class TileDenseEnergyCell extends TileEnergyCell {
+    public TileDenseEnergyCell() {
+        this.setInternalMaxPower(200000 * 8);
+    }
 }

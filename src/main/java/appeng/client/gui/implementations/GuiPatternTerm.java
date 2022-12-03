@@ -18,6 +18,7 @@
 
 package appeng.client.gui.implementations;
 
+import java.io.IOException;
 
 import appeng.api.config.ActionItems;
 import appeng.api.config.ItemSubstitution;
@@ -35,144 +36,166 @@ import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 
-import java.io.IOException;
+public class GuiPatternTerm extends GuiMEMonitorable {
+    private static final String SUBSITUTION_DISABLE = "0";
+    private static final String SUBSITUTION_ENABLE = "1";
 
+    private static final String CRAFTMODE_CRFTING = "1";
+    private static final String CRAFTMODE_PROCESSING = "0";
 
-public class GuiPatternTerm extends GuiMEMonitorable
-{
+    private final ContainerPatternTerm container;
 
-	private static final String SUBSITUTION_DISABLE = "0";
-	private static final String SUBSITUTION_ENABLE = "1";
+    private GuiTabButton tabCraftButton;
+    private GuiTabButton tabProcessButton;
+    private GuiImgButton substitutionsEnabledBtn;
+    private GuiImgButton substitutionsDisabledBtn;
+    private GuiImgButton encodeBtn;
+    private GuiImgButton clearBtn;
 
-	private static final String CRAFTMODE_CRFTING = "1";
-	private static final String CRAFTMODE_PROCESSING = "0";
+    public GuiPatternTerm(final InventoryPlayer inventoryPlayer, final ITerminalHost te) {
+        super(inventoryPlayer, te, new ContainerPatternTerm(inventoryPlayer, te));
+        this.container = (ContainerPatternTerm) this.inventorySlots;
+        this.setReservedSpace(81);
+    }
 
-	private final ContainerPatternTerm container;
+    @Override
+    protected void actionPerformed(final GuiButton btn) {
+        super.actionPerformed(btn);
 
-	private GuiTabButton tabCraftButton;
-	private GuiTabButton tabProcessButton;
-	private GuiImgButton substitutionsEnabledBtn;
-	private GuiImgButton substitutionsDisabledBtn;
-	private GuiImgButton encodeBtn;
-	private GuiImgButton clearBtn;
+        try {
+            if (this.tabCraftButton == btn || this.tabProcessButton == btn) {
+                NetworkHandler.instance.sendToServer(new PacketValueConfig(
+                    "PatternTerminal.CraftMode",
+                    this.tabProcessButton == btn ? CRAFTMODE_CRFTING
+                                                 : CRAFTMODE_PROCESSING
+                ));
+            }
 
-	public GuiPatternTerm( final InventoryPlayer inventoryPlayer, final ITerminalHost te )
-	{
-		super( inventoryPlayer, te, new ContainerPatternTerm( inventoryPlayer, te ) );
-		this.container = (ContainerPatternTerm) this.inventorySlots;
-		this.setReservedSpace( 81 );
-	}
+            if (this.encodeBtn == btn) {
+                NetworkHandler.instance.sendToServer(
+                    new PacketValueConfig("PatternTerminal.Encode", "1")
+                );
+            }
 
-	@Override
-	protected void actionPerformed( final GuiButton btn )
-	{
-		super.actionPerformed( btn );
+            if (this.clearBtn == btn) {
+                NetworkHandler.instance.sendToServer(
+                    new PacketValueConfig("PatternTerminal.Clear", "1")
+                );
+            }
 
-		try
-		{
+            if (this.substitutionsEnabledBtn == btn
+                || this.substitutionsDisabledBtn == btn) {
+                NetworkHandler.instance.sendToServer(new PacketValueConfig(
+                    "PatternTerminal.Substitute",
+                    this.substitutionsEnabledBtn == btn ? SUBSITUTION_DISABLE
+                                                        : SUBSITUTION_ENABLE
+                ));
+            }
+        } catch (final IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 
-			if( this.tabCraftButton == btn || this.tabProcessButton == btn )
-			{
-				NetworkHandler.instance.sendToServer( new PacketValueConfig( "PatternTerminal.CraftMode", this.tabProcessButton == btn ? CRAFTMODE_CRFTING : CRAFTMODE_PROCESSING ) );
-			}
+    @Override
+    public void initGui() {
+        super.initGui();
+        this.tabCraftButton = new GuiTabButton(
+            this.guiLeft + 173,
+            this.guiTop + this.ySize - 177,
+            new ItemStack(Blocks.crafting_table),
+            GuiText.CraftingPattern.getLocal(),
+            itemRender
+        );
+        this.buttonList.add(this.tabCraftButton);
 
-			if( this.encodeBtn == btn )
-			{
-				NetworkHandler.instance.sendToServer( new PacketValueConfig( "PatternTerminal.Encode", "1" ) );
-			}
+        this.tabProcessButton = new GuiTabButton(
+            this.guiLeft + 173,
+            this.guiTop + this.ySize - 177,
+            new ItemStack(Blocks.furnace),
+            GuiText.ProcessingPattern.getLocal(),
+            itemRender
+        );
+        this.buttonList.add(this.tabProcessButton);
 
-			if( this.clearBtn == btn )
-			{
-				NetworkHandler.instance.sendToServer( new PacketValueConfig( "PatternTerminal.Clear", "1" ) );
-			}
+        this.substitutionsEnabledBtn = new GuiImgButton(
+            this.guiLeft + 84,
+            this.guiTop + this.ySize - 163,
+            Settings.ACTIONS,
+            ItemSubstitution.ENABLED
+        );
+        this.substitutionsEnabledBtn.setHalfSize(true);
+        this.buttonList.add(this.substitutionsEnabledBtn);
 
-			if( this.substitutionsEnabledBtn == btn || this.substitutionsDisabledBtn == btn )
-			{
-				NetworkHandler.instance.sendToServer( new PacketValueConfig( "PatternTerminal.Substitute", this.substitutionsEnabledBtn == btn ? SUBSITUTION_DISABLE : SUBSITUTION_ENABLE ) );
-			}
-		}
-		catch( final IOException e )
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+        this.substitutionsDisabledBtn = new GuiImgButton(
+            this.guiLeft + 84,
+            this.guiTop + this.ySize - 163,
+            Settings.ACTIONS,
+            ItemSubstitution.DISABLED
+        );
+        this.substitutionsDisabledBtn.setHalfSize(true);
+        this.buttonList.add(this.substitutionsDisabledBtn);
 
-	@Override
-	public void initGui()
-	{
-		super.initGui();
-		this.tabCraftButton = new GuiTabButton( this.guiLeft + 173, this.guiTop + this.ySize - 177, new ItemStack( Blocks.crafting_table ), GuiText.CraftingPattern.getLocal(), itemRender );
-		this.buttonList.add( this.tabCraftButton );
+        this.clearBtn = new GuiImgButton(
+            this.guiLeft + 74,
+            this.guiTop + this.ySize - 163,
+            Settings.ACTIONS,
+            ActionItems.CLOSE
+        );
+        this.clearBtn.setHalfSize(true);
+        this.buttonList.add(this.clearBtn);
 
-		this.tabProcessButton = new GuiTabButton( this.guiLeft + 173, this.guiTop + this.ySize - 177, new ItemStack( Blocks.furnace ), GuiText.ProcessingPattern.getLocal(), itemRender );
-		this.buttonList.add( this.tabProcessButton );
+        this.encodeBtn = new GuiImgButton(
+            this.guiLeft + 147,
+            this.guiTop + this.ySize - 142,
+            Settings.ACTIONS,
+            ActionItems.ENCODE
+        );
+        this.buttonList.add(this.encodeBtn);
+    }
 
-		this.substitutionsEnabledBtn = new GuiImgButton( this.guiLeft + 84, this.guiTop + this.ySize - 163, Settings.ACTIONS, ItemSubstitution.ENABLED );
-		this.substitutionsEnabledBtn.setHalfSize( true );
-		this.buttonList.add( this.substitutionsEnabledBtn );
+    @Override
+    public void
+    drawFG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
+        if (!this.container.isCraftingMode()) {
+            this.tabCraftButton.visible = false;
+            this.tabProcessButton.visible = true;
+        } else {
+            this.tabCraftButton.visible = true;
+            this.tabProcessButton.visible = false;
+        }
 
-		this.substitutionsDisabledBtn = new GuiImgButton( this.guiLeft + 84, this.guiTop + this.ySize - 163, Settings.ACTIONS, ItemSubstitution.DISABLED );
-		this.substitutionsDisabledBtn.setHalfSize( true );
-		this.buttonList.add( this.substitutionsDisabledBtn );
+        if (this.container.substitute) {
+            this.substitutionsEnabledBtn.visible = true;
+            this.substitutionsDisabledBtn.visible = false;
+        } else {
+            this.substitutionsEnabledBtn.visible = false;
+            this.substitutionsDisabledBtn.visible = true;
+        }
 
-		this.clearBtn = new GuiImgButton( this.guiLeft + 74, this.guiTop + this.ySize - 163, Settings.ACTIONS, ActionItems.CLOSE );
-		this.clearBtn.setHalfSize( true );
-		this.buttonList.add( this.clearBtn );
+        super.drawFG(offsetX, offsetY, mouseX, mouseY);
+        this.fontRendererObj.drawString(
+            GuiText.PatternTerminal.getLocal(),
+            8,
+            this.ySize - 96 + 2 - this.getReservedSpace(),
+            4210752
+        );
+    }
 
-		this.encodeBtn = new GuiImgButton( this.guiLeft + 147, this.guiTop + this.ySize - 142, Settings.ACTIONS, ActionItems.ENCODE );
-		this.buttonList.add( this.encodeBtn );
-	}
+    @Override
+    protected String getBackground() {
+        if (this.container.isCraftingMode()) {
+            return "guis/pattern.png";
+        }
+        return "guis/pattern2.png";
+    }
 
-	@Override
-	public void drawFG( final int offsetX, final int offsetY, final int mouseX, final int mouseY )
-	{
-		if( !this.container.isCraftingMode() )
-		{
-			this.tabCraftButton.visible = false;
-			this.tabProcessButton.visible = true;
-		}
-		else
-		{
-			this.tabCraftButton.visible = true;
-			this.tabProcessButton.visible = false;
-		}
-
-		if( this.container.substitute )
-		{
-			this.substitutionsEnabledBtn.visible = true;
-			this.substitutionsDisabledBtn.visible = false;
-		}
-		else
-		{
-			this.substitutionsEnabledBtn.visible = false;
-			this.substitutionsDisabledBtn.visible = true;
-		}
-
-		super.drawFG( offsetX, offsetY, mouseX, mouseY );
-		this.fontRendererObj.drawString( GuiText.PatternTerminal.getLocal(), 8, this.ySize - 96 + 2 - this.getReservedSpace(), 4210752 );
-	}
-
-	@Override
-	protected String getBackground()
-	{
-		if( this.container.isCraftingMode() )
-		{
-			return "guis/pattern.png";
-		}
-		return "guis/pattern2.png";
-	}
-
-	@Override
-	protected void repositionSlot( final AppEngSlot s )
-	{
-		if( s.isPlayerSide() )
-		{
-			s.yDisplayPosition = s.getY() + this.ySize - 78 - 5;
-		}
-		else
-		{
-			s.yDisplayPosition = s.getY() + this.ySize - 78 - 3;
-		}
-	}
+    @Override
+    protected void repositionSlot(final AppEngSlot s) {
+        if (s.isPlayerSide()) {
+            s.yDisplayPosition = s.getY() + this.ySize - 78 - 5;
+        } else {
+            s.yDisplayPosition = s.getY() + this.ySize - 78 - 3;
+        }
+    }
 }

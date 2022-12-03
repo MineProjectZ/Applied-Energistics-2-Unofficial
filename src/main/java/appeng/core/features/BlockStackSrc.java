@@ -18,56 +18,49 @@
 
 package appeng.core.features;
 
+import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
-import javax.annotation.Nullable;
+public class BlockStackSrc implements IStackSrc {
+    private final Block block;
+    private final int damage;
+    private final boolean enabled;
 
+    public BlockStackSrc(final Block block, final int damage, final ActivityState state) {
+        Preconditions.checkNotNull(block);
+        Preconditions.checkArgument(damage >= 0);
+        Preconditions.checkNotNull(state);
+        Preconditions.checkArgument(
+            state == ActivityState.Enabled || state == ActivityState.Disabled
+        );
 
-public class BlockStackSrc implements IStackSrc
-{
+        this.block = block;
+        this.damage = damage;
+        this.enabled = state == ActivityState.Enabled;
+    }
 
-	private final Block block;
-	private final int damage;
-	private final boolean enabled;
+    @Nullable
+    @Override
+    public ItemStack stack(final int i) {
+        return new ItemStack(this.block, i, this.damage);
+    }
 
-	public BlockStackSrc( final Block block, final int damage, final ActivityState state )
-	{
-		Preconditions.checkNotNull( block );
-		Preconditions.checkArgument( damage >= 0 );
-		Preconditions.checkNotNull( state );
-		Preconditions.checkArgument( state == ActivityState.Enabled || state == ActivityState.Disabled );
+    @Override
+    public Item getItem() {
+        return null;
+    }
 
-		this.block = block;
-		this.damage = damage;
-		this.enabled = state == ActivityState.Enabled;
-	}
+    @Override
+    public int getDamage() {
+        return this.damage;
+    }
 
-	@Nullable
-	@Override
-	public ItemStack stack( final int i )
-	{
-		return new ItemStack( this.block, i, this.damage );
-	}
-
-	@Override
-	public Item getItem()
-	{
-		return null;
-	}
-
-	@Override
-	public int getDamage()
-	{
-		return this.damage;
-	}
-
-	@Override
-	public boolean isEnabled()
-	{
-		return this.enabled;
-	}
+    @Override
+    public boolean isEnabled() {
+        return this.enabled;
+    }
 }

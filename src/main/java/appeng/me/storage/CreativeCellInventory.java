@@ -18,7 +18,6 @@
 
 package appeng.me.storage;
 
-
 import appeng.api.AEApi;
 import appeng.api.config.AccessRestriction;
 import appeng.api.config.Actionable;
@@ -31,104 +30,89 @@ import appeng.items.contents.CellConfig;
 import appeng.util.item.AEItemStack;
 import net.minecraft.item.ItemStack;
 
+public class CreativeCellInventory implements IMEInventoryHandler<IAEItemStack> {
+    private final IItemList<IAEItemStack> itemListCache
+        = AEApi.instance().storage().createItemList();
 
-public class CreativeCellInventory implements IMEInventoryHandler<IAEItemStack>
-{
+    protected CreativeCellInventory(final ItemStack o) {
+        final CellConfig cc = new CellConfig(o);
+        for (final ItemStack is : cc) {
+            if (is != null) {
+                final IAEItemStack i = AEItemStack.create(is);
+                i.setStackSize(Integer.MAX_VALUE);
+                this.itemListCache.add(i);
+            }
+        }
+    }
 
-	private final IItemList<IAEItemStack> itemListCache = AEApi.instance().storage().createItemList();
+    public static IMEInventoryHandler getCell(final ItemStack o) {
+        return new CellInventoryHandler(new CreativeCellInventory(o));
+    }
 
-	protected CreativeCellInventory( final ItemStack o )
-	{
-		final CellConfig cc = new CellConfig( o );
-		for( final ItemStack is : cc )
-		{
-			if( is != null )
-			{
-				final IAEItemStack i = AEItemStack.create( is );
-				i.setStackSize( Integer.MAX_VALUE );
-				this.itemListCache.add( i );
-			}
-		}
-	}
+    @Override
+    public IAEItemStack injectItems(
+        final IAEItemStack input, final Actionable mode, final BaseActionSource src
+    ) {
+        final IAEItemStack local = this.itemListCache.findPrecise(input);
+        if (local == null) {
+            return input;
+        }
 
-	public static IMEInventoryHandler getCell( final ItemStack o )
-	{
-		return new CellInventoryHandler( new CreativeCellInventory( o ) );
-	}
+        return null;
+    }
 
-	@Override
-	public IAEItemStack injectItems( final IAEItemStack input, final Actionable mode, final BaseActionSource src )
-	{
-		final IAEItemStack local = this.itemListCache.findPrecise( input );
-		if( local == null )
-		{
-			return input;
-		}
+    @Override
+    public IAEItemStack extractItems(
+        final IAEItemStack request, final Actionable mode, final BaseActionSource src
+    ) {
+        final IAEItemStack local = this.itemListCache.findPrecise(request);
+        if (local == null) {
+            return null;
+        }
 
-		return null;
-	}
+        return request.copy();
+    }
 
-	@Override
-	public IAEItemStack extractItems( final IAEItemStack request, final Actionable mode, final BaseActionSource src )
-	{
-		final IAEItemStack local = this.itemListCache.findPrecise( request );
-		if( local == null )
-		{
-			return null;
-		}
+    @Override
+    public IItemList<IAEItemStack> getAvailableItems(final IItemList out) {
+        for (final IAEItemStack ais : this.itemListCache) {
+            out.add(ais);
+        }
+        return out;
+    }
 
-		return request.copy();
-	}
+    @Override
+    public StorageChannel getChannel() {
+        return StorageChannel.ITEMS;
+    }
 
-	@Override
-	public IItemList<IAEItemStack> getAvailableItems( final IItemList out )
-	{
-		for( final IAEItemStack ais : this.itemListCache )
-		{
-			out.add( ais );
-		}
-		return out;
-	}
+    @Override
+    public AccessRestriction getAccess() {
+        return AccessRestriction.READ_WRITE;
+    }
 
-	@Override
-	public StorageChannel getChannel()
-	{
-		return StorageChannel.ITEMS;
-	}
+    @Override
+    public boolean isPrioritized(final IAEItemStack input) {
+        return this.itemListCache.findPrecise(input) != null;
+    }
 
-	@Override
-	public AccessRestriction getAccess()
-	{
-		return AccessRestriction.READ_WRITE;
-	}
+    @Override
+    public boolean canAccept(final IAEItemStack input) {
+        return this.itemListCache.findPrecise(input) != null;
+    }
 
-	@Override
-	public boolean isPrioritized( final IAEItemStack input )
-	{
-		return this.itemListCache.findPrecise( input ) != null;
-	}
+    @Override
+    public int getPriority() {
+        return 0;
+    }
 
-	@Override
-	public boolean canAccept( final IAEItemStack input )
-	{
-		return this.itemListCache.findPrecise( input ) != null;
-	}
+    @Override
+    public int getSlot() {
+        return 0;
+    }
 
-	@Override
-	public int getPriority()
-	{
-		return 0;
-	}
-
-	@Override
-	public int getSlot()
-	{
-		return 0;
-	}
-
-	@Override
-	public boolean validForPass( final int i )
-	{
-		return true;
-	}
+    @Override
+    public boolean validForPass(final int i) {
+        return true;
+    }
 }

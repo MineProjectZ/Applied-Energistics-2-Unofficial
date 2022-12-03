@@ -18,6 +18,7 @@
 
 package appeng.block.misc;
 
+import java.util.EnumSet;
 
 import appeng.block.AEBaseTileBlock;
 import appeng.client.render.blocks.RendererSecurity;
@@ -32,46 +33,47 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.EnumSet;
+public class BlockSecurity extends AEBaseTileBlock {
+    public BlockSecurity() {
+        super(Material.iron);
 
+        this.setTileEntity(TileSecurity.class);
+        this.setFeature(EnumSet.of(AEFeature.Security));
+    }
 
-public class BlockSecurity extends AEBaseTileBlock
-{
+    @Override
+    @SideOnly(Side.CLIENT)
+    protected RendererSecurity getRenderer() {
+        return new RendererSecurity();
+    }
 
-	public BlockSecurity()
-	{
-		super( Material.iron );
+    @Override
+    public boolean onActivated(
+        final World w,
+        final int x,
+        final int y,
+        final int z,
+        final EntityPlayer p,
+        final int side,
+        final float hitX,
+        final float hitY,
+        final float hitZ
+    ) {
+        if (p.isSneaking()) {
+            return false;
+        }
 
-		this.setTileEntity( TileSecurity.class );
-		this.setFeature( EnumSet.of( AEFeature.Security ) );
-	}
+        final TileSecurity tg = this.getTileEntity(w, x, y, z);
+        if (tg != null) {
+            if (Platform.isClient()) {
+                return true;
+            }
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	protected RendererSecurity getRenderer()
-	{
-		return new RendererSecurity();
-	}
-
-	@Override
-	public boolean onActivated( final World w, final int x, final int y, final int z, final EntityPlayer p, final int side, final float hitX, final float hitY, final float hitZ )
-	{
-		if( p.isSneaking() )
-		{
-			return false;
-		}
-
-		final TileSecurity tg = this.getTileEntity( w, x, y, z );
-		if( tg != null )
-		{
-			if( Platform.isClient() )
-			{
-				return true;
-			}
-
-			Platform.openGUI( p, tg, ForgeDirection.getOrientation( side ), GuiBridge.GUI_SECURITY );
-			return true;
-		}
-		return false;
-	}
+            Platform.openGUI(
+                p, tg, ForgeDirection.getOrientation(side), GuiBridge.GUI_SECURITY
+            );
+            return true;
+        }
+        return false;
+    }
 }

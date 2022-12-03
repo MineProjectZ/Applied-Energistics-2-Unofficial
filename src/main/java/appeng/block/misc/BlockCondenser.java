@@ -18,6 +18,7 @@
 
 package appeng.block.misc;
 
+import java.util.EnumSet;
 
 import appeng.block.AEBaseTileBlock;
 import appeng.core.features.AEFeature;
@@ -29,38 +30,43 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.EnumSet;
+public class BlockCondenser extends AEBaseTileBlock {
+    public BlockCondenser() {
+        super(Material.iron);
 
+        this.setTileEntity(TileCondenser.class);
+        this.setFeature(EnumSet.of(AEFeature.Core));
+    }
 
-public class BlockCondenser extends AEBaseTileBlock
-{
+    @Override
+    public boolean onActivated(
+        final World w,
+        final int x,
+        final int y,
+        final int z,
+        final EntityPlayer player,
+        final int side,
+        final float hitX,
+        final float hitY,
+        final float hitZ
+    ) {
+        if (player.isSneaking()) {
+            return false;
+        }
 
-	public BlockCondenser()
-	{
-		super( Material.iron );
+        if (Platform.isServer()) {
+            final TileCondenser tc = this.getTileEntity(w, x, y, z);
+            if (tc != null && !player.isSneaking()) {
+                Platform.openGUI(
+                    player,
+                    tc,
+                    ForgeDirection.getOrientation(side),
+                    GuiBridge.GUI_CONDENSER
+                );
+                return true;
+            }
+        }
 
-		this.setTileEntity( TileCondenser.class );
-		this.setFeature( EnumSet.of( AEFeature.Core ) );
-	}
-
-	@Override
-	public boolean onActivated( final World w, final int x, final int y, final int z, final EntityPlayer player, final int side, final float hitX, final float hitY, final float hitZ )
-	{
-		if( player.isSneaking() )
-		{
-			return false;
-		}
-
-		if( Platform.isServer() )
-		{
-			final TileCondenser tc = this.getTileEntity( w, x, y, z );
-			if( tc != null && !player.isSneaking() )
-			{
-				Platform.openGUI( player, tc, ForgeDirection.getOrientation( side ), GuiBridge.GUI_CONDENSER );
-				return true;
-			}
-		}
-
-		return true;
-	}
+        return true;
+    }
 }

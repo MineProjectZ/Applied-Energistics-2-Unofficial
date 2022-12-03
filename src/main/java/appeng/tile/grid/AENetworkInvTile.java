@@ -18,7 +18,6 @@
 
 package appeng.tile.grid;
 
-
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.security.IActionHost;
 import appeng.me.helpers.AENetworkProxy;
@@ -29,74 +28,60 @@ import appeng.tile.events.TileEventType;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.util.ForgeDirection;
 
+public abstract class AENetworkInvTile
+    extends AEBaseInvTile implements IActionHost, IGridProxyable {
+    private final AENetworkProxy gridProxy
+        = new AENetworkProxy(this, "proxy", this.getItemFromTile(this), true);
 
-public abstract class AENetworkInvTile extends AEBaseInvTile implements IActionHost, IGridProxyable
-{
+    @TileEvent(TileEventType.WORLD_NBT_READ)
+    public void readFromNBT_AENetwork(final NBTTagCompound data) {
+        this.getProxy().readFromNBT(data);
+    }
 
-	private final AENetworkProxy gridProxy = new AENetworkProxy( this, "proxy", this.getItemFromTile( this ), true );
+    @TileEvent(TileEventType.WORLD_NBT_WRITE)
+    public void writeToNBT_AENetwork(final NBTTagCompound data) {
+        this.getProxy().writeToNBT(data);
+    }
 
-	@TileEvent( TileEventType.WORLD_NBT_READ )
-	public void readFromNBT_AENetwork( final NBTTagCompound data )
-	{
-		this.getProxy().readFromNBT( data );
-	}
+    @Override
+    public AENetworkProxy getProxy() {
+        return this.gridProxy;
+    }
 
-	@TileEvent( TileEventType.WORLD_NBT_WRITE )
-	public void writeToNBT_AENetwork( final NBTTagCompound data )
-	{
-		this.getProxy().writeToNBT( data );
-	}
+    @Override
+    public void gridChanged() {}
 
-	@Override
-	public AENetworkProxy getProxy()
-	{
-		return this.gridProxy;
-	}
+    @Override
+    public IGridNode getGridNode(final ForgeDirection dir) {
+        return this.getProxy().getNode();
+    }
 
-	@Override
-	public void gridChanged()
-	{
+    @Override
+    public void onChunkUnload() {
+        super.onChunkUnload();
+        this.getProxy().onChunkUnload();
+    }
 
-	}
+    @Override
+    public void onReady() {
+        super.onReady();
+        this.getProxy().onReady();
+    }
 
-	@Override
-	public IGridNode getGridNode( final ForgeDirection dir )
-	{
-		return this.getProxy().getNode();
-	}
+    @Override
+    public void invalidate() {
+        super.invalidate();
+        this.getProxy().invalidate();
+    }
 
-	@Override
-	public void onChunkUnload()
-	{
-		super.onChunkUnload();
-		this.getProxy().onChunkUnload();
-	}
+    @Override
+    public void validate() {
+        super.validate();
+        this.getProxy().validate();
+    }
 
-	@Override
-	public void onReady()
-	{
-		super.onReady();
-		this.getProxy().onReady();
-	}
-
-	@Override
-	public void invalidate()
-	{
-		super.invalidate();
-		this.getProxy().invalidate();
-	}
-
-	@Override
-	public void validate()
-	{
-		super.validate();
-		this.getProxy().validate();
-	}
-
-	@Override
-	public IGridNode getActionableNode()
-	{
-		return this.getProxy().getNode();
-	}
-
+    @Override
+    public IGridNode getActionableNode() {
+        return this.getProxy().getNode();
+    }
 }

@@ -18,44 +18,37 @@
 
 package appeng.core.stats;
 
-
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.stats.StatBasic;
 import net.minecraft.util.ChatComponentTranslation;
 
+public enum Stats {
+    // done
+    ItemsInserted,
 
-public enum Stats
-{
+    // done
+    ItemsExtracted,
 
-	// done
-	ItemsInserted,
+    // done
+    TurnedCranks;
 
-	// done
-	ItemsExtracted,
+    private StatBasic stat;
 
-	// done
-	TurnedCranks;
+    Stats() {}
 
-	private StatBasic stat;
+    public void addToPlayer(final EntityPlayer player, final int howMany) {
+        player.addStat(this.getStat(), howMany);
+    }
 
-	Stats()
-	{
-	}
+    StatBasic getStat() {
+        if (this.stat == null) {
+            this.stat = new StatBasic(
+                "stat.ae2." + this.name(),
+                new ChatComponentTranslation("stat.ae2." + this.name())
+            );
+            this.stat.registerStat();
+        }
 
-	public void addToPlayer( final EntityPlayer player, final int howMany )
-	{
-		player.addStat( this.getStat(), howMany );
-	}
-
-	StatBasic getStat()
-	{
-		if( this.stat == null )
-		{
-			this.stat = new StatBasic( "stat.ae2." + this.name(), new ChatComponentTranslation( "stat.ae2." + this.name() ) );
-			this.stat.registerStat();
-		}
-
-		return this.stat;
-	}
-
+        return this.stat;
+    }
 }

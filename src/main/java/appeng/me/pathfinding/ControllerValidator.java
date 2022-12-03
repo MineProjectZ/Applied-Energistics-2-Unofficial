@@ -18,83 +18,70 @@
 
 package appeng.me.pathfinding;
 
-
 import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridVisitor;
 import appeng.tile.networking.TileController;
 
+public class ControllerValidator implements IGridVisitor {
+    private boolean isValid = true;
+    private int found = 0;
+    private int minX;
+    private int minY;
+    private int minZ;
+    private int maxX;
+    private int maxY;
+    private int maxZ;
 
-public class ControllerValidator implements IGridVisitor
-{
+    public ControllerValidator(final int x, final int y, final int z) {
+        this.minX = x;
+        this.minY = y;
+        this.minZ = z;
+        this.maxX = x;
+        this.maxY = y;
+        this.maxZ = z;
+    }
 
-	private boolean isValid = true;
-	private int found = 0;
-	private int minX;
-	private int minY;
-	private int minZ;
-	private int maxX;
-	private int maxY;
-	private int maxZ;
+    @Override
+    public boolean visitNode(final IGridNode n) {
+        final IGridHost host = n.getMachine();
+        if (this.isValid() && host instanceof TileController) {
+            final TileController c = (TileController) host;
 
-	public ControllerValidator( final int x, final int y, final int z )
-	{
-		this.minX = x;
-		this.minY = y;
-		this.minZ = z;
-		this.maxX = x;
-		this.maxY = y;
-		this.maxZ = z;
-	}
+            this.minX = Math.min(c.xCoord, this.minX);
+            this.maxX = Math.max(c.xCoord, this.maxX);
+            this.minY = Math.min(c.yCoord, this.minY);
+            this.maxY = Math.max(c.yCoord, this.maxY);
+            this.minZ = Math.min(c.zCoord, this.minZ);
+            this.maxZ = Math.max(c.zCoord, this.maxZ);
 
-	@Override
-	public boolean visitNode( final IGridNode n )
-	{
-		final IGridHost host = n.getMachine();
-		if( this.isValid() && host instanceof TileController )
-		{
-			final TileController c = (TileController) host;
+            if (this.maxX - this.minX < 7 && this.maxY - this.minY < 7
+                && this.maxZ - this.minZ < 7) {
+                this.setFound(this.getFound() + 1);
+                return true;
+            }
 
-			this.minX = Math.min( c.xCoord, this.minX );
-			this.maxX = Math.max( c.xCoord, this.maxX );
-			this.minY = Math.min( c.yCoord, this.minY );
-			this.maxY = Math.max( c.yCoord, this.maxY );
-			this.minZ = Math.min( c.zCoord, this.minZ );
-			this.maxZ = Math.max( c.zCoord, this.maxZ );
+            this.setValid(false);
+        } else {
+            return false;
+        }
 
-			if( this.maxX - this.minX < 7 && this.maxY - this.minY < 7 && this.maxZ - this.minZ < 7 )
-			{
-				this.setFound( this.getFound() + 1 );
-				return true;
-			}
+        return this.isValid();
+    }
 
-			this.setValid( false );
-		}
-		else
-		{
-			return false;
-		}
+    public boolean isValid() {
+        return this.isValid;
+    }
 
-		return this.isValid();
-	}
+    private void setValid(final boolean isValid) {
+        this.isValid = isValid;
+    }
 
-	public boolean isValid()
-	{
-		return this.isValid;
-	}
+    public int getFound() {
+        return this.found;
+    }
 
-	private void setValid( final boolean isValid )
-	{
-		this.isValid = isValid;
-	}
-
-	public int getFound()
-	{
-		return this.found;
-	}
-
-	private void setFound( final int found )
-	{
-		this.found = found;
-	}
+    private void setFound(final int found) {
+        this.found = found;
+    }
 }

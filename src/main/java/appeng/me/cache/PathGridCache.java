@@ -18,6 +18,7 @@
 
 package appeng.me.cache;
 
+import java.util.*;
 
 import appeng.api.networking.*;
 import appeng.api.networking.events.MENetworkBootingStatusChange;
@@ -38,422 +39,353 @@ import appeng.tile.networking.TileController;
 import appeng.util.Platform;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.*;
-
-
-public class PathGridCache implements IPathingGrid
-{
-
-	private final LinkedList<PathSegment> active = new LinkedList<PathSegment>();
-	private final Set<TileController> controllers = new HashSet<TileController>();
-	private final Set<TileLegacyController> legacyControllers = new HashSet<TileLegacyController>();
-	private final Set<IGridNode> requireChannels = new HashSet<IGridNode>();
-	private final Set<IGridNode> blockDense = new HashSet<IGridNode>();
-	private final IGrid myGrid;
-	private int channelsInUse = 0;
-	private int channelsByBlocks = 0;
-	private double channelPowerUsage = 0.0;
-	private boolean recalculateControllerNextTick = true;
-	private boolean updateNetwork = true;
-	private boolean booting = false;
-	private ControllerState controllerState = ControllerState.NO_CONTROLLER;
-	private int ticksUntilReady = 20;
-	private int lastChannels = 0;
-	private HashSet<IPathItem> semiOpen = new HashSet<IPathItem>();
-
-	public PathGridCache( final IGrid g )
-	{
-		this.myGrid = g;
-	}
-
-	@Override
-	public void onUpdateTick()
-	{
-		if( this.recalculateControllerNextTick )
-		{
-			this.recalcController();
-		}
-
-		if( this.updateNetwork )
-		{
-			if( !this.booting )
-			{
-				this.myGrid.postEvent( new MENetworkBootingStatusChange() );
-			}
-
-			this.booting = true;
-			this.updateNetwork = false;
-			this.setChannelsInUse( 0 );
-
-			if( this.controllerState == ControllerState.CONTROLLER_INFINITE )
-			{
-				final int used = this.calculateRequiredChannels();
-
-				final int nodes = this.myGrid.getNodes().size();
-				this.ticksUntilReady = 20 + Math.max( 0, nodes / 100 - 20 );
-				this.setChannelsByBlocks( nodes * used );
-				this.setChannelPowerUsage( this.getChannelsByBlocks() / 128.0 );
-
-				this.myGrid.getPivot().beginVisit( new AdHocChannelUpdater( used ) );
-			}
-			else if( this.controllerState == ControllerState.NO_CONTROLLER ) {
-				if (AEConfig.instance.NeedController) {
-					this.ticksUntilReady = 20;
-					this.myGrid.getPivot().beginVisit( new AdHocChannelUpdater( 0 ) );
-				} else {
-					final int requiredChannels = this.calculateRequiredChannels();
-					int used = requiredChannels;
-					if (requiredChannels > 8) {
-						used = 0;
-					}
-
-					final int nodes = this.myGrid.getNodes().size();
-					this.setChannelsInUse(used);
-
-					this.ticksUntilReady = 20 + Math.max(0, nodes / 100 - 20);
-					this.setChannelsByBlocks(nodes * used);
-					this.setChannelPowerUsage(this.getChannelsByBlocks() / 128.0);
-
-					this.myGrid.getPivot().beginVisit(new AdHocChannelUpdater(used));
-				}
-			}
-			else if( this.controllerState == ControllerState.CONTROLLER_CONFLICT )
-			{
-				this.ticksUntilReady = 20;
-				this.myGrid.getPivot().beginVisit( new AdHocChannelUpdater( 0 ) );
-			}
-			else
-			{
-				final int nodes = this.myGrid.getNodes().size();
-				this.ticksUntilReady = 20 + Math.max( 0, nodes / 100 - 20 );
-				final HashSet<IPathItem> closedList = new HashSet<IPathItem>();
-				this.semiOpen = new HashSet<IPathItem>();
-
-				// myGrid.getPivot().beginVisit( new AdHocChannelUpdater( 0 )
-				// );
-				for( final IGridNode node : this.myGrid.getMachines( TileController.class ) )
-				{
-					closedList.add( (IPathItem) node );
-					for( final IGridConnection gcc : node.getConnections() )
-					{
-						final GridConnection gc = (GridConnection) gcc;
-						if( !( gc.getOtherSide( node ).getMachine() instanceof TileController ) )
-						{
-							final List<IPathItem> open = new LinkedList<IPathItem>();
-							closedList.add( gc );
-							open.add( gc );
-							gc.setControllerRoute( (GridNode) node, true );
-							this.active.add( new PathSegment( this, open, this.semiOpen, closedList ) );
-						}
-					}
-				}
-			}
-		}
-
-		if( !this.active.isEmpty() || this.ticksUntilReady > 0 )
-		{
-			final Iterator<PathSegment> i = this.active.iterator();
-			while( i.hasNext() )
-			{
-				final PathSegment pat = i.next();
-				if( pat.step() )
-				{
-					pat.setDead( true );
-					i.remove();
-				}
-			}
-
-			this.ticksUntilReady--;
-
-			if( this.active.isEmpty() && this.ticksUntilReady <= 0 )
-			{
-				if( this.controllerState == ControllerState.CONTROLLER_ONLINE || this.controllerState == ControllerState.CONTROLLER_INFINITE)
-				{
-					final Iterator<TileController> controllerIterator = this.controllers.iterator();
-					if( controllerIterator.hasNext() )
-					{
-						final TileController controller = controllerIterator.next();
-						controller.getGridNode( ForgeDirection.UNKNOWN ).beginVisit( new ControllerChannelUpdater() );
-					}
-				}
-
-				// check for achievements
-				this.achievementPost();
-
-				this.booting = false;
-				this.setChannelPowerUsage( this.getChannelsByBlocks() / 128.0 );
-				this.myGrid.postEvent( new MENetworkBootingStatusChange() );
-			}
-		}
-	}
-
-	@Override
-	public void removeNode( final IGridNode gridNode, final IGridHost machine )
-	{
-		if( machine instanceof TileController )
-		{
-			this.controllers.remove( machine );
-			this.recalculateControllerNextTick = true;
-		}
-		else if (machine instanceof  TileLegacyController) {
-			this.legacyControllers.remove(machine);
-			this.recalculateControllerNextTick = true;
-		}
-
-		final EnumSet<GridFlags> flags = gridNode.getGridBlock().getFlags();
-
-		if( flags.contains( GridFlags.REQUIRE_CHANNEL ) )
-		{
-			this.requireChannels.remove( gridNode );
-		}
-
-		if( flags.contains( GridFlags.CANNOT_CARRY_COMPRESSED ) )
-		{
-			this.blockDense.remove( gridNode );
-		}
-
-		this.repath();
-	}
-
-	@Override
-	public void addNode( final IGridNode gridNode, final IGridHost machine )
-	{
-		if( machine instanceof TileController )
-		{
-			this.controllers.add( (TileController) machine );
-			this.recalculateControllerNextTick = true;
-		}
-		else if(machine instanceof TileLegacyController) {
-			this.legacyControllers.add((TileLegacyController) machine);
-			this.recalculateControllerNextTick = true;
-		}
-
-		final EnumSet<GridFlags> flags = gridNode.getGridBlock().getFlags();
-
-		if( flags.contains( GridFlags.REQUIRE_CHANNEL ) )
-		{
-			this.requireChannels.add( gridNode );
-		}
-
-		if( flags.contains( GridFlags.CANNOT_CARRY_COMPRESSED ) )
-		{
-			this.blockDense.add( gridNode );
-		}
-
-		this.repath();
-	}
-
-	@Override
-	public void onSplit( final IGridStorage storageB )
-	{
-
-	}
-
-	@Override
-	public void onJoin( final IGridStorage storageB )
-	{
-
-	}
-
-	@Override
-	public void populateGridStorage( final IGridStorage storage )
-	{
-
-	}
-
-	private void recalcController()
-	{
-		this.recalculateControllerNextTick = false;
-		final ControllerState old = this.controllerState;
-
-		if (this.legacyControllers.size() > 1) {
-			this.controllerState = ControllerState.CONTROLLER_CONFLICT;
-		}
-		else if (this.legacyControllers.size() == 1 && !AEConfig.instance.HardLegacyController) {
-			this.controllerState = ControllerState.CONTROLLER_INFINITE;
-		}
-		else if( this.controllers.isEmpty() )
-		{
-			this.controllerState = ControllerState.NO_CONTROLLER;
-		}
-		else {
-			final IGridNode startingNode = this.controllers.iterator().next().getGridNode( ForgeDirection.UNKNOWN );
-			if( startingNode == null )
-			{
-				this.controllerState = ControllerState.CONTROLLER_CONFLICT;
-				return;
-			}
-
-			final DimensionalCoord dc = startingNode.getGridBlock().getLocation();
-			final ControllerValidator cv = new ControllerValidator( dc.x, dc.y, dc.z );
-
-			startingNode.beginVisit( cv );
-
-			if( cv.isValid() && cv.getFound() == this.controllers.size() )
-			{
-				if (this.legacyControllers.size() == 1 && this.controllers.size() >= 68) {
-					this.controllerState = ControllerState.CONTROLLER_INFINITE;
-				} else if (AEConfig.instance.isFeatureEnabled( AEFeature.Channels )) {
-					this.controllerState = ControllerState.CONTROLLER_ONLINE;
-				} else  {
-					this.controllerState = ControllerState.CONTROLLER_INFINITE;
-				}
-			}
-			else
-			{
-				this.controllerState = ControllerState.CONTROLLER_CONFLICT;
-			}
-		}
-
-		if( old != this.controllerState )
-		{
-			this.myGrid.postEvent( new MENetworkControllerChange() );
-		}
-	}
-
-	private int calculateRequiredChannels()
-	{
-		this.semiOpen.clear();
-
-		int depth = 0;
-		for( final IGridNode nodes : this.requireChannels )
-		{
-			if( !this.semiOpen.contains( nodes ) )
-			{
-				final IGridBlock gb = nodes.getGridBlock();
-				final EnumSet<GridFlags> flags = gb.getFlags();
-
-				if( flags.contains( GridFlags.COMPRESSED_CHANNEL ) && !this.blockDense.isEmpty() )
-				{
-					return 9;
-				}
-
-				depth++;
-
-				if( flags.contains( GridFlags.MULTIBLOCK ) )
-				{
-					final IGridMultiblock gmb = (IGridMultiblock) gb;
-					final Iterator<IGridNode> i = gmb.getMultiblockNodes();
-					while( i.hasNext() )
-					{
-						this.semiOpen.add( (IPathItem) i.next() );
-					}
-				}
-			}
-		}
-
-		return depth;
-	}
-
-	private void achievementPost()
-	{
-		if( this.lastChannels != this.getChannelsInUse() && AEConfig.instance.isFeatureEnabled( AEFeature.Channels ) )
-		{
-			final Achievements currentBracket = this.getAchievementBracket( this.getChannelsInUse() );
-			final Achievements lastBracket = this.getAchievementBracket( this.lastChannels );
-			if( currentBracket != lastBracket && currentBracket != null )
-			{
-				final Set<Integer> players = new HashSet<Integer>();
-				for( final IGridNode n : this.requireChannels )
-				{
-					players.add( n.getPlayerID() );
-				}
-
-				for( final int id : players )
-				{
-					Platform.addStat( id, currentBracket.getAchievement() );
-				}
-			}
-		}
-		this.lastChannels = this.getChannelsInUse();
-	}
-
-	private Achievements getAchievementBracket( final int ch )
-	{
-		if( ch < 8 )
-		{
-			return null;
-		}
-
-		if( ch < 128 )
-		{
-			return Achievements.Networking1;
-		}
-
-		if( ch < 2048 )
-		{
-			return Achievements.Networking2;
-		}
-
-		return Achievements.Networking3;
-	}
-
-	@MENetworkEventSubscribe
-	void updateNodReq( final MENetworkChannelChanged ev )
-	{
-		final IGridNode gridNode = ev.node;
-
-		if( gridNode.getGridBlock().getFlags().contains( GridFlags.REQUIRE_CHANNEL ) )
-		{
-			this.requireChannels.add( gridNode );
-		}
-		else
-		{
-			this.requireChannels.remove( gridNode );
-		}
-
-		this.repath();
-	}
-
-	@Override
-	public boolean isNetworkBooting()
-	{
-		return !this.active.isEmpty() && !this.booting;
-	}
-
-	@Override
-	public ControllerState getControllerState()
-	{
-		return this.controllerState;
-	}
-
-	@Override
-	public void repath()
-	{
-		// clean up...
-		this.active.clear();
-
-		this.setChannelsByBlocks( 0 );
-		this.updateNetwork = true;
-	}
-
-	double getChannelPowerUsage()
-	{
-		return this.channelPowerUsage;
-	}
-
-	private void setChannelPowerUsage( final double channelPowerUsage )
-	{
-		this.channelPowerUsage = channelPowerUsage;
-	}
-
-	public int getChannelsByBlocks()
-	{
-		return this.channelsByBlocks;
-	}
-
-	public void setChannelsByBlocks( final int channelsByBlocks )
-	{
-		this.channelsByBlocks = channelsByBlocks;
-	}
-
-	public int getChannelsInUse()
-	{
-		return this.channelsInUse;
-	}
-
-	public void setChannelsInUse( final int channelsInUse )
-	{
-		this.channelsInUse = channelsInUse;
-	}
+public class PathGridCache implements IPathingGrid {
+    private final LinkedList<PathSegment> active = new LinkedList<PathSegment>();
+    private final Set<TileController> controllers = new HashSet<TileController>();
+    private final Set<TileLegacyController> legacyControllers
+        = new HashSet<TileLegacyController>();
+    private final Set<IGridNode> requireChannels = new HashSet<IGridNode>();
+    private final Set<IGridNode> blockDense = new HashSet<IGridNode>();
+    private final IGrid myGrid;
+    private int channelsInUse = 0;
+    private int channelsByBlocks = 0;
+    private double channelPowerUsage = 0.0;
+    private boolean recalculateControllerNextTick = true;
+    private boolean updateNetwork = true;
+    private boolean booting = false;
+    private ControllerState controllerState = ControllerState.NO_CONTROLLER;
+    private int ticksUntilReady = 20;
+    private int lastChannels = 0;
+    private HashSet<IPathItem> semiOpen = new HashSet<IPathItem>();
+
+    public PathGridCache(final IGrid g) {
+        this.myGrid = g;
+    }
+
+    @Override
+    public void onUpdateTick() {
+        if (this.recalculateControllerNextTick) {
+            this.recalcController();
+        }
+
+        if (this.updateNetwork) {
+            if (!this.booting) {
+                this.myGrid.postEvent(new MENetworkBootingStatusChange());
+            }
+
+            this.booting = true;
+            this.updateNetwork = false;
+            this.setChannelsInUse(0);
+
+            if (this.controllerState == ControllerState.CONTROLLER_INFINITE) {
+                final int used = this.calculateRequiredChannels();
+
+                final int nodes = this.myGrid.getNodes().size();
+                this.ticksUntilReady = 20 + Math.max(0, nodes / 100 - 20);
+                this.setChannelsByBlocks(nodes * used);
+                this.setChannelPowerUsage(this.getChannelsByBlocks() / 128.0);
+
+                this.myGrid.getPivot().beginVisit(new AdHocChannelUpdater(used));
+            } else if (this.controllerState == ControllerState.NO_CONTROLLER) {
+                if (AEConfig.instance.NeedController) {
+                    this.ticksUntilReady = 20;
+                    this.myGrid.getPivot().beginVisit(new AdHocChannelUpdater(0));
+                } else {
+                    final int requiredChannels = this.calculateRequiredChannels();
+                    int used = requiredChannels;
+                    if (requiredChannels > 8) {
+                        used = 0;
+                    }
+
+                    final int nodes = this.myGrid.getNodes().size();
+                    this.setChannelsInUse(used);
+
+                    this.ticksUntilReady = 20 + Math.max(0, nodes / 100 - 20);
+                    this.setChannelsByBlocks(nodes * used);
+                    this.setChannelPowerUsage(this.getChannelsByBlocks() / 128.0);
+
+                    this.myGrid.getPivot().beginVisit(new AdHocChannelUpdater(used));
+                }
+            } else if (this.controllerState == ControllerState.CONTROLLER_CONFLICT) {
+                this.ticksUntilReady = 20;
+                this.myGrid.getPivot().beginVisit(new AdHocChannelUpdater(0));
+            } else {
+                final int nodes = this.myGrid.getNodes().size();
+                this.ticksUntilReady = 20 + Math.max(0, nodes / 100 - 20);
+                final HashSet<IPathItem> closedList = new HashSet<IPathItem>();
+                this.semiOpen = new HashSet<IPathItem>();
+
+                // myGrid.getPivot().beginVisit( new AdHocChannelUpdater( 0 )
+                // );
+                for (final IGridNode node :
+                     this.myGrid.getMachines(TileController.class)) {
+                    closedList.add((IPathItem) node);
+                    for (final IGridConnection gcc : node.getConnections()) {
+                        final GridConnection gc = (GridConnection) gcc;
+                        if (!(gc.getOtherSide(node).getMachine() instanceof TileController
+                            )) {
+                            final List<IPathItem> open = new LinkedList<IPathItem>();
+                            closedList.add(gc);
+                            open.add(gc);
+                            gc.setControllerRoute((GridNode) node, true);
+                            this.active.add(
+                                new PathSegment(this, open, this.semiOpen, closedList)
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!this.active.isEmpty() || this.ticksUntilReady > 0) {
+            final Iterator<PathSegment> i = this.active.iterator();
+            while (i.hasNext()) {
+                final PathSegment pat = i.next();
+                if (pat.step()) {
+                    pat.setDead(true);
+                    i.remove();
+                }
+            }
+
+            this.ticksUntilReady--;
+
+            if (this.active.isEmpty() && this.ticksUntilReady <= 0) {
+                if (this.controllerState == ControllerState.CONTROLLER_ONLINE
+                    || this.controllerState == ControllerState.CONTROLLER_INFINITE) {
+                    final Iterator<TileController> controllerIterator
+                        = this.controllers.iterator();
+                    if (controllerIterator.hasNext()) {
+                        final TileController controller = controllerIterator.next();
+                        controller.getGridNode(ForgeDirection.UNKNOWN)
+                            .beginVisit(new ControllerChannelUpdater());
+                    }
+                }
+
+                // check for achievements
+                this.achievementPost();
+
+                this.booting = false;
+                this.setChannelPowerUsage(this.getChannelsByBlocks() / 128.0);
+                this.myGrid.postEvent(new MENetworkBootingStatusChange());
+            }
+        }
+    }
+
+    @Override
+    public void removeNode(final IGridNode gridNode, final IGridHost machine) {
+        if (machine instanceof TileController) {
+            this.controllers.remove(machine);
+            this.recalculateControllerNextTick = true;
+        } else if (machine instanceof TileLegacyController) {
+            this.legacyControllers.remove(machine);
+            this.recalculateControllerNextTick = true;
+        }
+
+        final EnumSet<GridFlags> flags = gridNode.getGridBlock().getFlags();
+
+        if (flags.contains(GridFlags.REQUIRE_CHANNEL)) {
+            this.requireChannels.remove(gridNode);
+        }
+
+        if (flags.contains(GridFlags.CANNOT_CARRY_COMPRESSED)) {
+            this.blockDense.remove(gridNode);
+        }
+
+        this.repath();
+    }
+
+    @Override
+    public void addNode(final IGridNode gridNode, final IGridHost machine) {
+        if (machine instanceof TileController) {
+            this.controllers.add((TileController) machine);
+            this.recalculateControllerNextTick = true;
+        } else if (machine instanceof TileLegacyController) {
+            this.legacyControllers.add((TileLegacyController) machine);
+            this.recalculateControllerNextTick = true;
+        }
+
+        final EnumSet<GridFlags> flags = gridNode.getGridBlock().getFlags();
+
+        if (flags.contains(GridFlags.REQUIRE_CHANNEL)) {
+            this.requireChannels.add(gridNode);
+        }
+
+        if (flags.contains(GridFlags.CANNOT_CARRY_COMPRESSED)) {
+            this.blockDense.add(gridNode);
+        }
+
+        this.repath();
+    }
+
+    @Override
+    public void onSplit(final IGridStorage storageB) {}
+
+    @Override
+    public void onJoin(final IGridStorage storageB) {}
+
+    @Override
+    public void populateGridStorage(final IGridStorage storage) {}
+
+    private void recalcController() {
+        this.recalculateControllerNextTick = false;
+        final ControllerState old = this.controllerState;
+
+        if (this.legacyControllers.size() > 1) {
+            this.controllerState = ControllerState.CONTROLLER_CONFLICT;
+        } else if (this.legacyControllers.size() == 1 && !AEConfig.instance.HardLegacyController) {
+            this.controllerState = ControllerState.CONTROLLER_INFINITE;
+        } else if (this.controllers.isEmpty()) {
+            this.controllerState = ControllerState.NO_CONTROLLER;
+        } else {
+            final IGridNode startingNode
+                = this.controllers.iterator().next().getGridNode(ForgeDirection.UNKNOWN);
+            if (startingNode == null) {
+                this.controllerState = ControllerState.CONTROLLER_CONFLICT;
+                return;
+            }
+
+            final DimensionalCoord dc = startingNode.getGridBlock().getLocation();
+            final ControllerValidator cv = new ControllerValidator(dc.x, dc.y, dc.z);
+
+            startingNode.beginVisit(cv);
+
+            if (cv.isValid() && cv.getFound() == this.controllers.size()) {
+                if (this.legacyControllers.size() == 1 && this.controllers.size() >= 68) {
+                    this.controllerState = ControllerState.CONTROLLER_INFINITE;
+                } else if (AEConfig.instance.isFeatureEnabled(AEFeature.Channels)) {
+                    this.controllerState = ControllerState.CONTROLLER_ONLINE;
+                } else {
+                    this.controllerState = ControllerState.CONTROLLER_INFINITE;
+                }
+            } else {
+                this.controllerState = ControllerState.CONTROLLER_CONFLICT;
+            }
+        }
+
+        if (old != this.controllerState) {
+            this.myGrid.postEvent(new MENetworkControllerChange());
+        }
+    }
+
+    private int calculateRequiredChannels() {
+        this.semiOpen.clear();
+
+        int depth = 0;
+        for (final IGridNode nodes : this.requireChannels) {
+            if (!this.semiOpen.contains(nodes)) {
+                final IGridBlock gb = nodes.getGridBlock();
+                final EnumSet<GridFlags> flags = gb.getFlags();
+
+                if (flags.contains(GridFlags.COMPRESSED_CHANNEL)
+                    && !this.blockDense.isEmpty()) {
+                    return 9;
+                }
+
+                depth++;
+
+                if (flags.contains(GridFlags.MULTIBLOCK)) {
+                    final IGridMultiblock gmb = (IGridMultiblock) gb;
+                    final Iterator<IGridNode> i = gmb.getMultiblockNodes();
+                    while (i.hasNext()) {
+                        this.semiOpen.add((IPathItem) i.next());
+                    }
+                }
+            }
+        }
+
+        return depth;
+    }
+
+    private void achievementPost() {
+        if (this.lastChannels != this.getChannelsInUse()
+            && AEConfig.instance.isFeatureEnabled(AEFeature.Channels)) {
+            final Achievements currentBracket
+                = this.getAchievementBracket(this.getChannelsInUse());
+            final Achievements lastBracket
+                = this.getAchievementBracket(this.lastChannels);
+            if (currentBracket != lastBracket && currentBracket != null) {
+                final Set<Integer> players = new HashSet<Integer>();
+                for (final IGridNode n : this.requireChannels) {
+                    players.add(n.getPlayerID());
+                }
+
+                for (final int id : players) {
+                    Platform.addStat(id, currentBracket.getAchievement());
+                }
+            }
+        }
+        this.lastChannels = this.getChannelsInUse();
+    }
+
+    private Achievements getAchievementBracket(final int ch) {
+        if (ch < 8) {
+            return null;
+        }
+
+        if (ch < 128) {
+            return Achievements.Networking1;
+        }
+
+        if (ch < 2048) {
+            return Achievements.Networking2;
+        }
+
+        return Achievements.Networking3;
+    }
+
+    @MENetworkEventSubscribe
+    void updateNodReq(final MENetworkChannelChanged ev) {
+        final IGridNode gridNode = ev.node;
+
+        if (gridNode.getGridBlock().getFlags().contains(GridFlags.REQUIRE_CHANNEL)) {
+            this.requireChannels.add(gridNode);
+        } else {
+            this.requireChannels.remove(gridNode);
+        }
+
+        this.repath();
+    }
+
+    @Override
+    public boolean isNetworkBooting() {
+        return !this.active.isEmpty() && !this.booting;
+    }
+
+    @Override
+    public ControllerState getControllerState() {
+        return this.controllerState;
+    }
+
+    @Override
+    public void repath() {
+        // clean up...
+        this.active.clear();
+
+        this.setChannelsByBlocks(0);
+        this.updateNetwork = true;
+    }
+
+    double getChannelPowerUsage() {
+        return this.channelPowerUsage;
+    }
+
+    private void setChannelPowerUsage(final double channelPowerUsage) {
+        this.channelPowerUsage = channelPowerUsage;
+    }
+
+    public int getChannelsByBlocks() {
+        return this.channelsByBlocks;
+    }
+
+    public void setChannelsByBlocks(final int channelsByBlocks) {
+        this.channelsByBlocks = channelsByBlocks;
+    }
+
+    public int getChannelsInUse() {
+        return this.channelsInUse;
+    }
+
+    public void setChannelsInUse(final int channelsInUse) {
+        this.channelsInUse = channelsInUse;
+    }
 }

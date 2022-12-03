@@ -18,6 +18,9 @@
 
 package appeng.container.guisync;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.EnumSet;
 
 import appeng.container.AEBaseContainer;
 import appeng.core.AELog;
@@ -27,182 +30,126 @@ import appeng.core.sync.packets.PacketValueConfig;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.ICrafting;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.EnumSet;
+public class SyncData {
+    private final AEBaseContainer source;
+    private final Field field;
+    private final int channel;
+    private Object clientVersion;
 
+    public SyncData(
+        final AEBaseContainer container, final Field field, final GuiSync annotation
+    ) {
+        this.clientVersion = null;
+        this.source = container;
+        this.field = field;
+        this.channel = annotation.value();
+    }
 
-public class SyncData
-{
+    public int getChannel() {
+        return this.channel;
+    }
 
-	private final AEBaseContainer source;
-	private final Field field;
-	private final int channel;
-	private Object clientVersion;
+    public void tick(final ICrafting c) {
+        try {
+            final Object val = this.field.get(this.source);
+            if (val != null && this.clientVersion == null) {
+                this.send(c, val);
+            } else if (!val.equals(this.clientVersion)) {
+                this.send(c, val);
+            }
+        } catch (final IllegalArgumentException e) {
+            AELog.debug(e);
+        } catch (final IllegalAccessException e) {
+            AELog.debug(e);
+        } catch (final IOException e) {
+            AELog.debug(e);
+        }
+    }
 
-	public SyncData( final AEBaseContainer container, final Field field, final GuiSync annotation )
-	{
-		this.clientVersion = null;
-		this.source = container;
-		this.field = field;
-		this.channel = annotation.value();
-	}
+    private void send(final ICrafting o, final Object val) throws IOException {
+        if (val instanceof String) {
+            if (o instanceof EntityPlayerMP) {
+                NetworkHandler.instance.sendTo(
+                    new PacketValueConfig("SyncDat." + this.channel, (String) val),
+                    (EntityPlayerMP) o
+                );
+            }
+        } else if (this.field.getType().isEnum()) {
+            o.sendProgressBarUpdate(this.source, this.channel, ((Enum) val).ordinal());
 
-	public int getChannel()
-	{
-		return this.channel;
-	}
+        } else if (val instanceof Long || val.getClass() == long.class) {
+            NetworkHandler.instance.sendTo(
+                new PacketProgressBar(this.channel, (Long) val), (EntityPlayerMP) o
+            );
 
-	public void tick( final ICrafting c )
-	{
-		try
-		{
-			final Object val = this.field.get( this.source );
-			if( val != null && this.clientVersion == null )
-			{
-				this.send( c, val );
-			}
-			else if( !val.equals( this.clientVersion ) )
-			{
-				this.send( c, val );
-			}
-		}
-		catch( final IllegalArgumentException e )
-		{
-			AELog.debug( e );
-		}
-		catch( final IllegalAccessException e )
-		{
-			AELog.debug( e );
-		}
-		catch( final IOException e )
-		{
-			AELog.debug( e );
-		}
-	}
+        } else if (val instanceof Boolean || val.getClass() == boolean.class) {
+            o.sendProgressBarUpdate(this.source, this.channel, ((Boolean) val) ? 1 : 0);
+        } else {
+            o.sendProgressBarUpdate(this.source, this.channel, (Integer) val);
+        }
 
-	private void send( final ICrafting o, final Object val ) throws IOException
-	{
-		if( val instanceof String )
-		{
-			if( o instanceof EntityPlayerMP )
-			{
-				NetworkHandler.instance.sendTo( new PacketValueConfig( "SyncDat." + this.channel, (String) val ), (EntityPlayerMP) o );
-			}
-		}
-		else if( this.field.getType().isEnum() )
-		{
-			o.sendProgressBarUpdate( this.source, this.channel, ( (Enum) val ).ordinal() );
-		}
-		else if( val instanceof Long || val.getClass() == long.class )
-		{
-			NetworkHandler.instance.sendTo( new PacketProgressBar( this.channel, (Long) val ), (EntityPlayerMP) o );
-		}
-		else if( val instanceof Boolean || val.getClass() == boolean.class )
-		{
-			o.sendProgressBarUpdate( this.source, this.channel, ( (Boolean) val ) ? 1 : 0 );
-		}
-		else
-		{
-			o.sendProgressBarUpdate( this.source, this.channel, (Integer) val );
-		}
+        this.clientVersion = val;
+    }
 
-		this.clientVersion = val;
-	}
+    public void update(final Object val) {
+        try {
+            final Object oldValue = this.field.get(this.source);
+            if (val instanceof String) {
+                this.updateString(oldValue, (String) val);
+            } else {
+                this.updateValue(oldValue, (Long) val);
+            }
+        } catch (final IllegalArgumentException e) {
+            AELog.debug(e);
+        } catch (final IllegalAccessException e) {
+            AELog.debug(e);
+        }
+    }
 
-	public void update( final Object val )
-	{
-		try
-		{
-			final Object oldValue = this.field.get( this.source );
-			if( val instanceof String )
-			{
-				this.updateString( oldValue, (String) val );
-			}
-			else
-			{
-				this.updateValue( oldValue, (Long) val );
-			}
-		}
-		catch( final IllegalArgumentException e )
-		{
-			AELog.debug( e );
-		}
-		catch( final IllegalAccessException e )
-		{
-			AELog.debug( e );
-		}
-	}
+    private void updateString(final Object oldValue, final String val) {
+        try {
+            this.field.set(this.source, val);
+        } catch (final IllegalArgumentException e) {
+            AELog.debug(e);
+        } catch (final IllegalAccessException e) {
+            AELog.debug(e);
+        }
+    }
 
-	private void updateString( final Object oldValue, final String val )
-	{
-		try
-		{
-			this.field.set( this.source, val );
-		}
-		catch( final IllegalArgumentException e )
-		{
-			AELog.debug( e );
-		}
-		catch( final IllegalAccessException e )
-		{
-			AELog.debug( e );
-		}
-	}
+    private void updateValue(final Object oldValue, final long val) {
+        try {
+            if (this.field.getType().isEnum()) {
+                final EnumSet<? extends Enum> valList
+                    = EnumSet.allOf((Class<? extends Enum>) this.field.getType());
+                for (final Enum e : valList) {
+                    if (e.ordinal() == val) {
+                        this.field.set(this.source, e);
+                        break;
+                    }
+                }
+            } else {
+                if (this.field.getType().equals(int.class)) {
+                    this.field.set(this.source, (int) val);
+                } else if (this.field.getType().equals(long.class)) {
+                    this.field.set(this.source, val);
+                } else if (this.field.getType().equals(boolean.class)) {
+                    this.field.set(this.source, val == 1);
+                } else if (this.field.getType().equals(Integer.class)) {
+                    this.field.set(this.source, (int) val);
+                } else if (this.field.getType().equals(Long.class)) {
+                    this.field.set(this.source, val);
+                } else if (this.field.getType().equals(Boolean.class)) {
+                    this.field.set(this.source, val == 1);
+                }
+            }
 
-	private void updateValue( final Object oldValue, final long val )
-	{
-		try
-		{
-			if( this.field.getType().isEnum() )
-			{
-				final EnumSet<? extends Enum> valList = EnumSet.allOf( (Class<? extends Enum>) this.field.getType() );
-				for( final Enum e : valList )
-				{
-					if( e.ordinal() == val )
-					{
-						this.field.set( this.source, e );
-						break;
-					}
-				}
-			}
-			else
-			{
-				if( this.field.getType().equals( int.class ) )
-				{
-					this.field.set( this.source, (int) val );
-				}
-				else if( this.field.getType().equals( long.class ) )
-				{
-					this.field.set( this.source, val );
-				}
-				else if( this.field.getType().equals( boolean.class ) )
-				{
-					this.field.set( this.source, val == 1 );
-				}
-				else if( this.field.getType().equals( Integer.class ) )
-				{
-					this.field.set( this.source, (int) val );
-				}
-				else if( this.field.getType().equals( Long.class ) )
-				{
-					this.field.set( this.source, val );
-				}
-				else if( this.field.getType().equals( Boolean.class ) )
-				{
-					this.field.set( this.source, val == 1 );
-				}
-			}
-
-			this.source.onUpdate( this.field.getName(), oldValue, this.field.get( this.source ) );
-		}
-		catch( final IllegalArgumentException e )
-		{
-			AELog.debug( e );
-		}
-		catch( final IllegalAccessException e )
-		{
-			AELog.debug( e );
-		}
-	}
+            this.source.onUpdate(
+                this.field.getName(), oldValue, this.field.get(this.source)
+            );
+        } catch (final IllegalArgumentException e) {
+            AELog.debug(e);
+        } catch (final IllegalAccessException e) {
+            AELog.debug(e);
+        }
+    }
 }

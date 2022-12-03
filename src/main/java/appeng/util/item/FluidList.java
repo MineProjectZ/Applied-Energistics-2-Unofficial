@@ -18,180 +18,157 @@
 
 package appeng.util.item;
 
+import java.util.*;
 
 import appeng.api.config.FuzzyMode;
 import appeng.api.storage.data.IAEFluidStack;
 import appeng.api.storage.data.IItemList;
 
-import java.util.*;
+public final class FluidList implements IItemList<IAEFluidStack> {
+    private final Map<IAEFluidStack, IAEFluidStack> records
+        = new HashMap<IAEFluidStack, IAEFluidStack>();
 
+    @Override
+    public void add(final IAEFluidStack option) {
+        if (option == null) {
+            return;
+        }
 
-public final class FluidList implements IItemList<IAEFluidStack>
-{
+        final IAEFluidStack st = this.getFluidRecord(option);
 
-	private final Map<IAEFluidStack, IAEFluidStack> records = new HashMap<IAEFluidStack, IAEFluidStack>();
+        if (st != null) {
+            st.add(option);
+            return;
+        }
 
-	@Override
-	public void add( final IAEFluidStack option )
-	{
-		if( option == null )
-		{
-			return;
-		}
+        final IAEFluidStack opt = option.copy();
 
-		final IAEFluidStack st = this.getFluidRecord( option );
+        this.putFluidRecord(opt);
+    }
 
-		if( st != null )
-		{
-			st.add( option );
-			return;
-		}
+    @Override
+    public IAEFluidStack findPrecise(final IAEFluidStack fluidStack) {
+        if (fluidStack == null) {
+            return null;
+        }
 
-		final IAEFluidStack opt = option.copy();
+        return this.getFluidRecord(fluidStack);
+    }
 
-		this.putFluidRecord( opt );
-	}
+    @Override
+    public Collection<IAEFluidStack>
+    findFuzzy(final IAEFluidStack filter, final FuzzyMode fuzzy) {
+        if (filter == null) {
+            return Collections.emptyList();
+        }
 
-	@Override
-	public IAEFluidStack findPrecise( final IAEFluidStack fluidStack )
-	{
-		if( fluidStack == null )
-		{
-			return null;
-		}
+        return Collections.singletonList(this.findPrecise(filter));
+    }
 
-		return this.getFluidRecord( fluidStack );
-	}
+    @Override
+    public boolean isEmpty() {
+        return !this.iterator().hasNext();
+    }
 
-	@Override
-	public Collection<IAEFluidStack> findFuzzy( final IAEFluidStack filter, final FuzzyMode fuzzy )
-	{
-		if( filter == null )
-		{
-			return Collections.emptyList();
-		}
+    @Override
+    public void addStorage(final IAEFluidStack option) {
+        if (option == null) {
+            return;
+        }
 
-		return Collections.singletonList( this.findPrecise( filter ) );
-	}
+        final IAEFluidStack st = this.getFluidRecord(option);
 
-	@Override
-	public boolean isEmpty()
-	{
-		return !this.iterator().hasNext();
-	}
+        if (st != null) {
+            st.incStackSize(option.getStackSize());
+            return;
+        }
 
-	@Override
-	public void addStorage( final IAEFluidStack option )
-	{
-		if( option == null )
-		{
-			return;
-		}
+        final IAEFluidStack opt = option.copy();
 
-		final IAEFluidStack st = this.getFluidRecord( option );
+        this.putFluidRecord(opt);
+    }
 
-		if( st != null )
-		{
-			st.incStackSize( option.getStackSize() );
-			return;
-		}
+    /*
+     * public synchronized void clean() { Iterator<StackType> i = iterator(); while
+     * (i.hasNext()) { StackType AEI = i.next(); if ( !AEI.isMeaningful() ) i.remove(); }
+     * }
+     */
 
-		final IAEFluidStack opt = option.copy();
+    @Override
+    public void addCrafting(final IAEFluidStack option) {
+        if (option == null) {
+            return;
+        }
 
-		this.putFluidRecord( opt );
-	}
+        final IAEFluidStack st = this.getFluidRecord(option);
 
-	/*
-	 * public synchronized void clean() { Iterator<StackType> i = iterator(); while (i.hasNext()) { StackType AEI =
-	 * i.next(); if ( !AEI.isMeaningful() ) i.remove(); } }
-	 */
+        if (st != null) {
+            st.setCraftable(true);
+            return;
+        }
 
-	@Override
-	public void addCrafting( final IAEFluidStack option )
-	{
-		if( option == null )
-		{
-			return;
-		}
+        final IAEFluidStack opt = option.copy();
+        opt.setStackSize(0);
+        opt.setCraftable(true);
 
-		final IAEFluidStack st = this.getFluidRecord( option );
+        this.putFluidRecord(opt);
+    }
 
-		if( st != null )
-		{
-			st.setCraftable( true );
-			return;
-		}
+    @Override
+    public void addRequestable(final IAEFluidStack option) {
+        if (option == null) {
+            return;
+        }
 
-		final IAEFluidStack opt = option.copy();
-		opt.setStackSize( 0 );
-		opt.setCraftable( true );
+        final IAEFluidStack st = this.getFluidRecord(option);
 
-		this.putFluidRecord( opt );
-	}
+        if (st != null) {
+            st.setCountRequestable(
+                st.getCountRequestable() + option.getCountRequestable()
+            );
+            return;
+        }
 
-	@Override
-	public void addRequestable( final IAEFluidStack option )
-	{
-		if( option == null )
-		{
-			return;
-		}
+        final IAEFluidStack opt = option.copy();
+        opt.setStackSize(0);
+        opt.setCraftable(false);
+        opt.setCountRequestable(option.getCountRequestable());
 
-		final IAEFluidStack st = this.getFluidRecord( option );
+        this.putFluidRecord(opt);
+    }
 
-		if( st != null )
-		{
-			st.setCountRequestable( st.getCountRequestable() + option.getCountRequestable() );
-			return;
-		}
+    @Override
+    public IAEFluidStack getFirstItem() {
+        for (final IAEFluidStack stackType : this) {
+            return stackType;
+        }
 
-		final IAEFluidStack opt = option.copy();
-		opt.setStackSize( 0 );
-		opt.setCraftable( false );
-		opt.setCountRequestable( option.getCountRequestable() );
+        return null;
+    }
 
-		this.putFluidRecord( opt );
-	}
+    @Override
+    public int size() {
+        return this.records.values().size();
+    }
 
-	@Override
-	public IAEFluidStack getFirstItem()
-	{
-		for( final IAEFluidStack stackType : this )
-		{
-			return stackType;
-		}
+    @Override
+    public Iterator<IAEFluidStack> iterator() {
+        return new MeaningfulFluidIterator<IAEFluidStack>(this.records.values().iterator()
+        );
+    }
 
-		return null;
-	}
+    @Override
+    public void resetStatus() {
+        for (final IAEFluidStack i : this) {
+            i.reset();
+        }
+    }
 
-	@Override
-	public int size()
-	{
-		return this.records.values().size();
-	}
+    private IAEFluidStack getFluidRecord(final IAEFluidStack fluid) {
+        return this.records.get(fluid);
+    }
 
-	@Override
-	public Iterator<IAEFluidStack> iterator()
-	{
-		return new MeaningfulFluidIterator<IAEFluidStack>( this.records.values().iterator() );
-	}
-
-	@Override
-	public void resetStatus()
-	{
-		for( final IAEFluidStack i : this )
-		{
-			i.reset();
-		}
-	}
-
-	private IAEFluidStack getFluidRecord( final IAEFluidStack fluid )
-	{
-		return this.records.get( fluid );
-	}
-
-	private IAEFluidStack putFluidRecord( final IAEFluidStack fluid )
-	{
-		return this.records.put( fluid, fluid );
-	}
+    private IAEFluidStack putFluidRecord(final IAEFluidStack fluid) {
+        return this.records.put(fluid, fluid);
+    }
 }

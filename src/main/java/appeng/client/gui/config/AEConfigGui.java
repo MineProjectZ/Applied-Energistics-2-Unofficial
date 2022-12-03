@@ -18,6 +18,8 @@
 
 package appeng.client.gui.config;
 
+import java.util.ArrayList;
+import java.util.List;
 
 import appeng.core.AEConfig;
 import appeng.core.AppEng;
@@ -27,45 +29,40 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.ConfigElement;
 
-import java.util.ArrayList;
-import java.util.List;
+public class AEConfigGui extends GuiConfig {
+    public AEConfigGui(final GuiScreen parent) {
+        super(
+            parent,
+            getConfigElements(),
+            AppEng.MOD_ID,
+            false,
+            false,
+            GuiConfig.getAbridgedConfigPath(AEConfig.instance.getFilePath())
+        );
+    }
 
+    private static List<IConfigElement> getConfigElements() {
+        final List<IConfigElement> list = new ArrayList<IConfigElement>();
 
-public class AEConfigGui extends GuiConfig
-{
+        for (final String cat : AEConfig.instance.getCategoryNames()) {
+            if (cat.equals("versionchecker")) {
+                continue;
+            }
 
-	public AEConfigGui( final GuiScreen parent )
-	{
-		super( parent, getConfigElements(), AppEng.MOD_ID, false, false, GuiConfig.getAbridgedConfigPath( AEConfig.instance.getFilePath() ) );
-	}
+            if (cat.equals("settings")) {
+                continue;
+            }
 
-	private static List<IConfigElement> getConfigElements()
-	{
-		final List<IConfigElement> list = new ArrayList<IConfigElement>();
+            final ConfigCategory cc = AEConfig.instance.getCategory(cat);
 
-		for( final String cat : AEConfig.instance.getCategoryNames() )
-		{
-			if( cat.equals( "versionchecker" ) )
-			{
-				continue;
-			}
+            if (cc.isChild()) {
+                continue;
+            }
 
-			if( cat.equals( "settings" ) )
-			{
-				continue;
-			}
+            final ConfigElement ce = new ConfigElement(cc);
+            list.add(ce);
+        }
 
-			final ConfigCategory cc = AEConfig.instance.getCategory( cat );
-
-			if( cc.isChild() )
-			{
-				continue;
-			}
-
-			final ConfigElement ce = new ConfigElement( cc );
-			list.add( ce );
-		}
-
-		return list;
-	}
+        return list;
+    }
 }

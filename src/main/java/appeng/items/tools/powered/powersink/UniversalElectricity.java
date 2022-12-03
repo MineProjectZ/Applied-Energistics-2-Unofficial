@@ -18,7 +18,6 @@
 
 package appeng.items.tools.powered.powersink;
 
-
 /*
  @Interface(iface = "universalelectricity.core.item.IItemElectric", modid = "IC2")
  public class UniversalElectricity extends ThermalExpansion implements IItemElectric
@@ -53,4 +52,3 @@ package appeng.items.tools.powered.powersink;
 
  }
  */
-

@@ -18,97 +18,70 @@
 
 package appeng.tile.inventory;
 
-
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
+public class AppEngNullInventory implements IInventory {
+    public AppEngNullInventory() {}
 
-public class AppEngNullInventory implements IInventory
-{
+    public void writeToNBT(final NBTTagCompound target) {}
 
-	public AppEngNullInventory()
-	{
-	}
+    @Override
+    public int getSizeInventory() {
+        return 0;
+    }
 
-	public void writeToNBT( final NBTTagCompound target )
-	{
-	}
+    @Override
+    public ItemStack getStackInSlot(final int var1) {
+        return null;
+    }
 
-	@Override
-	public int getSizeInventory()
-	{
-		return 0;
-	}
+    @Override
+    public ItemStack decrStackSize(final int slot, final int qty) {
+        return null;
+    }
 
-	@Override
-	public ItemStack getStackInSlot( final int var1 )
-	{
-		return null;
-	}
+    @Override
+    public ItemStack getStackInSlotOnClosing(final int var1) {
+        return null;
+    }
 
-	@Override
-	public ItemStack decrStackSize( final int slot, final int qty )
-	{
-		return null;
-	}
+    @Override
+    public void setInventorySlotContents(final int slot, final ItemStack newItemStack) {}
 
-	@Override
-	public ItemStack getStackInSlotOnClosing( final int var1 )
-	{
-		return null;
-	}
+    @Override
+    public String getInventoryName() {
+        return "appeng-internal";
+    }
 
-	@Override
-	public void setInventorySlotContents( final int slot, final ItemStack newItemStack )
-	{
+    @Override
+    public boolean hasCustomInventoryName() {
+        return false;
+    }
 
-	}
+    @Override
+    public int getInventoryStackLimit() {
+        return 0;
+    }
 
-	@Override
-	public String getInventoryName()
-	{
-		return "appeng-internal";
-	}
+    @Override
+    public void markDirty() {}
 
-	@Override
-	public boolean hasCustomInventoryName()
-	{
-		return false;
-	}
+    @Override
+    public boolean isUseableByPlayer(final EntityPlayer var1) {
+        return false;
+    }
 
-	@Override
-	public int getInventoryStackLimit()
-	{
-		return 0;
-	}
+    @Override
+    public void openInventory() {}
 
-	@Override
-	public void markDirty()
-	{
+    @Override
+    public void closeInventory() {}
 
-	}
-
-	@Override
-	public boolean isUseableByPlayer( final EntityPlayer var1 )
-	{
-		return false;
-	}
-
-	@Override
-	public void openInventory()
-	{
-	}
-
-	@Override
-	public void closeInventory()
-	{
-	}
-
-	@Override
-	public boolean isItemValidForSlot( final int i, final ItemStack itemstack )
-	{
-		return false;
-	}
+    @Override
+    public boolean isItemValidForSlot(final int i, final ItemStack itemstack) {
+        return false;
+    }
 }

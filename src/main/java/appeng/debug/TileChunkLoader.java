@@ -18,6 +18,7 @@
 
 package appeng.debug;
 
+import java.util.List;
 
 import appeng.core.AELog;
 import appeng.core.AppEng;
@@ -34,61 +35,53 @@ import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.ForgeChunkManager.Ticket;
 import net.minecraftforge.common.ForgeChunkManager.Type;
 
-import java.util.List;
+public class TileChunkLoader extends AEBaseTile {
+    private boolean requestTicket = true;
+    private Ticket ct = null;
 
+    @TileEvent(TileEventType.TICK)
+    public void onTickEvent() {
+        if (this.requestTicket) {
+            this.requestTicket = false;
+            this.initTicket();
+        }
+    }
 
-public class TileChunkLoader extends AEBaseTile
-{
+    private void initTicket() {
+        if (Platform.isClient()) {
+            return;
+        }
 
-	private boolean requestTicket = true;
-	private Ticket ct = null;
+        this.ct = ForgeChunkManager.requestTicket(
+            AppEng.instance(), this.worldObj, Type.NORMAL
+        );
 
-	@TileEvent( TileEventType.TICK )
-	public void onTickEvent()
-	{
-		if( this.requestTicket )
-		{
-			this.requestTicket = false;
-			this.initTicket();
-		}
-	}
+        if (this.ct == null) {
+            final MinecraftServer server
+                = FMLCommonHandler.instance().getMinecraftServerInstance();
+            if (server != null) {
+                final List<EntityPlayerMP> pl
+                    = server.getConfigurationManager().playerEntityList;
+                for (final EntityPlayerMP p : pl) {
+                    p.addChatMessage(new ChatComponentText("Can't chunk load.."));
+                }
+            }
+            return;
+        }
 
-	private void initTicket()
-	{
-		if( Platform.isClient() )
-		{
-			return;
-		}
+        AELog.info("New Ticket " + this.ct.toString());
+        ForgeChunkManager.forceChunk(
+            this.ct, new ChunkCoordIntPair(this.xCoord >> 4, this.zCoord >> 4)
+        );
+    }
 
-		this.ct = ForgeChunkManager.requestTicket( AppEng.instance(), this.worldObj, Type.NORMAL );
+    @Override
+    public void invalidate() {
+        if (Platform.isClient()) {
+            return;
+        }
 
-		if( this.ct == null )
-		{
-			final MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
-			if( server != null )
-			{
-				final List<EntityPlayerMP> pl = server.getConfigurationManager().playerEntityList;
-				for( final EntityPlayerMP p : pl )
-				{
-					p.addChatMessage( new ChatComponentText( "Can't chunk load.." ) );
-				}
-			}
-			return;
-		}
-
-		AELog.info( "New Ticket " + this.ct.toString() );
-		ForgeChunkManager.forceChunk( this.ct, new ChunkCoordIntPair( this.xCoord >> 4, this.zCoord >> 4 ) );
-	}
-
-	@Override
-	public void invalidate()
-	{
-		if( Platform.isClient() )
-		{
-			return;
-		}
-
-		AELog.info( "Released Ticket " + this.ct.toString() );
-		ForgeChunkManager.releaseTicket( this.ct );
-	}
+        AELog.info("Released Ticket " + this.ct.toString());
+        ForgeChunkManager.releaseTicket(this.ct);
+    }
 }

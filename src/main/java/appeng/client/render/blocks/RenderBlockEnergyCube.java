@@ -18,7 +18,6 @@
 
 package appeng.client.render.blocks;
 
-
 import appeng.api.implementations.items.IAEItemPowerStorage;
 import appeng.block.networking.BlockEnergyCell;
 import appeng.client.render.BaseBlockRender;
@@ -28,48 +27,54 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 
+public class RenderBlockEnergyCube
+    extends BaseBlockRender<BlockEnergyCell, TileEnergyCell> {
+    public RenderBlockEnergyCube() {
+        super(false, 20);
+    }
 
-public class RenderBlockEnergyCube extends BaseBlockRender<BlockEnergyCell, TileEnergyCell>
-{
+    @Override
+    public void renderInventory(
+        final BlockEnergyCell blk,
+        final ItemStack is,
+        final RenderBlocks renderer,
+        final ItemRenderType type,
+        final Object[] obj
+    ) {
+        final IAEItemPowerStorage myItem = (IAEItemPowerStorage) is.getItem();
+        final double internalCurrentPower = myItem.getAECurrentPower(is);
+        final double internalMaxPower = myItem.getAEMaxPower(is);
 
-	public RenderBlockEnergyCube()
-	{
-		super( false, 20 );
-	}
+        int meta = (int) (8.0 * (internalCurrentPower / internalMaxPower));
 
-	@Override
-	public void renderInventory( final BlockEnergyCell blk, final ItemStack is, final RenderBlocks renderer, final ItemRenderType type, final Object[] obj )
-	{
-		final IAEItemPowerStorage myItem = (IAEItemPowerStorage) is.getItem();
-		final double internalCurrentPower = myItem.getAECurrentPower( is );
-		final double internalMaxPower = myItem.getAEMaxPower( is );
+        if (meta > 7) {
+            meta = 7;
+        }
+        if (meta < 0) {
+            meta = 0;
+        }
 
-		int meta = (int) ( 8.0 * ( internalCurrentPower / internalMaxPower ) );
+        renderer.setOverrideBlockTexture(blk.getIcon(0, meta));
+        super.renderInventory(blk, is, renderer, type, obj);
+        renderer.setOverrideBlockTexture(null);
+    }
 
-		if( meta > 7 )
-		{
-			meta = 7;
-		}
-		if( meta < 0 )
-		{
-			meta = 0;
-		}
+    @Override
+    public boolean renderInWorld(
+        final BlockEnergyCell blk,
+        final IBlockAccess world,
+        final int x,
+        final int y,
+        final int z,
+        final RenderBlocks renderer
+    ) {
+        final int meta = world.getBlockMetadata(x, y, z);
 
-		renderer.setOverrideBlockTexture( blk.getIcon( 0, meta ) );
-		super.renderInventory( blk, is, renderer, type, obj );
-		renderer.setOverrideBlockTexture( null );
-	}
+        renderer.overrideBlockTexture = blk.getIcon(0, meta);
 
-	@Override
-	public boolean renderInWorld( final BlockEnergyCell blk, final IBlockAccess world, final int x, final int y, final int z, final RenderBlocks renderer )
-	{
-		final int meta = world.getBlockMetadata( x, y, z );
+        final boolean out = renderer.renderStandardBlock(blk, x, y, z);
+        renderer.overrideBlockTexture = null;
 
-		renderer.overrideBlockTexture = blk.getIcon( 0, meta );
-
-		final boolean out = renderer.renderStandardBlock( blk, x, y, z );
-		renderer.overrideBlockTexture = null;
-
-		return out;
-	}
+        return out;
+    }
 }

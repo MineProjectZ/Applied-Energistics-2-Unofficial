@@ -1,5 +1,7 @@
 package appeng.block.legacy;
 
+import java.util.EnumSet;
+
 import appeng.block.AEBaseTileBlock;
 import appeng.client.texture.ExtraBlockTextures;
 import appeng.core.features.AEFeature;
@@ -12,19 +14,31 @@ import net.minecraft.util.IIcon;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.EnumSet;
-
 public class BlockLegacyController extends AEBaseTileBlock {
-
     public BlockLegacyController() {
         super(Material.iron);
         this.setTileEntity(TileLegacyController.class);
-        this.setFeature( EnumSet.of(AEFeature.Legacy) );
+        this.setFeature(EnumSet.of(AEFeature.Legacy));
     }
 
     @Override
-    public boolean onActivated(World w, int x, int y, int z, EntityPlayer player, int side, float hitX, float hitY, float hitZ) {
-        Platform.openGUI(player, w.getTileEntity(x, y, z), ForgeDirection.getOrientation(side), GuiBridge.GUI_NETWORK_STATUS_BLOCK);
+    public boolean onActivated(
+        World w,
+        int x,
+        int y,
+        int z,
+        EntityPlayer player,
+        int side,
+        float hitX,
+        float hitY,
+        float hitZ
+    ) {
+        Platform.openGUI(
+            player,
+            w.getTileEntity(x, y, z),
+            ForgeDirection.getOrientation(side),
+            GuiBridge.GUI_NETWORK_STATUS_BLOCK
+        );
         return true;
     }
 
@@ -50,5 +64,4 @@ public class BlockLegacyController extends AEBaseTileBlock {
         }
         return super.getIcon(direction, metadata);
     }
-
 }

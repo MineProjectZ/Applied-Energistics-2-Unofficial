@@ -18,21 +18,16 @@
 
 package appeng.crafting;
 
-
 import appeng.api.storage.data.IAEItemStack;
 
+public class CraftBranchFailure extends Exception {
+    private static final long serialVersionUID = 654603652836724823L;
 
-public class CraftBranchFailure extends Exception
-{
+    private final IAEItemStack missing;
 
-	private static final long serialVersionUID = 654603652836724823L;
-
-	private final IAEItemStack missing;
-
-	public CraftBranchFailure( final IAEItemStack what, final long howMany )
-	{
-		super( "Failed: " + what.getItem().getUnlocalizedName() + " x " + howMany );
-		this.missing = what.copy();
-		this.missing.setStackSize( howMany );
-	}
+    public CraftBranchFailure(final IAEItemStack what, final long howMany) {
+        super("Failed: " + what.getItem().getUnlocalizedName() + " x " + howMany);
+        this.missing = what.copy();
+        this.missing.setStackSize(howMany);
+    }
 }

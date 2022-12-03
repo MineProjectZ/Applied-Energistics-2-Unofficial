@@ -18,6 +18,7 @@
 
 package appeng.helpers;
 
+import java.util.EnumSet;
 
 import appeng.api.implementations.IUpgradeableHost;
 import appeng.api.networking.crafting.ICraftingProvider;
@@ -25,17 +26,13 @@ import appeng.api.networking.crafting.ICraftingRequester;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.EnumSet;
+public interface IInterfaceHost
+    extends ICraftingProvider, IUpgradeableHost, ICraftingRequester {
+    DualityInterface getInterfaceDuality();
 
+    EnumSet<ForgeDirection> getTargets();
 
-public interface IInterfaceHost extends ICraftingProvider, IUpgradeableHost, ICraftingRequester
-{
+    TileEntity getTileEntity();
 
-	DualityInterface getInterfaceDuality();
-
-	EnumSet<ForgeDirection> getTargets();
-
-	TileEntity getTileEntity();
-
-	void saveChanges();
+    void saveChanges();
 }

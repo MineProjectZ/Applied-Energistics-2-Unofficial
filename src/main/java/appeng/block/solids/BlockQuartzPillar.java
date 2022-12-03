@@ -18,6 +18,7 @@
 
 package appeng.block.solids;
 
+import java.util.EnumSet;
 
 import appeng.api.util.IOrientable;
 import appeng.api.util.IOrientableBlock;
@@ -27,27 +28,20 @@ import appeng.helpers.MetaRotation;
 import net.minecraft.block.material.Material;
 import net.minecraft.world.IBlockAccess;
 
-import java.util.EnumSet;
+public class BlockQuartzPillar extends AEBaseBlock implements IOrientableBlock {
+    public BlockQuartzPillar() {
+        super(Material.rock);
+        this.setFeature(EnumSet.of(AEFeature.DecorativeQuartzBlocks));
+    }
 
+    @Override
+    public boolean usesMetadata() {
+        return true;
+    }
 
-public class BlockQuartzPillar extends AEBaseBlock implements IOrientableBlock
-{
-
-	public BlockQuartzPillar()
-	{
-		super( Material.rock );
-		this.setFeature( EnumSet.of( AEFeature.DecorativeQuartzBlocks ) );
-	}
-
-	@Override
-	public boolean usesMetadata()
-	{
-		return true;
-	}
-
-	@Override
-	public IOrientable getOrientable( final IBlockAccess w, final int x, final int y, final int z )
-	{
-		return new MetaRotation( w, x, y, z );
-	}
+    @Override
+    public IOrientable
+    getOrientable(final IBlockAccess w, final int x, final int y, final int z) {
+        return new MetaRotation(w, x, y, z);
+    }
 }

@@ -18,40 +18,31 @@
 
 package appeng.me;
 
-
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridVisitor;
 
+class GridSplitDetector implements IGridVisitor {
+    private final IGridNode pivot;
+    private boolean pivotFound;
 
-class GridSplitDetector implements IGridVisitor
-{
+    public GridSplitDetector(final IGridNode pivot) {
+        this.pivot = pivot;
+    }
 
-	private final IGridNode pivot;
-	private boolean pivotFound;
+    @Override
+    public boolean visitNode(final IGridNode n) {
+        if (n == this.pivot) {
+            this.setPivotFound(true);
+        }
 
-	public GridSplitDetector( final IGridNode pivot )
-	{
-		this.pivot = pivot;
-	}
+        return !this.isPivotFound();
+    }
 
-	@Override
-	public boolean visitNode( final IGridNode n )
-	{
-		if( n == this.pivot )
-		{
-			this.setPivotFound( true );
-		}
+    public boolean isPivotFound() {
+        return this.pivotFound;
+    }
 
-		return !this.isPivotFound();
-	}
-
-	public boolean isPivotFound()
-	{
-		return this.pivotFound;
-	}
-
-	private void setPivotFound( final boolean pivotFound )
-	{
-		this.pivotFound = pivotFound;
-	}
+    private void setPivotFound(final boolean pivotFound) {
+        this.pivotFound = pivotFound;
+    }
 }

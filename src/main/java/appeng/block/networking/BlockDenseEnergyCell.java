@@ -18,52 +18,44 @@
 
 package appeng.block.networking;
 
+import java.util.EnumSet;
 
 import appeng.client.texture.ExtraBlockTextures;
 import appeng.core.features.AEFeature;
 import appeng.tile.networking.TileDenseEnergyCell;
 import net.minecraft.util.IIcon;
 
-import java.util.EnumSet;
+public class BlockDenseEnergyCell extends BlockEnergyCell {
+    public BlockDenseEnergyCell() {
+        this.setTileEntity(TileDenseEnergyCell.class);
+        this.setFeature(EnumSet.of(AEFeature.DenseEnergyCells));
+    }
 
+    @Override
+    public IIcon getIcon(final int direction, final int metadata) {
+        switch (metadata) {
+            case 0:
+                return ExtraBlockTextures.MEDenseEnergyCell0.getIcon();
+            case 1:
+                return ExtraBlockTextures.MEDenseEnergyCell1.getIcon();
+            case 2:
+                return ExtraBlockTextures.MEDenseEnergyCell2.getIcon();
+            case 3:
+                return ExtraBlockTextures.MEDenseEnergyCell3.getIcon();
+            case 4:
+                return ExtraBlockTextures.MEDenseEnergyCell4.getIcon();
+            case 5:
+                return ExtraBlockTextures.MEDenseEnergyCell5.getIcon();
+            case 6:
+                return ExtraBlockTextures.MEDenseEnergyCell6.getIcon();
+            case 7:
+                return ExtraBlockTextures.MEDenseEnergyCell7.getIcon();
+        }
+        return super.getIcon(direction, metadata);
+    }
 
-public class BlockDenseEnergyCell extends BlockEnergyCell
-{
-
-	public BlockDenseEnergyCell()
-	{
-		this.setTileEntity( TileDenseEnergyCell.class );
-		this.setFeature( EnumSet.of( AEFeature.DenseEnergyCells ) );
-	}
-
-	@Override
-	public IIcon getIcon( final int direction, final int metadata )
-	{
-		switch( metadata )
-		{
-			case 0:
-				return ExtraBlockTextures.MEDenseEnergyCell0.getIcon();
-			case 1:
-				return ExtraBlockTextures.MEDenseEnergyCell1.getIcon();
-			case 2:
-				return ExtraBlockTextures.MEDenseEnergyCell2.getIcon();
-			case 3:
-				return ExtraBlockTextures.MEDenseEnergyCell3.getIcon();
-			case 4:
-				return ExtraBlockTextures.MEDenseEnergyCell4.getIcon();
-			case 5:
-				return ExtraBlockTextures.MEDenseEnergyCell5.getIcon();
-			case 6:
-				return ExtraBlockTextures.MEDenseEnergyCell6.getIcon();
-			case 7:
-				return ExtraBlockTextures.MEDenseEnergyCell7.getIcon();
-		}
-		return super.getIcon( direction, metadata );
-	}
-
-	@Override
-	public double getMaxPower()
-	{
-		return 200000.0 * 8.0;
-	}
+    @Override
+    public double getMaxPower() {
+        return 200000.0 * 8.0;
+    }
 }

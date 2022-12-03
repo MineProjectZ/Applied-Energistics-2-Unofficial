@@ -18,6 +18,8 @@
 
 package appeng.core.features.registries;
 
+import java.util.ArrayList;
+import java.util.List;
 
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.storage.IExternalStorageHandler;
@@ -27,43 +29,36 @@ import appeng.core.features.registries.entries.ExternalIInv;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.ArrayList;
-import java.util.List;
+public class ExternalStorageRegistry implements IExternalStorageRegistry {
+    private final List<IExternalStorageHandler> Handlers;
+    private final ExternalIInv lastHandler = new ExternalIInv();
 
+    public ExternalStorageRegistry() {
+        this.Handlers = new ArrayList<IExternalStorageHandler>();
+    }
 
-public class ExternalStorageRegistry implements IExternalStorageRegistry
-{
+    @Override
+    public void addExternalStorageInterface(final IExternalStorageHandler ei) {
+        this.Handlers.add(ei);
+    }
 
-	private final List<IExternalStorageHandler> Handlers;
-	private final ExternalIInv lastHandler = new ExternalIInv();
+    @Override
+    public IExternalStorageHandler getHandler(
+        final TileEntity te,
+        final ForgeDirection d,
+        final StorageChannel chan,
+        final BaseActionSource mySrc
+    ) {
+        for (final IExternalStorageHandler x : this.Handlers) {
+            if (x.canHandle(te, d, chan, mySrc)) {
+                return x;
+            }
+        }
 
-	public ExternalStorageRegistry()
-	{
-		this.Handlers = new ArrayList<IExternalStorageHandler>();
-	}
+        if (this.lastHandler.canHandle(te, d, chan, mySrc)) {
+            return this.lastHandler;
+        }
 
-	@Override
-	public void addExternalStorageInterface( final IExternalStorageHandler ei )
-	{
-		this.Handlers.add( ei );
-	}
-
-	@Override
-	public IExternalStorageHandler getHandler( final TileEntity te, final ForgeDirection d, final StorageChannel chan, final BaseActionSource mySrc )
-	{
-		for( final IExternalStorageHandler x : this.Handlers )
-		{
-			if( x.canHandle( te, d, chan, mySrc ) )
-			{
-				return x;
-			}
-		}
-
-		if( this.lastHandler.canHandle( te, d, chan, mySrc ) )
-		{
-			return this.lastHandler;
-		}
-
-		return null;
-	}
+        return null;
+    }
 }

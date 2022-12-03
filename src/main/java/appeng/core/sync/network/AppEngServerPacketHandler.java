@@ -18,6 +18,7 @@
 
 package appeng.core.sync.network;
 
+import java.lang.reflect.InvocationTargetException;
 
 import appeng.core.AELog;
 import appeng.core.sync.AppEngPacket;
@@ -26,38 +27,27 @@ import cpw.mods.fml.common.network.internal.FMLProxyPacket;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayer;
 
-import java.lang.reflect.InvocationTargetException;
+public final class AppEngServerPacketHandler
+    extends AppEngPacketHandlerBase implements IPacketHandler {
+    @Override
+    public void onPacketData(
+        final INetworkInfo manager, final FMLProxyPacket packet, final EntityPlayer player
+    ) {
+        final ByteBuf stream = packet.payload();
 
-
-public final class AppEngServerPacketHandler extends AppEngPacketHandlerBase implements IPacketHandler
-{
-
-	@Override
-	public void onPacketData( final INetworkInfo manager, final FMLProxyPacket packet, final EntityPlayer player )
-	{
-		final ByteBuf stream = packet.payload();
-
-		try
-		{
-			final int packetType = stream.readInt();
-			final AppEngPacket pack = PacketTypes.getPacket( packetType ).parsePacket( stream );
-			pack.serverPacketData( manager, pack, player );
-		}
-		catch( final InstantiationException e )
-		{
-			AELog.debug( e );
-		}
-		catch( final IllegalAccessException e )
-		{
-			AELog.debug( e );
-		}
-		catch( final IllegalArgumentException e )
-		{
-			AELog.debug( e );
-		}
-		catch( final InvocationTargetException e )
-		{
-			AELog.debug( e );
-		}
-	}
+        try {
+            final int packetType = stream.readInt();
+            final AppEngPacket pack
+                = PacketTypes.getPacket(packetType).parsePacket(stream);
+            pack.serverPacketData(manager, pack, player);
+        } catch (final InstantiationException e) {
+            AELog.debug(e);
+        } catch (final IllegalAccessException e) {
+            AELog.debug(e);
+        } catch (final IllegalArgumentException e) {
+            AELog.debug(e);
+        } catch (final InvocationTargetException e) {
+            AELog.debug(e);
+        }
+    }
 }

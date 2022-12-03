@@ -18,6 +18,11 @@
 
 package appeng.me;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.WeakHashMap;
 
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridStorage;
@@ -26,129 +31,105 @@ import appeng.core.worlddata.WorldData;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.util.WeakHashMap;
+public class GridStorage implements IGridStorage {
+    private final long myID;
+    private final NBTTagCompound data;
+    private final GridStorageSearch mySearchEntry; // keep myself in the list until I'm
+    private final WeakHashMap<GridStorage, Boolean> divided
+        = new WeakHashMap<GridStorage, Boolean>();
+    private WeakReference<IGrid> internalGrid = null;
 
+    // lost...
 
-public class GridStorage implements IGridStorage
-{
+    /**
+     * for use with world settings
+     *
+     * @param id  ID of grid storage
+     * @param gss grid storage search
+     */
+    public GridStorage(final long id, final GridStorageSearch gss) {
+        this.myID = id;
+        this.mySearchEntry = gss;
+        this.data = new NBTTagCompound();
+    }
 
-	private final long myID;
-	private final NBTTagCompound data;
-	private final GridStorageSearch mySearchEntry; // keep myself in the list until I'm
-	private final WeakHashMap<GridStorage, Boolean> divided = new WeakHashMap<GridStorage, Boolean>();
-	private WeakReference<IGrid> internalGrid = null;
+    /**
+     * for use with world settings
+     *
+     * @param input array of bytes string
+     * @param id    ID of grid storage
+     * @param gss   grid storage search
+     */
+    public GridStorage(final String input, final long id, final GridStorageSearch gss) {
+        this.myID = id;
+        this.mySearchEntry = gss;
+        NBTTagCompound myTag = null;
 
-	// lost...
+        try {
+            final byte[] byteData
+                = javax.xml.bind.DatatypeConverter.parseBase64Binary(input);
+            myTag = CompressedStreamTools.readCompressed(new ByteArrayInputStream(byteData
+            ));
+        } catch (final Throwable t) {
+            myTag = new NBTTagCompound();
+        }
 
-	/**
-	 * for use with world settings
-	 *
-	 * @param id  ID of grid storage
-	 * @param gss grid storage search
-	 */
-	public GridStorage( final long id, final GridStorageSearch gss )
-	{
-		this.myID = id;
-		this.mySearchEntry = gss;
-		this.data = new NBTTagCompound();
-	}
+        this.data = myTag;
+    }
 
-	/**
-	 * for use with world settings
-	 *
-	 * @param input array of bytes string
-	 * @param id    ID of grid storage
-	 * @param gss   grid storage search
-	 */
-	public GridStorage( final String input, final long id, final GridStorageSearch gss )
-	{
-		this.myID = id;
-		this.mySearchEntry = gss;
-		NBTTagCompound myTag = null;
+    /**
+     * fake storage.
+     */
+    public GridStorage() {
+        this.myID = 0;
+        this.mySearchEntry = null;
+        this.data = new NBTTagCompound();
+    }
 
-		try
-		{
-			final byte[] byteData = javax.xml.bind.DatatypeConverter.parseBase64Binary( input );
-			myTag = CompressedStreamTools.readCompressed( new ByteArrayInputStream( byteData ) );
-		}
-		catch( final Throwable t )
-		{
-			myTag = new NBTTagCompound();
-		}
+    public String getValue() {
+        final Grid currentGrid = (Grid) this.getGrid();
+        if (currentGrid != null) {
+            currentGrid.saveState();
+        }
 
-		this.data = myTag;
-	}
+        try {
+            final ByteArrayOutputStream out = new ByteArrayOutputStream();
+            CompressedStreamTools.writeCompressed(this.data, out);
+            return javax.xml.bind.DatatypeConverter.printBase64Binary(out.toByteArray());
+        } catch (final IOException e) {
+            AELog.debug(e);
+        }
 
-	/**
-	 * fake storage.
-	 */
-	public GridStorage()
-	{
-		this.myID = 0;
-		this.mySearchEntry = null;
-		this.data = new NBTTagCompound();
-	}
+        return "";
+    }
 
-	public String getValue()
-	{
-		final Grid currentGrid = (Grid) this.getGrid();
-		if( currentGrid != null )
-		{
-			currentGrid.saveState();
-		}
+    public IGrid getGrid() {
+        return this.internalGrid == null ? null : this.internalGrid.get();
+    }
 
-		try
-		{
-			final ByteArrayOutputStream out = new ByteArrayOutputStream();
-			CompressedStreamTools.writeCompressed( this.data, out );
-			return javax.xml.bind.DatatypeConverter.printBase64Binary( out.toByteArray() );
-		}
-		catch( final IOException e )
-		{
-			AELog.debug( e );
-		}
+    void setGrid(final Grid grid) {
+        this.internalGrid = new WeakReference<IGrid>(grid);
+    }
 
-		return "";
-	}
+    @Override
+    public NBTTagCompound dataObject() {
+        return this.data;
+    }
 
-	public IGrid getGrid()
-	{
-		return this.internalGrid == null ? null : this.internalGrid.get();
-	}
+    @Override
+    public long getID() {
+        return this.myID;
+    }
 
-	void setGrid( final Grid grid )
-	{
-		this.internalGrid = new WeakReference<IGrid>( grid );
-	}
+    void addDivided(final GridStorage gs) {
+        this.divided.put(gs, true);
+    }
 
-	@Override
-	public NBTTagCompound dataObject()
-	{
-		return this.data;
-	}
+    boolean hasDivided(final GridStorage myStorage) {
+        return this.divided.containsKey(myStorage);
+    }
 
-	@Override
-	public long getID()
-	{
-		return this.myID;
-	}
-
-	void addDivided( final GridStorage gs )
-	{
-		this.divided.put( gs, true );
-	}
-
-	boolean hasDivided( final GridStorage myStorage )
-	{
-		return this.divided.containsKey( myStorage );
-	}
-
-	void remove()
-	{
-		WorldData.instance().storageData().destroyGridStorage( this.myID );
-	}
+    void remove() {
+        WorldData.instance().storageData().destroyGridStorage(this.myID);
+    }
 }

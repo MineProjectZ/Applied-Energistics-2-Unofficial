@@ -18,6 +18,7 @@
 
 package appeng.util.item;
 
+import java.util.List;
 
 import appeng.util.Platform;
 import cpw.mods.fml.common.registry.GameRegistry.UniqueIdentifier;
@@ -27,196 +28,167 @@ import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
-import java.util.List;
+public class AEItemDef {
+    static final AESharedNBT LOW_TAG = new AESharedNBT(Integer.MIN_VALUE);
+    static final AESharedNBT HIGH_TAG = new AESharedNBT(Integer.MAX_VALUE);
 
+    private final int itemID;
+    private final Item item;
+    private int myHash;
+    private int def;
+    private int damageValue;
+    private int displayDamage;
+    private int maxDamage;
+    private AESharedNBT tagCompound;
+    @SideOnly(Side.CLIENT)
+    private String displayName;
+    @SideOnly(Side.CLIENT)
+    private List tooltip;
+    @SideOnly(Side.CLIENT)
+    private UniqueIdentifier uniqueID;
+    private OreReference isOre;
 
-public class AEItemDef
-{
+    public AEItemDef(final Item it) {
+        this.item = it;
+        this.itemID = Item.getIdFromItem(it);
+    }
 
-	static final AESharedNBT LOW_TAG = new AESharedNBT( Integer.MIN_VALUE );
-	static final AESharedNBT HIGH_TAG = new AESharedNBT( Integer.MAX_VALUE );
+    AEItemDef copy() {
+        final AEItemDef t = new AEItemDef(this.getItem());
+        t.def = this.def;
+        t.setDamageValue(this.getDamageValue());
+        t.setDisplayDamage(this.getDisplayDamage());
+        t.setMaxDamage(this.getMaxDamage());
+        t.setTagCompound(this.getTagCompound());
+        t.setIsOre(this.getIsOre());
+        return t;
+    }
 
-	private final int itemID;
-	private final Item item;
-	private int myHash;
-	private int def;
-	private int damageValue;
-	private int displayDamage;
-	private int maxDamage;
-	private AESharedNBT tagCompound;
-	@SideOnly( Side.CLIENT )
-	private String displayName;
-	@SideOnly( Side.CLIENT )
-	private List tooltip;
-	@SideOnly( Side.CLIENT )
-	private UniqueIdentifier uniqueID;
-	private OreReference isOre;
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (this.getClass() != obj.getClass()) {
+            return false;
+        }
+        final AEItemDef other = (AEItemDef) obj;
+        return other.getDamageValue() == this.getDamageValue()
+            && other.getItem() == this.getItem()
+            && this.getTagCompound() == other.getTagCompound();
+    }
 
-	public AEItemDef( final Item it )
-	{
-		this.item = it;
-		this.itemID = Item.getIdFromItem( it );
-	}
+    boolean isItem(final ItemStack otherStack) {
+        // hackery!
+        final int dmg = this.getDamageValueHack(otherStack);
 
-	AEItemDef copy()
-	{
-		final AEItemDef t = new AEItemDef( this.getItem() );
-		t.def = this.def;
-		t.setDamageValue( this.getDamageValue() );
-		t.setDisplayDamage( this.getDisplayDamage() );
-		t.setMaxDamage( this.getMaxDamage() );
-		t.setTagCompound( this.getTagCompound() );
-		t.setIsOre( this.getIsOre() );
-		return t;
-	}
+        if (this.getItem() == otherStack.getItem() && dmg == this.getDamageValue()) {
+            if ((this.getTagCompound() != null) == otherStack.hasTagCompound()) {
+                return true;
+            }
 
-	@Override
-	public boolean equals( final Object obj )
-	{
-		if( obj == null )
-		{
-			return false;
-		}
-		if( this.getClass() != obj.getClass() )
-		{
-			return false;
-		}
-		final AEItemDef other = (AEItemDef) obj;
-		return other.getDamageValue() == this.getDamageValue() && other.getItem() == this.getItem() && this.getTagCompound() == other.getTagCompound();
-	}
+            if (this.getTagCompound() != null && otherStack.hasTagCompound()) {
+                return Platform.NBTEqualityTest(
+                    this.getTagCompound(), otherStack.getTagCompound()
+                );
+            }
 
-	boolean isItem( final ItemStack otherStack )
-	{
-		// hackery!
-		final int dmg = this.getDamageValueHack( otherStack );
+            return true;
+        }
+        return false;
+    }
 
-		if( this.getItem() == otherStack.getItem() && dmg == this.getDamageValue() )
-		{
-			if( ( this.getTagCompound() != null ) == otherStack.hasTagCompound() )
-			{
-				return true;
-			}
+    int getDamageValueHack(final ItemStack is) {
+        return Items.blaze_rod.getDamage(is);
+    }
 
-			if( this.getTagCompound() != null && otherStack.hasTagCompound() )
-			{
-				return Platform.NBTEqualityTest( this.getTagCompound(), otherStack.getTagCompound() );
-			}
+    void reHash() {
+        this.def = this.getItemID() << Platform.DEF_OFFSET | this.getDamageValue();
+        this.myHash = this.def
+            ^ (this.getTagCompound() == null
+                   ? 0
+                   : System.identityHashCode(this.getTagCompound()));
+    }
 
-			return true;
-		}
-		return false;
-	}
+    AESharedNBT getTagCompound() {
+        return this.tagCompound;
+    }
 
-	int getDamageValueHack( final ItemStack is )
-	{
-		return Items.blaze_rod.getDamage( is );
-	}
+    void setTagCompound(final AESharedNBT tagCompound) {
+        this.tagCompound = tagCompound;
+    }
 
-	void reHash()
-	{
-		this.def = this.getItemID() << Platform.DEF_OFFSET | this.getDamageValue();
-		this.myHash = this.def ^ ( this.getTagCompound() == null ? 0 : System.identityHashCode( this.getTagCompound() ) );
-	}
+    int getDamageValue() {
+        return this.damageValue;
+    }
 
-	AESharedNBT getTagCompound()
-	{
-		return this.tagCompound;
-	}
+    int setDamageValue(final int damageValue) {
+        this.damageValue = damageValue;
+        return damageValue;
+    }
 
-	void setTagCompound( final AESharedNBT tagCompound )
-	{
-		this.tagCompound = tagCompound;
-	}
+    Item getItem() {
+        return this.item;
+    }
 
-	int getDamageValue()
-	{
-		return this.damageValue;
-	}
+    int getDisplayDamage() {
+        return this.displayDamage;
+    }
 
-	int setDamageValue( final int damageValue )
-	{
-		this.damageValue = damageValue;
-		return damageValue;
-	}
+    void setDisplayDamage(final int displayDamage) {
+        this.displayDamage = displayDamage;
+    }
 
-	Item getItem()
-	{
-		return this.item;
-	}
+    String getDisplayName() {
+        return this.displayName;
+    }
 
-	int getDisplayDamage()
-	{
-		return this.displayDamage;
-	}
+    void setDisplayName(final String displayName) {
+        this.displayName = displayName;
+    }
 
-	void setDisplayDamage( final int displayDamage )
-	{
-		this.displayDamage = displayDamage;
-	}
+    List getTooltip() {
+        return this.tooltip;
+    }
 
-	String getDisplayName()
-	{
-		return this.displayName;
-	}
+    List setTooltip(final List tooltip) {
+        this.tooltip = tooltip;
+        return tooltip;
+    }
 
-	void setDisplayName( final String displayName )
-	{
-		this.displayName = displayName;
-	}
+    UniqueIdentifier getUniqueID() {
+        return this.uniqueID;
+    }
 
-	List getTooltip()
-	{
-		return this.tooltip;
-	}
+    UniqueIdentifier setUniqueID(final UniqueIdentifier uniqueID) {
+        this.uniqueID = uniqueID;
+        return uniqueID;
+    }
 
-	List setTooltip( final List tooltip )
-	{
-		this.tooltip = tooltip;
-		return tooltip;
-	}
+    OreReference getIsOre() {
+        return this.isOre;
+    }
 
-	UniqueIdentifier getUniqueID()
-	{
-		return this.uniqueID;
-	}
+    void setIsOre(final OreReference isOre) {
+        this.isOre = isOre;
+    }
 
-	UniqueIdentifier setUniqueID( final UniqueIdentifier uniqueID )
-	{
-		this.uniqueID = uniqueID;
-		return uniqueID;
-	}
+    int getItemID() {
+        return this.itemID;
+    }
 
-	OreReference getIsOre()
-	{
-		return this.isOre;
-	}
+    int getMaxDamage() {
+        return this.maxDamage;
+    }
 
-	void setIsOre( final OreReference isOre )
-	{
-		this.isOre = isOre;
-	}
+    void setMaxDamage(final int maxDamage) {
+        this.maxDamage = maxDamage;
+    }
 
-	int getItemID()
-	{
-		return this.itemID;
-	}
-
-	int getMaxDamage()
-	{
-		return this.maxDamage;
-	}
-
-	void setMaxDamage( final int maxDamage )
-	{
-		this.maxDamage = maxDamage;
-	}
-
-	/**
-	 * TODO: Check if replaceable by hashCode();
-	 */
-	int getMyHash()
-	{
-		return this.myHash;
-	}
-
+    /**
+     * TODO: Check if replaceable by hashCode();
+     */
+    int getMyHash() {
+        return this.myHash;
+    }
 }

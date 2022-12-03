@@ -18,6 +18,9 @@
 
 package appeng.block.storage;
 
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
 
 import appeng.api.AEApi;
 import appeng.block.AEBaseTileBlock;
@@ -44,133 +47,151 @@ import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
+public class BlockSkyChest extends AEBaseTileBlock implements ICustomCollision {
+    private static final double AABB_OFFSET_BOTTOM = .0625d;
+    private static final double AABB_OFFSET_SIDES = 0;
+    private static final double AABB_OFFSET_TOP = .125d;
 
+    public BlockSkyChest() {
+        super(Material.rock);
+        this.setTileEntity(TileSkyChest.class);
+        this.isOpaque = this.isFullSize = false;
+        this.hasSubtypes = true;
+        this.lightOpacity = 0;
+        this.setHardness(50);
+        this.blockResistance = 150.0f;
+        this.setFeature(EnumSet.of(AEFeature.Core, AEFeature.SkyStoneChests));
+    }
 
-public class BlockSkyChest extends AEBaseTileBlock implements ICustomCollision
-{
+    @Override
+    public int damageDropped(final int metadata) {
+        return metadata;
+    }
 
-	private static final double AABB_OFFSET_BOTTOM = .0625d;
-	private static final double AABB_OFFSET_SIDES = 0;
-	private static final double AABB_OFFSET_TOP = .125d;
+    @Override
+    public ItemStack getPickBlock(
+        final MovingObjectPosition target,
+        final World world,
+        final int x,
+        final int y,
+        final int z,
+        final EntityPlayer player
+    ) {
+        final ItemStack is = super.getPickBlock(target, world, x, y, z, player);
+        is.setItemDamage(world.getBlockMetadata(x, y, z));
 
-	public BlockSkyChest()
-	{
-		super( Material.rock );
-		this.setTileEntity( TileSkyChest.class );
-		this.isOpaque = this.isFullSize = false;
-		this.hasSubtypes = true;
-		this.lightOpacity = 0;
-		this.setHardness( 50 );
-		this.blockResistance = 150.0f;
-		this.setFeature( EnumSet.of( AEFeature.Core, AEFeature.SkyStoneChests ) );
-	}
+        return is;
+    }
 
-	@Override
-	public int damageDropped( final int metadata )
-	{
-		return metadata;
-	}
+    @Override
+    @SideOnly(Side.CLIENT)
+    protected RenderBlockSkyChest getRenderer() {
+        return new RenderBlockSkyChest();
+    }
 
+    @Override
+    @SideOnly(Side.CLIENT)
+    public IIcon getIcon(final int direction, final int metadata) {
+        for (final Block skyStoneBlock :
+             AEApi.instance().definitions().blocks().skyStone().maybeBlock().asSet()) {
+            return skyStoneBlock.getIcon(direction, metadata);
+        }
 
-	@Override
-	public ItemStack getPickBlock( final MovingObjectPosition target, final World world, final int x, final int y, final int z, final EntityPlayer player )
-	{
-		final ItemStack is = super.getPickBlock( target, world, x, y, z, player );
-		is.setItemDamage( world.getBlockMetadata( x, y, z ) );
+        return Blocks.stone.getIcon(direction, metadata);
+    }
 
-		return is;
-	}
+    @Override
+    public boolean onActivated(
+        final World w,
+        final int x,
+        final int y,
+        final int z,
+        final EntityPlayer player,
+        final int side,
+        final float hitX,
+        final float hitY,
+        final float hitZ
+    ) {
+        if (Platform.isServer()) {
+            Platform.openGUI(
+                player,
+                this.getTileEntity(w, x, y, z),
+                ForgeDirection.getOrientation(side),
+                GuiBridge.GUI_SKYCHEST
+            );
+        }
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	protected RenderBlockSkyChest getRenderer()
-	{
-		return new RenderBlockSkyChest();
-	}
+        return true;
+    }
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	public IIcon getIcon( final int direction, final int metadata )
-	{
-		for( final Block skyStoneBlock : AEApi.instance().definitions().blocks().skyStone().maybeBlock().asSet() )
-		{
-			return skyStoneBlock.getIcon( direction, metadata );
-		}
+    @Override
+    public void registerBlockIcons(final IIconRegister iconRegistry) {}
 
-		return Blocks.stone.getIcon( direction, metadata );
-	}
+    @Override
+    @SideOnly(Side.CLIENT)
+    public void getCheckedSubBlocks(
+        final Item item, final CreativeTabs tabs, final List<ItemStack> itemStacks
+    ) {
+        super.getCheckedSubBlocks(item, tabs, itemStacks);
 
-	@Override
-	public boolean onActivated( final World w, final int x, final int y, final int z, final EntityPlayer player, final int side, final float hitX, final float hitY, final float hitZ )
-	{
-		if( Platform.isServer() )
-		{
-			Platform.openGUI( player, this.getTileEntity( w, x, y, z ), ForgeDirection.getOrientation( side ), GuiBridge.GUI_SKYCHEST );
-		}
+        itemStacks.add(new ItemStack(item, 1, 1));
+    }
 
-		return true;
-	}
+    @Override
+    public String getUnlocalizedName(final ItemStack is) {
+        if (is.getItemDamage() == 1) {
+            return this.getUnlocalizedName() + ".Block";
+        }
 
-	@Override
-	public void registerBlockIcons( final IIconRegister iconRegistry )
-	{
-	}
+        return this.getUnlocalizedName();
+    }
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	public void getCheckedSubBlocks( final Item item, final CreativeTabs tabs, final List<ItemStack> itemStacks )
-	{
-		super.getCheckedSubBlocks( item, tabs, itemStacks );
+    @Override
+    public Iterable<AxisAlignedBB> getSelectedBoundingBoxesFromPool(
+        final World w,
+        final int x,
+        final int y,
+        final int z,
+        final Entity thePlayer,
+        final boolean isVisual
+    ) {
+        return Collections.singletonList(computeAABB(w, x, y, z));
+    }
 
-		itemStacks.add( new ItemStack( item, 1, 1 ) );
-	}
+    @Override
+    public void addCollidingBlockToList(
+        final World w,
+        final int x,
+        final int y,
+        final int z,
+        final AxisAlignedBB bb,
+        final List<AxisAlignedBB> out,
+        final Entity e
+    ) {
+        out.add(computeAABB(w, x, y, z));
+    }
 
-	@Override
-	public String getUnlocalizedName( final ItemStack is )
-	{
-		if( is.getItemDamage() == 1 )
-		{
-			return this.getUnlocalizedName() + ".Block";
-		}
+    private AxisAlignedBB
+    computeAABB(final World w, final int x, final int y, final int z) {
+        final TileSkyChest sk = this.getTileEntity(w, x, y, z);
+        ForgeDirection o = ForgeDirection.UP;
 
-		return this.getUnlocalizedName();
-	}
-	@Override
-	public Iterable<AxisAlignedBB> getSelectedBoundingBoxesFromPool( final World w, final int x, final int y, final int z, final Entity thePlayer, final boolean isVisual )
-	{
-		return Collections.singletonList( computeAABB( w, x, y, z ) );
-	}
+        if (sk != null)
+            o = sk.getUp();
 
-	@Override
-	public void addCollidingBlockToList( final World w, final int x, final int y, final int z, final AxisAlignedBB bb, final List<AxisAlignedBB> out, final Entity e )
-	{
-		out.add( computeAABB( w, x, y, z ) );
-	}
+        final double offsetX = o.offsetX == 0 ? AABB_OFFSET_BOTTOM : AABB_OFFSET_SIDES;
+        final double offsetY = o.offsetY == 0 ? AABB_OFFSET_BOTTOM : AABB_OFFSET_SIDES;
+        final double offsetZ = o.offsetZ == 0 ? AABB_OFFSET_BOTTOM : AABB_OFFSET_SIDES;
 
-	private AxisAlignedBB computeAABB( final World w, final int x, final int y, final int z )
-	{
-		final TileSkyChest sk = this.getTileEntity( w, x, y, z );
-		ForgeDirection o = ForgeDirection.UP;
+        // x/z needs to be multiplied by -1, thus we simply add not substract.
+        final double minX = Math.max(0.0, offsetX + o.offsetX * AABB_OFFSET_TOP);
+        final double minY = Math.max(0.0, offsetY - o.offsetY * AABB_OFFSET_TOP);
+        final double minZ = Math.max(0.0, offsetZ + o.offsetZ * AABB_OFFSET_TOP);
 
-		if( sk != null )
-			o = sk.getUp();
+        final double maxX = Math.min(1.0, (1.0 - offsetX) + o.offsetX * AABB_OFFSET_TOP);
+        final double maxY = Math.min(1.0, (1.0 - offsetY) - o.offsetY * AABB_OFFSET_TOP);
+        final double maxZ = Math.min(1.0, (1.0 - offsetZ) + o.offsetZ * AABB_OFFSET_TOP);
 
-		final double offsetX = o.offsetX == 0 ? AABB_OFFSET_BOTTOM : AABB_OFFSET_SIDES;
-		final double offsetY = o.offsetY == 0 ? AABB_OFFSET_BOTTOM : AABB_OFFSET_SIDES;
-		final double offsetZ = o.offsetZ == 0 ? AABB_OFFSET_BOTTOM : AABB_OFFSET_SIDES;
-
-		// x/z needs to be multiplied by -1, thus we simply add not substract.
-		final double minX = Math.max( 0.0, offsetX + o.offsetX * AABB_OFFSET_TOP );
-		final double minY = Math.max( 0.0, offsetY - o.offsetY * AABB_OFFSET_TOP );
-		final double minZ = Math.max( 0.0, offsetZ + o.offsetZ * AABB_OFFSET_TOP );
-
-		final double maxX = Math.min( 1.0, ( 1.0 - offsetX ) + o.offsetX * AABB_OFFSET_TOP );
-		final double maxY = Math.min( 1.0, ( 1.0 - offsetY ) - o.offsetY * AABB_OFFSET_TOP );
-		final double maxZ = Math.min( 1.0, ( 1.0 - offsetZ ) + o.offsetZ * AABB_OFFSET_TOP );
-
-		return AxisAlignedBB.getBoundingBox( minX, minY, minZ, maxX, maxY, maxZ );
-	}
+        return AxisAlignedBB.getBoundingBox(minX, minY, minZ, maxX, maxY, maxZ);
+    }
 }

@@ -18,6 +18,9 @@
 
 package appeng.util;
 
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Set;
 
 import appeng.api.config.LevelEmitterMode;
 import appeng.api.config.Settings;
@@ -26,106 +29,89 @@ import appeng.api.util.IConfigManager;
 import appeng.core.AELog;
 import net.minecraft.nbt.NBTTagCompound;
 
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Set;
+public final class ConfigManager implements IConfigManager {
+    private final Map<Settings, Enum<?>> settings
+        = new EnumMap<Settings, Enum<?>>(Settings.class);
+    private final IConfigManagerHost target;
 
+    public ConfigManager(final IConfigManagerHost tile) {
+        this.target = tile;
+    }
 
-public final class ConfigManager implements IConfigManager
-{
-	private final Map<Settings, Enum<?>> settings = new EnumMap<Settings, Enum<?>>( Settings.class );
-	private final IConfigManagerHost target;
+    @Override
+    public Set<Settings> getSettings() {
+        return this.settings.keySet();
+    }
 
-	public ConfigManager( final IConfigManagerHost tile )
-	{
-		this.target = tile;
-	}
+    @Override
+    public void registerSetting(final Settings settingName, final Enum defaultValue) {
+        this.settings.put(settingName, defaultValue);
+    }
 
-	@Override
-	public Set<Settings> getSettings()
-	{
-		return this.settings.keySet();
-	}
+    @Override
+    public Enum<?> getSetting(final Settings settingName) {
+        final Enum<?> oldValue = this.settings.get(settingName);
 
-	@Override
-	public void registerSetting( final Settings settingName, final Enum defaultValue )
-	{
-		this.settings.put( settingName, defaultValue );
-	}
+        if (oldValue != null) {
+            return oldValue;
+        }
 
-	@Override
-	public Enum<?> getSetting( final Settings settingName )
-	{
-		final Enum<?> oldValue = this.settings.get( settingName );
+        throw new IllegalStateException(
+            "Invalid Config setting. Expected a non-null value for " + settingName
+        );
+    }
 
-		if( oldValue != null )
-		{
-			return oldValue;
-		}
+    @Override
+    public Enum<?> putSetting(final Settings settingName, final Enum newValue) {
+        final Enum<?> oldValue = this.getSetting(settingName);
+        this.settings.put(settingName, newValue);
+        this.target.updateSetting(this, settingName, newValue);
+        return oldValue;
+    }
 
-		throw new IllegalStateException( "Invalid Config setting. Expected a non-null value for " + settingName );
-	}
+    /**
+     * save all settings using config manager.
+     *
+     * @param tagCompound to be written to compound
+     */
+    @Override
+    public void writeToNBT(final NBTTagCompound tagCompound) {
+        for (final Map.Entry<Settings, Enum<?>> entry : this.settings.entrySet()) {
+            tagCompound.setString(
+                entry.getKey().name(), this.settings.get(entry.getKey()).toString()
+            );
+        }
+    }
 
-	@Override
-	public Enum<?> putSetting( final Settings settingName, final Enum newValue )
-	{
-		final Enum<?> oldValue = this.getSetting( settingName );
-		this.settings.put( settingName, newValue );
-		this.target.updateSetting( this, settingName, newValue );
-		return oldValue;
-	}
+    /**
+     * read all settings using config manager.
+     *
+     * @param tagCompound to be read from compound
+     */
+    @Override
+    public void readFromNBT(final NBTTagCompound tagCompound) {
+        for (final Map.Entry<Settings, Enum<?>> entry : this.settings.entrySet()) {
+            try {
+                if (tagCompound.hasKey(entry.getKey().name())) {
+                    String value = tagCompound.getString(entry.getKey().name());
 
-	/**
-	 * save all settings using config manager.
-	 *
-	 * @param tagCompound to be written to compound
-	 */
-	@Override
-	public void writeToNBT( final NBTTagCompound tagCompound )
-	{
-		for( final Map.Entry<Settings, Enum<?>> entry : this.settings.entrySet() )
-		{
-			tagCompound.setString( entry.getKey().name(), this.settings.get( entry.getKey() ).toString() );
-		}
-	}
+                    // Provides an upgrade path for the rename of this value in the API
+                    // between rv1 and rv2
+                    if (value.equals("EXTACTABLE_ONLY")) {
+                        value = StorageFilter.EXTRACTABLE_ONLY.toString();
+                    } else if (value.equals("STOREABLE_AMOUNT")) {
+                        value = LevelEmitterMode.STORABLE_AMOUNT.toString();
+                    }
 
-	/**
-	 * read all settings using config manager.
-	 *
-	 * @param tagCompound to be read from compound
-	 */
-	@Override
-	public void readFromNBT( final NBTTagCompound tagCompound )
-	{
-		for( final Map.Entry<Settings, Enum<?>> entry : this.settings.entrySet() )
-		{
-			try
-			{
-				if( tagCompound.hasKey( entry.getKey().name() ) )
-				{
-					String value = tagCompound.getString( entry.getKey().name() );
+                    final Enum<?> oldValue = this.settings.get(entry.getKey());
 
-					// Provides an upgrade path for the rename of this value in the API between rv1 and rv2
-					if( value.equals( "EXTACTABLE_ONLY" ) )
-					{
-						value = StorageFilter.EXTRACTABLE_ONLY.toString();
-					}
-					else if( value.equals( "STOREABLE_AMOUNT" ) )
-					{
-						value = LevelEmitterMode.STORABLE_AMOUNT.toString();
-					}
+                    final Enum<?> newValue = Enum.valueOf(oldValue.getClass(), value);
 
-					final Enum<?> oldValue = this.settings.get( entry.getKey() );
-
-					final Enum<?> newValue = Enum.valueOf( oldValue.getClass(), value );
-
-					this.putSetting( entry.getKey(), newValue );
-				}
-			}
-			catch( final IllegalArgumentException e )
-			{
-				AELog.debug( e );
-			}
-		}
-	}
+                    this.putSetting(entry.getKey(), newValue);
+                }
+            } catch (final IllegalArgumentException e) {
+                AELog.debug(e);
+            }
+        }
+    }
 }

@@ -18,6 +18,8 @@
 
 package appeng.client.render;
 
+import java.util.HashMap;
+import java.util.Map;
 
 import appeng.block.AEBaseBlock;
 import appeng.core.AELog;
@@ -31,81 +33,82 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 
-import java.util.HashMap;
-import java.util.Map;
+@SideOnly(Side.CLIENT)
+public final class WorldRender implements ISimpleBlockRenderingHandler {
+    public static final WorldRender INSTANCE = new WorldRender();
+    private final Map<AEBaseBlock, BaseBlockRender> blockRenders
+        = new HashMap<AEBaseBlock, BaseBlockRender>();
+    private final int renderID = RenderingRegistry.getNextAvailableRenderId();
+    private final RenderBlocks renderer = new RenderBlocks();
+    private boolean hasError = false;
 
+    private WorldRender() {}
 
-@SideOnly( Side.CLIENT )
-public final class WorldRender implements ISimpleBlockRenderingHandler
-{
+    void setRender(final AEBaseBlock in, final BaseBlockRender r) {
+        this.blockRenders.put(in, r);
+    }
 
-	public static final WorldRender INSTANCE = new WorldRender();
-	private final Map<AEBaseBlock, BaseBlockRender> blockRenders = new HashMap<AEBaseBlock, BaseBlockRender>();
-	private final int renderID = RenderingRegistry.getNextAvailableRenderId();
-	private final RenderBlocks renderer = new RenderBlocks();
-	private boolean hasError = false;
+    @Override
+    public void renderInventoryBlock(
+        final Block block,
+        final int metadata,
+        final int modelID,
+        final RenderBlocks renderer
+    ) {
+        // wtf is this for?
+    }
 
-	private WorldRender()
-	{
-	}
+    @Override
+    public boolean renderWorldBlock(
+        final IBlockAccess world,
+        final int x,
+        final int y,
+        final int z,
+        final Block block,
+        final int modelId,
+        final RenderBlocks renderer
+    ) {
+        final AEBaseBlock blk = (AEBaseBlock) block;
+        renderer.setRenderBoundsFromBlock(block);
+        return this.getRender(blk).renderInWorld(blk, world, x, y, z, renderer);
+    }
 
-	void setRender( final AEBaseBlock in, final BaseBlockRender r )
-	{
-		this.blockRenders.put( in, r );
-	}
+    @Override
+    public boolean shouldRender3DInInventory(final int modelId) {
+        return true;
+    }
 
-	@Override
-	public void renderInventoryBlock( final Block block, final int metadata, final int modelID, final RenderBlocks renderer )
-	{
-		// wtf is this for?
-	}
+    @Override
+    public int getRenderId() {
+        return this.renderID;
+    }
 
-	@Override
-	public boolean renderWorldBlock( final IBlockAccess world, final int x, final int y, final int z, final Block block, final int modelId, final RenderBlocks renderer )
-	{
-		final AEBaseBlock blk = (AEBaseBlock) block;
-		renderer.setRenderBoundsFromBlock( block );
-		return this.getRender( blk ).renderInWorld( blk, world, x, y, z, renderer );
-	}
+    private BaseBlockRender getRender(final AEBaseBlock block) {
+        return block.getRendererInstance().getRendererInstance();
+    }
 
-	@Override
-	public boolean shouldRender3DInInventory( final int modelId )
-	{
-		return true;
-	}
+    void renderItemBlock(
+        final ItemStack item, final ItemRenderType type, final Object[] data
+    ) {
+        final Block blk = Block.getBlockFromItem(item.getItem());
+        if (blk instanceof AEBaseBlock) {
+            final AEBaseBlock block = (AEBaseBlock) blk;
+            this.renderer.setRenderBoundsFromBlock(block);
 
-	@Override
-	public int getRenderId()
-	{
-		return this.renderID;
-	}
-
-	private BaseBlockRender getRender( final AEBaseBlock block )
-	{
-		return block.getRendererInstance().getRendererInstance();
-	}
-
-	void renderItemBlock( final ItemStack item, final ItemRenderType type, final Object[] data )
-	{
-		final Block blk = Block.getBlockFromItem( item.getItem() );
-		if( blk instanceof AEBaseBlock )
-		{
-			final AEBaseBlock block = (AEBaseBlock) blk;
-			this.renderer.setRenderBoundsFromBlock( block );
-
-			this.renderer.uvRotateBottom = this.renderer.uvRotateEast = this.renderer.uvRotateNorth = this.renderer.uvRotateSouth = this.renderer.uvRotateTop = this.renderer.uvRotateWest = 0;
-			this.getRender( block ).renderInventory( block, item, this.renderer, type, data );
-			this.renderer.uvRotateBottom = this.renderer.uvRotateEast = this.renderer.uvRotateNorth = this.renderer.uvRotateSouth = this.renderer.uvRotateTop = this.renderer.uvRotateWest = 0;
-		}
-		else
-		{
-			if( !this.hasError )
-			{
-				this.hasError = true;
-				AELog.error( "Invalid render - item/block mismatch" );
-				AELog.error( "		item: " + item.getUnlocalizedName() );
-				AELog.error( "		block: " + blk.getUnlocalizedName() );
-			}
-		}
-	}
+            this.renderer.uvRotateBottom = this.renderer.uvRotateEast
+                = this.renderer.uvRotateNorth = this.renderer.uvRotateSouth
+                = this.renderer.uvRotateTop = this.renderer.uvRotateWest = 0;
+            this.getRender(block).renderInventory(block, item, this.renderer, type, data);
+            this.renderer.uvRotateBottom = this.renderer.uvRotateEast
+                = this.renderer.uvRotateNorth = this.renderer.uvRotateSouth
+                = this.renderer.uvRotateTop = this.renderer.uvRotateWest = 0;
+        } else {
+            if (!this.hasError) {
+                this.hasError = true;
+                AELog.error("Invalid render - item/block mismatch");
+                AELog.error("		item: " + item.getUnlocalizedName());
+                AELog.error("		block: " + blk.getUnlocalizedName());
+            }
+        }
+    }
 }

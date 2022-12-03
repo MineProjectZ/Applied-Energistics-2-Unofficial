@@ -18,19 +18,15 @@
 
 package appeng.core.features;
 
-
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
+public interface IStackSrc {
+    ItemStack stack(int i);
 
-public interface IStackSrc
-{
+    Item getItem();
 
-	ItemStack stack( int i );
+    int getDamage();
 
-	Item getItem();
-
-	int getDamage();
-
-	boolean isEnabled();
+    boolean isEnabled();
 }

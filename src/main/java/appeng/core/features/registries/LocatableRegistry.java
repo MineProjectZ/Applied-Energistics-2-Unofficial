@@ -18,6 +18,8 @@
 
 package appeng.core.features.registries;
 
+import java.util.HashMap;
+import java.util.Map;
 
 import appeng.api.events.LocatableEventAnnounce;
 import appeng.api.events.LocatableEventAnnounce.LocatableEvent;
@@ -27,51 +29,38 @@ import appeng.util.Platform;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.common.MinecraftForge;
 
-import java.util.HashMap;
-import java.util.Map;
+public final class LocatableRegistry implements ILocatableRegistry {
+    private final Map<Long, ILocatable> set;
 
+    public LocatableRegistry() {
+        this.set = new HashMap<Long, ILocatable>();
+        MinecraftForge.EVENT_BUS.register(this);
+    }
 
-public final class LocatableRegistry implements ILocatableRegistry
-{
-	private final Map<Long, ILocatable> set;
+    @SubscribeEvent
+    public void updateLocatable(final LocatableEventAnnounce e) {
+        if (Platform.isClient()) {
+            return; // IGNORE!
+        }
 
-	public LocatableRegistry()
-	{
-		this.set = new HashMap<Long, ILocatable>();
-		MinecraftForge.EVENT_BUS.register( this );
-	}
+        if (e.change == LocatableEvent.Register) {
+            this.set.put(e.target.getLocatableSerial(), e.target);
+        } else if (e.change == LocatableEvent.Unregister) {
+            this.set.remove(e.target.getLocatableSerial());
+        }
+    }
 
-	@SubscribeEvent
-	public void updateLocatable( final LocatableEventAnnounce e )
-	{
-		if( Platform.isClient() )
-		{
-			return; // IGNORE!
-		}
+    /**
+     * Find a locate-able object by its serial.
+     */
+    @Override
+    @Deprecated
+    public Object findLocatableBySerial(final long ser) {
+        return this.set.get(ser);
+    }
 
-		if( e.change == LocatableEvent.Register )
-		{
-			this.set.put( e.target.getLocatableSerial(), e.target );
-		}
-		else if( e.change == LocatableEvent.Unregister )
-		{
-			this.set.remove( e.target.getLocatableSerial() );
-		}
-	}
-
-	/**
-	 * Find a locate-able object by its serial.
-	 */
-	@Override
-	@Deprecated
-	public Object findLocatableBySerial( final long ser )
-	{
-		return this.set.get( ser );
-	}
-
-	@Override
-	public ILocatable getLocatableBy( final long serial )
-	{
-		return this.set.get( serial );
-	}
+    @Override
+    public ILocatable getLocatableBy(final long serial) {
+        return this.set.get(serial);
+    }
 }

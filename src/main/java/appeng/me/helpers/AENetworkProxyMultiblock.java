@@ -18,6 +18,7 @@
 
 package appeng.me.helpers;
 
+import java.util.Iterator;
 
 import appeng.api.networking.IGridMultiblock;
 import appeng.api.networking.IGridNode;
@@ -27,30 +28,26 @@ import appeng.util.iterators.ChainedIterator;
 import appeng.util.iterators.ProxyNodeIterator;
 import net.minecraft.item.ItemStack;
 
-import java.util.Iterator;
+public class AENetworkProxyMultiblock extends AENetworkProxy implements IGridMultiblock {
+    public AENetworkProxyMultiblock(
+        final IGridProxyable te,
+        final String nbtName,
+        final ItemStack itemStack,
+        final boolean inWorld
+    ) {
+        super(te, nbtName, itemStack, inWorld);
+    }
 
+    @Override
+    public Iterator<IGridNode> getMultiblockNodes() {
+        if (this.getCluster() == null) {
+            return new ChainedIterator<IGridNode>();
+        }
 
-public class AENetworkProxyMultiblock extends AENetworkProxy implements IGridMultiblock
-{
+        return new ProxyNodeIterator(this.getCluster().getTiles());
+    }
 
-	public AENetworkProxyMultiblock( final IGridProxyable te, final String nbtName, final ItemStack itemStack, final boolean inWorld )
-	{
-		super( te, nbtName, itemStack, inWorld );
-	}
-
-	@Override
-	public Iterator<IGridNode> getMultiblockNodes()
-	{
-		if( this.getCluster() == null )
-		{
-			return new ChainedIterator<IGridNode>();
-		}
-
-		return new ProxyNodeIterator( this.getCluster().getTiles() );
-	}
-
-	private IAECluster getCluster()
-	{
-		return ( (IAEMultiBlock) this.getMachine() ).getCluster();
-	}
+    private IAECluster getCluster() {
+        return ((IAEMultiBlock) this.getMachine()).getCluster();
+    }
 }

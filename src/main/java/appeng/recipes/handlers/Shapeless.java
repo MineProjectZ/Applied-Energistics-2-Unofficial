@@ -18,6 +18,8 @@
 
 package appeng.recipes.handlers;
 
+import java.util.ArrayList;
+import java.util.List;
 
 import appeng.api.exceptions.MissingIngredientError;
 import appeng.api.exceptions.RecipeError;
@@ -31,110 +33,84 @@ import appeng.util.Platform;
 import cpw.mods.fml.common.registry.GameRegistry;
 import net.minecraft.item.ItemStack;
 
-import java.util.ArrayList;
-import java.util.List;
+public class Shapeless implements ICraftHandler, IWebsiteSerializer {
+    private List<IIngredient> inputs;
+    private IIngredient output;
 
+    @Override
+    public void
+    setup(final List<List<IIngredient>> input, final List<List<IIngredient>> output)
+        throws RecipeError {
+        if (output.size() == 1 && output.get(0).size() == 1) {
+            if (input.size() == 1) {
+                this.inputs = input.get(0);
+                this.output = output.get(0).get(0);
+            } else {
+                throw new RecipeError("Shapeless crafting recipes cannot have rows.");
+            }
+        } else {
+            throw new RecipeError("Crafting must produce a single output.");
+        }
+    }
 
-public class Shapeless implements ICraftHandler, IWebsiteSerializer
-{
+    @Override
+    public void register() throws RegistrationError, MissingIngredientError {
+        final List<Object> args = new ArrayList<Object>();
+        for (final IIngredient i : this.inputs) {
+            args.add(i);
+        }
 
-	private List<IIngredient> inputs;
-	private IIngredient output;
+        final ItemStack outIS = this.output.getItemStack();
 
-	@Override
-	public void setup( final List<List<IIngredient>> input, final List<List<IIngredient>> output ) throws RecipeError
-	{
-		if( output.size() == 1 && output.get( 0 ).size() == 1 )
-		{
-			if( input.size() == 1 )
-			{
-				this.inputs = input.get( 0 );
-				this.output = output.get( 0 ).get( 0 );
-			}
-			else
-			{
-				throw new RecipeError( "Shapeless crafting recipes cannot have rows." );
-			}
-		}
-		else
-		{
-			throw new RecipeError( "Crafting must produce a single output." );
-		}
-	}
+        try {
+            GameRegistry.addRecipe(
+                new ShapelessRecipe(outIS, args.toArray(new Object[args.size()]))
+            );
+        } catch (final Throwable e) {
+            AELog.debug(e);
+            throw new RegistrationError("Error while adding shapeless recipe.");
+        }
+    }
 
-	@Override
-	public void register() throws RegistrationError, MissingIngredientError
-	{
-		final List<Object> args = new ArrayList<Object>();
-		for( final IIngredient i : this.inputs )
-		{
-			args.add( i );
-		}
+    @Override
+    public String getPattern(final RecipeHandler h) {
+        final StringBuilder o
+            = new StringBuilder("shapeless " + this.output.getQty() + '\n');
 
-		final ItemStack outIS = this.output.getItemStack();
+        o.append(h.getName(this.output)).append('\n');
 
-		try
-		{
-			GameRegistry.addRecipe( new ShapelessRecipe( outIS, args.toArray( new Object[args.size()] ) ) );
-		}
-		catch( final Throwable e )
-		{
-			AELog.debug( e );
-			throw new RegistrationError( "Error while adding shapeless recipe." );
-		}
-	}
+        for (int y = 0; y < this.inputs.size(); y++) {
+            final IIngredient i = this.inputs.get(y);
 
-	@Override
-	public String getPattern( final RecipeHandler h )
-	{
-		final StringBuilder o = new StringBuilder( "shapeless " + this.output.getQty() + '\n' );
+            if (i.isAir()) {
+                o.append("air");
+            } else {
+                o.append(h.getName(i));
+            }
 
-		o.append( h.getName( this.output ) ).append( '\n' );
+            if (y + 1 == this.inputs.size()) {
+                o.append('\n');
+            } else {
+                o.append(' ');
+            }
+        }
 
-		for( int y = 0; y < this.inputs.size(); y++ )
-		{
-			final IIngredient i = this.inputs.get( y );
+        return o.toString().trim();
+    }
 
-			if( i.isAir() )
-			{
-				o.append( "air" );
-			}
-			else
-			{
-				o.append( h.getName( i ) );
-			}
+    @Override
+    public boolean canCraft(final ItemStack reqOutput)
+        throws RegistrationError, MissingIngredientError {
+        for (final IIngredient i : this.inputs) {
+            if (!i.isAir()) {
+                for (final ItemStack r : i.getItemStackSet()) {
+                    if (Platform.isSameItemPrecise(r, reqOutput)) {
+                        return false;
+                    }
+                }
+            }
+        }
 
-			if( y + 1 == this.inputs.size() )
-			{
-				o.append( '\n' );
-			}
-			else
-			{
-				o.append( ' ' );
-			}
-		}
-
-		return o.toString().trim();
-	}
-
-	@Override
-	public boolean canCraft( final ItemStack reqOutput ) throws RegistrationError, MissingIngredientError
-	{
-
-		for( final IIngredient i : this.inputs )
-		{
-			if( !i.isAir() )
-			{
-				for( final ItemStack r : i.getItemStackSet() )
-				{
-					if( Platform.isSameItemPrecise( r, reqOutput ) )
-					{
-						return false;
-					}
-				}
-			}
-		}
-
-		return Platform.isSameItemPrecise( this.output.getItemStack(), reqOutput );
-	}
+        return Platform.isSameItemPrecise(this.output.getItemStack(), reqOutput);
+    }
 }

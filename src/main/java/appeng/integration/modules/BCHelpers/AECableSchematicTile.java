@@ -18,6 +18,7 @@
 
 package appeng.integration.modules.BCHelpers;
 
+import java.util.Set;
 
 import appeng.api.parts.*;
 import appeng.api.util.AEColor;
@@ -31,141 +32,102 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Vec3;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.Set;
+public class AECableSchematicTile extends AEGenericSchematicTile implements IPartHost {
+    @Override
+    public void rotateLeft(final IBuilderContext context) {
+        final CableBusContainer cbc = new CableBusContainer(this);
+        cbc.readFromNBT(this.tileNBT);
 
+        cbc.rotateLeft();
 
-public class AECableSchematicTile extends AEGenericSchematicTile implements IPartHost
-{
+        this.tileNBT = new NBTTagCompound();
+        cbc.writeToNBT(this.tileNBT);
+    }
 
-	@Override
-	public void rotateLeft( final IBuilderContext context )
-	{
-		final CableBusContainer cbc = new CableBusContainer( this );
-		cbc.readFromNBT( this.tileNBT );
+    @Override
+    public IFacadeContainer getFacadeContainer() {
+        return null;
+    }
 
-		cbc.rotateLeft();
+    @Override
+    public boolean canAddPart(final ItemStack part, final ForgeDirection side) {
+        return false;
+    }
 
-		this.tileNBT = new NBTTagCompound();
-		cbc.writeToNBT( this.tileNBT );
-	}
+    @Override
+    public ForgeDirection
+    addPart(final ItemStack is, final ForgeDirection side, final EntityPlayer owner) {
+        return null;
+    }
 
-	@Override
-	public IFacadeContainer getFacadeContainer()
-	{
-		return null;
-	}
+    @Override
+    public IPart getPart(final ForgeDirection side) {
+        return null;
+    }
 
-	@Override
-	public boolean canAddPart( final ItemStack part, final ForgeDirection side )
-	{
-		return false;
-	}
+    @Override
+    public void removePart(final ForgeDirection side, final boolean suppressUpdate) {}
 
-	@Override
-	public ForgeDirection addPart( final ItemStack is, final ForgeDirection side, final EntityPlayer owner )
-	{
-		return null;
-	}
+    @Override
+    public void markForUpdate() {}
 
-	@Override
-	public IPart getPart( final ForgeDirection side )
-	{
-		return null;
-	}
+    @Override
+    public DimensionalCoord getLocation() {
+        return null;
+    }
 
-	@Override
-	public void removePart( final ForgeDirection side, final boolean suppressUpdate )
-	{
+    @Override
+    public TileEntity getTile() {
+        return null;
+    }
 
-	}
+    @Override
+    public AEColor getColor() {
+        return null;
+    }
 
-	@Override
-	public void markForUpdate()
-	{
+    @Override
+    public void clearContainer() {}
 
-	}
+    @Override
+    public boolean isBlocked(final ForgeDirection side) {
+        return false;
+    }
 
-	@Override
-	public DimensionalCoord getLocation()
-	{
-		return null;
-	}
+    @Override
+    public SelectedPart selectPart(final Vec3 pos) {
+        return null;
+    }
 
-	@Override
-	public TileEntity getTile()
-	{
-		return null;
-	}
+    @Override
+    public void markForSave() {}
 
-	@Override
-	public AEColor getColor()
-	{
-		return null;
-	}
+    @Override
+    public void partChanged() {}
 
-	@Override
-	public void clearContainer()
-	{
+    @Override
+    public boolean hasRedstone(final ForgeDirection side) {
+        return false;
+    }
 
-	}
+    @Override
+    public boolean isEmpty() {
+        return false;
+    }
 
-	@Override
-	public boolean isBlocked( final ForgeDirection side )
-	{
-		return false;
-	}
+    @Override
+    public Set<LayerFlags> getLayerFlags() {
+        return null;
+    }
 
-	@Override
-	public SelectedPart selectPart( final Vec3 pos )
-	{
-		return null;
-	}
+    @Override
+    public void cleanup() {}
 
-	@Override
-	public void markForSave()
-	{
+    @Override
+    public void notifyNeighbors() {}
 
-	}
-
-	@Override
-	public void partChanged()
-	{
-
-	}
-
-	@Override
-	public boolean hasRedstone( final ForgeDirection side )
-	{
-		return false;
-	}
-
-	@Override
-	public boolean isEmpty()
-	{
-		return false;
-	}
-
-	@Override
-	public Set<LayerFlags> getLayerFlags()
-	{
-		return null;
-	}
-
-	@Override
-	public void cleanup()
-	{
-
-	}
-
-	@Override
-	public void notifyNeighbors()
-	{
-
-	}
-
-	@Override
-	public boolean isInWorld()
-	{
-		return false;
-	}
+    @Override
+    public boolean isInWorld() {
+        return false;
+    }
 }

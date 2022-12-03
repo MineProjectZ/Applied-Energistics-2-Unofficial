@@ -23,20 +23,15 @@
 
 package appeng.api.networking.security;
 
+public class MachineSource extends BaseActionSource {
+    public final IActionHost via;
 
-public class MachineSource extends BaseActionSource
-{
+    public MachineSource(final IActionHost v) {
+        this.via = v;
+    }
 
-	public final IActionHost via;
-
-	public MachineSource( final IActionHost v )
-	{
-		this.via = v;
-	}
-
-	@Override
-	public boolean isMachine()
-	{
-		return true;
-	}
+    @Override
+    public boolean isMachine() {
+        return true;
+    }
 }

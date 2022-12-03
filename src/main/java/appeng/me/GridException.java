@@ -18,15 +18,10 @@
 
 package appeng.me;
 
+public class GridException extends RuntimeException {
+    private static final long serialVersionUID = -8110077032108243076L;
 
-public class GridException extends RuntimeException
-{
-
-	private static final long serialVersionUID = -8110077032108243076L;
-
-	public GridException( final String s )
-	{
-
-		super( s );
-	}
+    public GridException(final String s) {
+        super(s);
+    }
 }

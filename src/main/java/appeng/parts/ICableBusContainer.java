@@ -18,6 +18,8 @@
 
 package appeng.parts;
 
+import java.util.EnumSet;
+import java.util.Random;
 
 import appeng.api.parts.SelectedPart;
 import appeng.api.util.AEColor;
@@ -30,37 +32,31 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.EnumSet;
-import java.util.Random;
+public interface ICableBusContainer {
+    int isProvidingStrongPower(ForgeDirection opposite);
 
+    int isProvidingWeakPower(ForgeDirection opposite);
 
-public interface ICableBusContainer
-{
+    boolean canConnectRedstone(EnumSet<ForgeDirection> of);
 
-	int isProvidingStrongPower( ForgeDirection opposite );
+    void onEntityCollision(Entity e);
 
-	int isProvidingWeakPower( ForgeDirection opposite );
+    boolean activate(EntityPlayer player, Vec3 vecFromPool);
 
-	boolean canConnectRedstone( EnumSet<ForgeDirection> of );
+    void onNeighborChanged();
 
-	void onEntityCollision( Entity e );
+    boolean isSolidOnSide(ForgeDirection side);
 
-	boolean activate( EntityPlayer player, Vec3 vecFromPool );
+    boolean isEmpty();
 
-	void onNeighborChanged();
+    SelectedPart selectPart(Vec3 v3);
 
-	boolean isSolidOnSide( ForgeDirection side );
+    boolean recolourBlock(ForgeDirection side, AEColor colour, EntityPlayer who);
 
-	boolean isEmpty();
+    boolean isLadder(EntityLivingBase entity);
 
-	SelectedPart selectPart( Vec3 v3 );
+    @SideOnly(Side.CLIENT)
+    void randomDisplayTick(World world, int x, int y, int z, Random r);
 
-	boolean recolourBlock( ForgeDirection side, AEColor colour, EntityPlayer who );
-
-	boolean isLadder( EntityLivingBase entity );
-
-	@SideOnly( Side.CLIENT )
-	void randomDisplayTick( World world, int x, int y, int z, Random r );
-
-	int getLightValue();
+    int getLightValue();
 }

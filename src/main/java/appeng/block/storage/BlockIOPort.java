@@ -18,6 +18,7 @@
 
 package appeng.block.storage;
 
+import java.util.EnumSet;
 
 import appeng.block.AEBaseTileBlock;
 import appeng.core.features.AEFeature;
@@ -30,46 +31,48 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.EnumSet;
+public class BlockIOPort extends AEBaseTileBlock {
+    public BlockIOPort() {
+        super(Material.iron);
+        this.setTileEntity(TileIOPort.class);
+        this.setFeature(EnumSet.of(AEFeature.StorageCells, AEFeature.IOPort));
+    }
 
+    @Override
+    public final void onNeighborBlockChange(
+        final World w, final int x, final int y, final int z, final Block junk
+    ) {
+        final TileIOPort te = this.getTileEntity(w, x, y, z);
+        if (te != null) {
+            te.updateRedstoneState();
+        }
+    }
 
-public class BlockIOPort extends AEBaseTileBlock
-{
+    @Override
+    public boolean onActivated(
+        final World w,
+        final int x,
+        final int y,
+        final int z,
+        final EntityPlayer p,
+        final int side,
+        final float hitX,
+        final float hitY,
+        final float hitZ
+    ) {
+        if (p.isSneaking()) {
+            return false;
+        }
 
-	public BlockIOPort()
-	{
-		super( Material.iron );
-		this.setTileEntity( TileIOPort.class );
-		this.setFeature( EnumSet.of( AEFeature.StorageCells, AEFeature.IOPort ) );
-	}
-
-	@Override
-	public final void onNeighborBlockChange( final World w, final int x, final int y, final int z, final Block junk )
-	{
-		final TileIOPort te = this.getTileEntity( w, x, y, z );
-		if( te != null )
-		{
-			te.updateRedstoneState();
-		}
-	}
-
-	@Override
-	public boolean onActivated( final World w, final int x, final int y, final int z, final EntityPlayer p, final int side, final float hitX, final float hitY, final float hitZ )
-	{
-		if( p.isSneaking() )
-		{
-			return false;
-		}
-
-		final TileIOPort tg = this.getTileEntity( w, x, y, z );
-		if( tg != null )
-		{
-			if( Platform.isServer() )
-			{
-				Platform.openGUI( p, tg, ForgeDirection.getOrientation( side ), GuiBridge.GUI_IOPORT );
-			}
-			return true;
-		}
-		return false;
-	}
+        final TileIOPort tg = this.getTileEntity(w, x, y, z);
+        if (tg != null) {
+            if (Platform.isServer()) {
+                Platform.openGUI(
+                    p, tg, ForgeDirection.getOrientation(side), GuiBridge.GUI_IOPORT
+                );
+            }
+            return true;
+        }
+        return false;
+    }
 }

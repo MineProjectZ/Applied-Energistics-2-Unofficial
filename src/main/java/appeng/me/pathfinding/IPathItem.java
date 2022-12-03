@@ -18,44 +18,40 @@
 
 package appeng.me.pathfinding;
 
+import java.util.EnumSet;
 
 import appeng.api.networking.GridFlags;
 import appeng.api.util.IReadOnlyCollection;
 
-import java.util.EnumSet;
+public interface IPathItem {
+    IPathItem getControllerRoute();
 
+    void setControllerRoute(IPathItem fast, boolean zeroOut);
 
-public interface IPathItem
-{
+    /**
+     * used to determine if the finder can continue.
+     */
+    boolean canSupportMoreChannels();
 
-	IPathItem getControllerRoute();
+    /**
+     * find possible choices for other pathing.
+     */
+    IReadOnlyCollection<IPathItem> getPossibleOptions();
 
-	void setControllerRoute( IPathItem fast, boolean zeroOut );
+    /**
+     * add one to the channel count, this is mostly for cables.
+     */
+    void incrementChannelCount(int usedChannels);
 
-	/**
-	 * used to determine if the finder can continue.
-	 */
-	boolean canSupportMoreChannels();
+    /**
+     * get the grid flags for this IPathItem.
+     *
+     * @return the flag set.
+     */
+    EnumSet<GridFlags> getFlags();
 
-	/**
-	 * find possible choices for other pathing.
-	 */
-	IReadOnlyCollection<IPathItem> getPossibleOptions();
-
-	/**
-	 * add one to the channel count, this is mostly for cables.
-	 */
-	void incrementChannelCount( int usedChannels );
-
-	/**
-	 * get the grid flags for this IPathItem.
-	 *
-	 * @return the flag set.
-	 */
-	EnumSet<GridFlags> getFlags();
-
-	/**
-	 * channels are done, wrap it up.
-	 */
-	void finalizeChannels();
+    /**
+     * channels are done, wrap it up.
+     */
+    void finalizeChannels();
 }

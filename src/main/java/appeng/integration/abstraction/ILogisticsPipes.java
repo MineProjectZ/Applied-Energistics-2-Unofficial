@@ -18,14 +18,12 @@
 
 package appeng.integration.abstraction;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.ForgeDirection;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 
 /**
  * Contains pipe logic to interact between storage buses and pipes
@@ -34,9 +32,7 @@ import javax.annotation.Nullable;
  * @version rv3 01.01.2017
  * @since rv3 01.01.2017
  */
-public interface ILogisticsPipes
-{
-
+public interface ILogisticsPipes {
     /**
      * checks weather if the {@code te} is injectable and simulates to inject the item
      *
@@ -45,15 +41,18 @@ public interface ILogisticsPipes
      * @param dir direction of the pipe
      * @return {@code true} if items were simulated successfully being added
      */
-    boolean canAddItemsToPipe( TileEntity te, ItemStack is, ForgeDirection dir );
+    boolean canAddItemsToPipe(TileEntity te, ItemStack is, ForgeDirection dir);
 
     /**
-     * checks weather if the {@code te} is injectable, simulates the inject and tries to inject the item
+     * checks weather if the {@code te} is injectable, simulates the inject and tries to
+     * inject the item
      *
      * @param te  instanceof ILPPipe
      * @param is  to be injected item
      * @param dir direction of the pipe
      * @return {@code true} if items were added to the buildcraft pipe
      */
-    boolean addItemsToPipe( @Nullable TileEntity te, @Nullable ItemStack is, @Nonnull ForgeDirection dir );
+    boolean addItemsToPipe(
+        @Nullable TileEntity te, @Nullable ItemStack is, @Nonnull ForgeDirection dir
+    );
 }

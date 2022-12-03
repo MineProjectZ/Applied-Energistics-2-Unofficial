@@ -18,6 +18,8 @@
 
 package appeng.me;
 
+import java.util.*;
+import java.util.Map.Entry;
 
 import appeng.api.AEApi;
 import appeng.api.networking.*;
@@ -28,262 +30,217 @@ import appeng.core.worlddata.WorldData;
 import appeng.hooks.TickHandler;
 import appeng.util.ReadOnlyCollection;
 
-import java.util.*;
-import java.util.Map.Entry;
+public class Grid implements IGrid {
+    private final NetworkEventBus eventBus = new NetworkEventBus();
+    private final Map<Class<? extends IGridHost>, MachineSet> machines
+        = new HashMap<Class<? extends IGridHost>, MachineSet>();
+    private final Map<Class<? extends IGridCache>, GridCacheWrapper> caches
+        = new HashMap<Class<? extends IGridCache>, GridCacheWrapper>();
+    private GridNode pivot;
+    private int priority; // how import is this network?
+    private GridStorage myStorage;
 
+    public Grid(final GridNode center) {
+        this.pivot = center;
 
-public class Grid implements IGrid
-{
-	private final NetworkEventBus eventBus = new NetworkEventBus();
-	private final Map<Class<? extends IGridHost>, MachineSet> machines = new HashMap<Class<? extends IGridHost>, MachineSet>();
-	private final Map<Class<? extends IGridCache>, GridCacheWrapper> caches = new HashMap<Class<? extends IGridCache>, GridCacheWrapper>();
-	private GridNode pivot;
-	private int priority; // how import is this network?
-	private GridStorage myStorage;
+        final Map<Class<? extends IGridCache>, IGridCache> myCaches
+            = AEApi.instance().registries().gridCache().createCacheInstance(this);
+        for (final Entry<Class<? extends IGridCache>, IGridCache> c :
+             myCaches.entrySet()) {
+            final Class<? extends IGridCache> key = c.getKey();
+            final IGridCache value = c.getValue();
+            final Class<? extends IGridCache> valueClass = value.getClass();
 
-	public Grid( final GridNode center )
-	{
-		this.pivot = center;
+            this.eventBus.readClass(key, valueClass);
+            this.caches.put(key, new GridCacheWrapper(value));
+        }
 
-		final Map<Class<? extends IGridCache>, IGridCache> myCaches = AEApi.instance().registries().gridCache().createCacheInstance( this );
-		for( final Entry<Class<? extends IGridCache>, IGridCache> c : myCaches.entrySet() )
-		{
-			final Class<? extends IGridCache> key = c.getKey();
-			final IGridCache value = c.getValue();
-			final Class<? extends IGridCache> valueClass = value.getClass();
+        this.postEvent(new MENetworkPostCacheConstruction());
 
-			this.eventBus.readClass( key, valueClass );
-			this.caches.put( key, new GridCacheWrapper( value ) );
-		}
+        TickHandler.INSTANCE.addNetwork(this);
+        center.setGrid(this);
+    }
 
-		this.postEvent( new MENetworkPostCacheConstruction() );
+    int getPriority() {
+        return this.priority;
+    }
 
-		TickHandler.INSTANCE.addNetwork( this );
-		center.setGrid( this );
-	}
+    IGridStorage getMyStorage() {
+        return this.myStorage;
+    }
 
-	int getPriority()
-	{
-		return this.priority;
-	}
+    Map<Class<? extends IGridCache>, GridCacheWrapper> getCaches() {
+        return this.caches;
+    }
 
-	IGridStorage getMyStorage()
-	{
-		return this.myStorage;
-	}
+    public Iterable<Class<? extends IGridHost>> getMachineClasses() {
+        return this.machines.keySet();
+    }
 
-	Map<Class<? extends IGridCache>, GridCacheWrapper> getCaches()
-	{
-		return this.caches;
-	}
+    int size() {
+        int out = 0;
+        for (final Collection<?> x : this.machines.values()) {
+            out += x.size();
+        }
+        return out;
+    }
 
-	public Iterable<Class<? extends IGridHost>> getMachineClasses()
-	{
-		return this.machines.keySet();
-	}
+    void remove(final GridNode gridNode) {
+        for (final IGridCache c : this.caches.values()) {
+            final IGridHost machine = gridNode.getMachine();
+            c.removeNode(gridNode, machine);
+        }
 
-	int size()
-	{
-		int out = 0;
-		for( final Collection<?> x : this.machines.values() )
-		{
-			out += x.size();
-		}
-		return out;
-	}
+        final Class<? extends IGridHost> machineClass = gridNode.getMachineClass();
+        final Set<IGridNode> nodes = this.machines.get(machineClass);
+        if (nodes != null) {
+            nodes.remove(gridNode);
+        }
 
-	void remove( final GridNode gridNode )
-	{
-		for( final IGridCache c : this.caches.values() )
-		{
-			final IGridHost machine = gridNode.getMachine();
-			c.removeNode( gridNode, machine );
-		}
+        gridNode.setGridStorage(null);
 
-		final Class<? extends IGridHost> machineClass = gridNode.getMachineClass();
-		final Set<IGridNode> nodes = this.machines.get( machineClass );
-		if( nodes != null )
-		{
-			nodes.remove( gridNode );
-		}
+        if (this.pivot == gridNode) {
+            final Iterator<IGridNode> n = this.getNodes().iterator();
+            if (n.hasNext()) {
+                this.pivot = (GridNode) n.next();
+            } else {
+                this.pivot = null;
+                TickHandler.INSTANCE.removeNetwork(this);
+                this.myStorage.remove();
+            }
+        }
+    }
 
-		gridNode.setGridStorage( null );
+    void add(final GridNode gridNode) {
+        final Class<? extends IGridHost> mClass = gridNode.getMachineClass();
 
-		if( this.pivot == gridNode )
-		{
-			final Iterator<IGridNode> n = this.getNodes().iterator();
-			if( n.hasNext() )
-			{
-				this.pivot = (GridNode) n.next();
-			}
-			else
-			{
-				this.pivot = null;
-				TickHandler.INSTANCE.removeNetwork( this );
-				this.myStorage.remove();
-			}
-		}
-	}
+        MachineSet nodes = this.machines.get(mClass);
+        if (nodes == null) {
+            nodes = new MachineSet(mClass);
+            this.machines.put(mClass, nodes);
+            this.eventBus.readClass(mClass, mClass);
+        }
 
-	void add( final GridNode gridNode )
-	{
-		final Class<? extends IGridHost> mClass = gridNode.getMachineClass();
+        // handle loading grid storages.
+        if (gridNode.getGridStorage() != null) {
+            final GridStorage gs = gridNode.getGridStorage();
+            final IGrid grid = gs.getGrid();
 
-		MachineSet nodes = this.machines.get( mClass );
-		if( nodes == null )
-		{
-			nodes = new MachineSet( mClass );
-			this.machines.put( mClass, nodes );
-			this.eventBus.readClass( mClass, mClass );
-		}
+            if (grid == null) {
+                this.myStorage = gs;
+                this.myStorage.setGrid(this);
 
-		// handle loading grid storages.
-		if( gridNode.getGridStorage() != null )
-		{
-			final GridStorage gs = gridNode.getGridStorage();
-			final IGrid grid = gs.getGrid();
+                for (final IGridCache gc : this.caches.values()) {
+                    gc.onJoin(this.myStorage);
+                }
+            } else if (grid != this) {
+                if (this.myStorage == null) {
+                    this.myStorage
+                        = WorldData.instance().storageData().getNewGridStorage();
+                    this.myStorage.setGrid(this);
+                }
 
-			if( grid == null )
-			{
-				this.myStorage = gs;
-				this.myStorage.setGrid( this );
+                final IGridStorage tmp = new GridStorage();
+                if (!gs.hasDivided(this.myStorage)) {
+                    gs.addDivided(this.myStorage);
 
-				for( final IGridCache gc : this.caches.values() )
-				{
-					gc.onJoin( this.myStorage );
-				}
-			}
-			else if( grid != this )
-			{
-				if( this.myStorage == null )
-				{
-					this.myStorage = WorldData.instance().storageData().getNewGridStorage();
-					this.myStorage.setGrid( this );
-				}
+                    for (final IGridCache gc : ((Grid) grid).caches.values()) {
+                        gc.onSplit(tmp);
+                    }
 
-				final IGridStorage tmp = new GridStorage();
-				if( !gs.hasDivided( this.myStorage ) )
-				{
-					gs.addDivided( this.myStorage );
+                    for (final IGridCache gc : this.caches.values()) {
+                        gc.onJoin(tmp);
+                    }
+                }
+            }
+        } else if (this.myStorage == null) {
+            this.myStorage = WorldData.instance().storageData().getNewGridStorage();
+            this.myStorage.setGrid(this);
+        }
 
-					for( final IGridCache gc : ( (Grid) grid ).caches.values() )
-					{
-						gc.onSplit( tmp );
-					}
+        // update grid node...
+        gridNode.setGridStorage(this.myStorage);
 
-					for( final IGridCache gc : this.caches.values() )
-					{
-						gc.onJoin( tmp );
-					}
-				}
-			}
-		}
-		else if( this.myStorage == null )
-		{
-			this.myStorage = WorldData.instance().storageData().getNewGridStorage();
-			this.myStorage.setGrid( this );
-		}
+        // track node.
+        nodes.add(gridNode);
 
-		// update grid node...
-		gridNode.setGridStorage( this.myStorage );
+        for (final IGridCache cache : this.caches.values()) {
+            final IGridHost machine = gridNode.getMachine();
+            cache.addNode(gridNode, machine);
+        }
 
-		// track node.
-		nodes.add( gridNode );
+        gridNode.getGridProxy().gridChanged();
+        // postEventTo( gridNode, networkChanged );
+    }
 
-		for( final IGridCache cache : this.caches.values() )
-		{
-			final IGridHost machine = gridNode.getMachine();
-			cache.addNode( gridNode, machine );
-		}
+    @Override
+    @SuppressWarnings("unchecked")
+    public <C extends IGridCache> C getCache(final Class<? extends IGridCache> iface) {
+        return (C) this.caches.get(iface).getCache();
+    }
 
-		gridNode.getGridProxy().gridChanged();
-		// postEventTo( gridNode, networkChanged );
-	}
+    @Override
+    public MENetworkEvent postEvent(final MENetworkEvent ev) {
+        return this.eventBus.postEvent(this, ev);
+    }
 
-	@Override
-	@SuppressWarnings( "unchecked" )
-	public <C extends IGridCache> C getCache( final Class<? extends IGridCache> iface )
-	{
-		return (C) this.caches.get( iface ).getCache();
-	}
+    @Override
+    public MENetworkEvent postEventTo(final IGridNode node, final MENetworkEvent ev) {
+        return this.eventBus.postEventTo(this, (GridNode) node, ev);
+    }
 
-	@Override
-	public MENetworkEvent postEvent( final MENetworkEvent ev )
-	{
-		return this.eventBus.postEvent( this, ev );
-	}
+    @Override
+    public IReadOnlyCollection<Class<? extends IGridHost>> getMachinesClasses() {
+        final Set<Class<? extends IGridHost>> machineKeys = this.machines.keySet();
 
-	@Override
-	public MENetworkEvent postEventTo( final IGridNode node, final MENetworkEvent ev )
-	{
-		return this.eventBus.postEventTo( this, (GridNode) node, ev );
-	}
+        return new ReadOnlyCollection<Class<? extends IGridHost>>(machineKeys);
+    }
 
-	@Override
-	public IReadOnlyCollection<Class<? extends IGridHost>> getMachinesClasses()
-	{
-		final Set<Class<? extends IGridHost>> machineKeys = this.machines.keySet();
+    @Override
+    public IMachineSet getMachines(final Class<? extends IGridHost> c) {
+        final MachineSet s = this.machines.get(c);
+        if (s == null) {
+            return new MachineSet(c);
+        }
+        return s;
+    }
 
-		return new ReadOnlyCollection<Class<? extends IGridHost>>( machineKeys );
-	}
+    @Override
+    public IReadOnlyCollection<IGridNode> getNodes() {
+        return new GridNodeCollection(this.machines);
+    }
 
-	@Override
-	public IMachineSet getMachines( final Class<? extends IGridHost> c )
-	{
-		final MachineSet s = this.machines.get( c );
-		if( s == null )
-		{
-			return new MachineSet( c );
-		}
-		return s;
-	}
+    @Override
+    public boolean isEmpty() {
+        return this.pivot == null;
+    }
 
-	@Override
-	public IReadOnlyCollection<IGridNode> getNodes()
-	{
-		return new GridNodeCollection( this.machines );
-	}
+    @Override
+    public IGridNode getPivot() {
+        return this.pivot;
+    }
 
-	@Override
-	public boolean isEmpty()
-	{
-		return this.pivot == null;
-	}
+    void setPivot(final GridNode pivot) {
+        this.pivot = pivot;
+    }
 
-	@Override
-	public IGridNode getPivot()
-	{
-		return this.pivot;
-	}
+    public void update() {
+        for (final IGridCache gc : this.caches.values()) {
+            // are there any nodes left?
+            if (this.pivot != null) {
+                gc.onUpdateTick();
+            }
+        }
+    }
 
-	void setPivot( final GridNode pivot )
-	{
-		this.pivot = pivot;
-	}
+    void saveState() {
+        for (final IGridCache c : this.caches.values()) {
+            c.populateGridStorage(this.myStorage);
+        }
+    }
 
-	public void update()
-	{
-		for( final IGridCache gc : this.caches.values() )
-		{
-			// are there any nodes left?
-			if( this.pivot != null )
-			{
-				gc.onUpdateTick();
-			}
-		}
-	}
-
-	void saveState()
-	{
-		for( final IGridCache c : this.caches.values() )
-		{
-			c.populateGridStorage( this.myStorage );
-		}
-	}
-
-	public void setImportantFlag( final int i, final boolean publicHasPower )
-	{
-		final int flag = 1 << i;
-		this.priority = ( this.priority & ~flag ) | ( publicHasPower ? flag : 0 );
-	}
+    public void setImportantFlag(final int i, final boolean publicHasPower) {
+        final int flag = 1 << i;
+        this.priority = (this.priority & ~flag) | (publicHasPower ? flag : 0);
+    }
 }

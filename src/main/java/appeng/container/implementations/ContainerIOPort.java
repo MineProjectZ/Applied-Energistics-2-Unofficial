@@ -18,7 +18,6 @@
 
 package appeng.container.implementations;
 
-
 import appeng.api.config.*;
 import appeng.container.guisync.GuiSync;
 import appeng.container.slot.SlotOutput;
@@ -28,102 +27,133 @@ import appeng.util.Platform;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.IInventory;
 
+public class ContainerIOPort extends ContainerUpgradeable {
+    @GuiSync(2)
+    public FullnessMode fMode = FullnessMode.EMPTY;
+    @GuiSync(3)
+    public OperationMode opMode = OperationMode.EMPTY;
 
-public class ContainerIOPort extends ContainerUpgradeable
-{
+    public ContainerIOPort(final InventoryPlayer ip, final TileIOPort te) {
+        super(ip, te);
+    }
 
-	@GuiSync( 2 )
-	public FullnessMode fMode = FullnessMode.EMPTY;
-	@GuiSync( 3 )
-	public OperationMode opMode = OperationMode.EMPTY;
+    @Override
+    protected int getHeight() {
+        return 166;
+    }
 
-	public ContainerIOPort( final InventoryPlayer ip, final TileIOPort te )
-	{
-		super( ip, te );
-	}
+    @Override
+    protected void setupConfig() {
+        int offX = 19;
+        int offY = 17;
 
-	@Override
-	protected int getHeight()
-	{
-		return 166;
-	}
+        final IInventory cells = this.getUpgradeable().getInventoryByName("cells");
 
-	@Override
-	protected void setupConfig()
-	{
-		int offX = 19;
-		int offY = 17;
+        for (int y = 0; y < 3; y++) {
+            for (int x = 0; x < 2; x++) {
+                this.addSlotToContainer(new SlotRestrictedInput(
+                    SlotRestrictedInput.PlacableItemType.STORAGE_CELLS,
+                    cells,
+                    x + y * 2,
+                    offX + x * 18,
+                    offY + y * 18,
+                    this.getInventoryPlayer()
+                ));
+            }
+        }
 
-		final IInventory cells = this.getUpgradeable().getInventoryByName( "cells" );
+        offX = 122;
+        offY = 17;
+        for (int y = 0; y < 3; y++) {
+            for (int x = 0; x < 2; x++) {
+                this.addSlotToContainer(new SlotOutput(
+                    cells,
+                    6 + x + y * 2,
+                    offX + x * 18,
+                    offY + y * 18,
+                    SlotRestrictedInput.PlacableItemType.STORAGE_CELLS.IIcon
+                ));
+            }
+        }
 
-		for( int y = 0; y < 3; y++ )
-		{
-			for( int x = 0; x < 2; x++ )
-			{
-				this.addSlotToContainer( new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.STORAGE_CELLS, cells, x + y * 2, offX + x * 18, offY + y * 18, this.getInventoryPlayer() ) );
-			}
-		}
+        final IInventory upgrades = this.getUpgradeable().getInventoryByName("upgrades");
+        this.addSlotToContainer((new SlotRestrictedInput(
+                                     SlotRestrictedInput.PlacableItemType.UPGRADES,
+                                     upgrades,
+                                     0,
+                                     187,
+                                     8,
+                                     this.getInventoryPlayer()
+                                 ))
+                                    .setNotDraggable());
+        this.addSlotToContainer((new SlotRestrictedInput(
+                                     SlotRestrictedInput.PlacableItemType.UPGRADES,
+                                     upgrades,
+                                     1,
+                                     187,
+                                     8 + 18,
+                                     this.getInventoryPlayer()
+                                 ))
+                                    .setNotDraggable());
+        this.addSlotToContainer((new SlotRestrictedInput(
+                                     SlotRestrictedInput.PlacableItemType.UPGRADES,
+                                     upgrades,
+                                     2,
+                                     187,
+                                     8 + 18 * 2,
+                                     this.getInventoryPlayer()
+                                 ))
+                                    .setNotDraggable());
+    }
 
-		offX = 122;
-		offY = 17;
-		for( int y = 0; y < 3; y++ )
-		{
-			for( int x = 0; x < 2; x++ )
-			{
-				this.addSlotToContainer( new SlotOutput( cells, 6 + x + y * 2, offX + x * 18, offY + y * 18, SlotRestrictedInput.PlacableItemType.STORAGE_CELLS.IIcon ) );
-			}
-		}
+    @Override
+    protected boolean supportCapacity() {
+        return false;
+    }
 
-		final IInventory upgrades = this.getUpgradeable().getInventoryByName( "upgrades" );
-		this.addSlotToContainer( ( new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.UPGRADES, upgrades, 0, 187, 8, this.getInventoryPlayer() ) ).setNotDraggable() );
-		this.addSlotToContainer( ( new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.UPGRADES, upgrades, 1, 187, 8 + 18, this.getInventoryPlayer() ) ).setNotDraggable() );
-		this.addSlotToContainer( ( new SlotRestrictedInput( SlotRestrictedInput.PlacableItemType.UPGRADES, upgrades, 2, 187, 8 + 18 * 2, this.getInventoryPlayer() ) ).setNotDraggable() );
-	}
+    @Override
+    public int availableUpgrades() {
+        return 3;
+    }
 
-	@Override
-	protected boolean supportCapacity()
-	{
-		return false;
-	}
+    @Override
+    public void detectAndSendChanges() {
+        this.verifyPermissions(SecurityPermissions.BUILD, false);
 
-	@Override
-	public int availableUpgrades()
-	{
-		return 3;
-	}
+        if (Platform.isServer()) {
+            this.setOperationMode(
+                (OperationMode) this.getUpgradeable().getConfigManager().getSetting(
+                    Settings.OPERATION_MODE
+                )
+            );
+            this.setFullMode(
+                (FullnessMode) this.getUpgradeable().getConfigManager().getSetting(
+                    Settings.FULLNESS_MODE
+                )
+            );
+            this.setRedStoneMode(
+                (RedstoneMode) this.getUpgradeable().getConfigManager().getSetting(
+                    Settings.REDSTONE_CONTROLLED
+                )
+            );
+        }
 
-	@Override
-	public void detectAndSendChanges()
-	{
-		this.verifyPermissions( SecurityPermissions.BUILD, false );
+        this.standardDetectAndSendChanges();
+    }
 
-		if( Platform.isServer() )
-		{
-			this.setOperationMode( (OperationMode) this.getUpgradeable().getConfigManager().getSetting( Settings.OPERATION_MODE ) );
-			this.setFullMode( (FullnessMode) this.getUpgradeable().getConfigManager().getSetting( Settings.FULLNESS_MODE ) );
-			this.setRedStoneMode( (RedstoneMode) this.getUpgradeable().getConfigManager().getSetting( Settings.REDSTONE_CONTROLLED ) );
-		}
+    public FullnessMode getFullMode() {
+        return this.fMode;
+    }
 
-		this.standardDetectAndSendChanges();
-	}
+    private void setFullMode(final FullnessMode fMode) {
+        this.fMode = fMode;
+    }
 
-	public FullnessMode getFullMode()
-	{
-		return this.fMode;
-	}
+    public OperationMode getOperationMode() {
+        return this.opMode;
+    }
 
-	private void setFullMode( final FullnessMode fMode )
-	{
-		this.fMode = fMode;
-	}
-
-	public OperationMode getOperationMode()
-	{
-		return this.opMode;
-	}
-
-	private void setOperationMode( final OperationMode opMode )
-	{
-		this.opMode = opMode;
-	}
+    private void setOperationMode(final OperationMode opMode) {
+        this.opMode = opMode;
+    }
 }

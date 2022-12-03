@@ -18,6 +18,7 @@
 
 package appeng.core.sync.packets;
 
+import java.util.concurrent.Future;
 
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridHost;
@@ -38,90 +39,86 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.concurrent.Future;
+public class PacketCraftRequest extends AppEngPacket {
+    private final long amount;
+    private final boolean heldShift;
 
+    // automatic.
+    public PacketCraftRequest(final ByteBuf stream) {
+        this.heldShift = stream.readBoolean();
+        this.amount = stream.readLong();
+    }
 
-public class PacketCraftRequest extends AppEngPacket
-{
+    public PacketCraftRequest(final int craftAmt, final boolean shift) {
+        this.amount = craftAmt;
+        this.heldShift = shift;
 
-	private final long amount;
-	private final boolean heldShift;
+        final ByteBuf data = Unpooled.buffer();
 
-	// automatic.
-	public PacketCraftRequest( final ByteBuf stream )
-	{
-		this.heldShift = stream.readBoolean();
-		this.amount = stream.readLong();
-	}
+        data.writeInt(this.getPacketID());
+        data.writeBoolean(shift);
+        data.writeLong(this.amount);
 
-	public PacketCraftRequest( final int craftAmt, final boolean shift )
-	{
-		this.amount = craftAmt;
-		this.heldShift = shift;
+        this.configureWrite(data);
+    }
 
-		final ByteBuf data = Unpooled.buffer();
+    @Override
+    public void serverPacketData(
+        final INetworkInfo manager, final AppEngPacket packet, final EntityPlayer player
+    ) {
+        if (player.openContainer instanceof ContainerCraftAmount) {
+            final ContainerCraftAmount cca = (ContainerCraftAmount) player.openContainer;
+            final Object target = cca.getTarget();
+            if (target instanceof IGridHost) {
+                final IGridHost gh = (IGridHost) target;
+                final IGridNode gn = gh.getGridNode(ForgeDirection.UNKNOWN);
+                if (gn == null) {
+                    return;
+                }
 
-		data.writeInt( this.getPacketID() );
-		data.writeBoolean( shift );
-		data.writeLong( this.amount );
+                final IGrid g = gn.getGrid();
+                if (g == null || cca.getItemToCraft() == null) {
+                    return;
+                }
 
-		this.configureWrite( data );
-	}
+                cca.getItemToCraft().setStackSize(this.amount);
 
-	@Override
-	public void serverPacketData( final INetworkInfo manager, final AppEngPacket packet, final EntityPlayer player )
-	{
-		if( player.openContainer instanceof ContainerCraftAmount )
-		{
-			final ContainerCraftAmount cca = (ContainerCraftAmount) player.openContainer;
-			final Object target = cca.getTarget();
-			if( target instanceof IGridHost )
-			{
-				final IGridHost gh = (IGridHost) target;
-				final IGridNode gn = gh.getGridNode( ForgeDirection.UNKNOWN );
-				if( gn == null )
-				{
-					return;
-				}
+                Future<ICraftingJob> futureJob = null;
+                try {
+                    final ICraftingGrid cg = g.getCache(ICraftingGrid.class);
+                    futureJob = cg.beginCraftingJob(
+                        cca.getWorld(),
+                        cca.getGrid(),
+                        cca.getActionSrc(),
+                        cca.getItemToCraft(),
+                        null
+                    );
 
-				final IGrid g = gn.getGrid();
-				if( g == null || cca.getItemToCraft() == null )
-				{
-					return;
-				}
+                    final ContainerOpenContext context = cca.getOpenContext();
+                    if (context != null) {
+                        final TileEntity te = context.getTile();
+                        Platform.openGUI(
+                            player,
+                            te,
+                            cca.getOpenContext().getSide(),
+                            GuiBridge.GUI_CRAFTING_CONFIRM
+                        );
 
-				cca.getItemToCraft().setStackSize( this.amount );
-
-				Future<ICraftingJob> futureJob = null;
-				try
-				{
-					final ICraftingGrid cg = g.getCache( ICraftingGrid.class );
-					futureJob = cg.beginCraftingJob( cca.getWorld(), cca.getGrid(), cca.getActionSrc(), cca.getItemToCraft(), null );
-
-					final ContainerOpenContext context = cca.getOpenContext();
-					if( context != null )
-					{
-						final TileEntity te = context.getTile();
-						Platform.openGUI( player, te, cca.getOpenContext().getSide(), GuiBridge.GUI_CRAFTING_CONFIRM );
-
-						if( player.openContainer instanceof ContainerCraftConfirm )
-						{
-							final ContainerCraftConfirm ccc = (ContainerCraftConfirm) player.openContainer;
-							ccc.setAutoStart( this.heldShift );
-							ccc.setJob( futureJob );
-							cca.detectAndSendChanges();
-						}
-					}
-				}
-				catch( final Throwable e )
-				{
-					if( futureJob != null )
-					{
-						futureJob.cancel( true );
-					}
-					AELog.debug( e );
-				}
-			}
-		}
-	}
+                        if (player.openContainer instanceof ContainerCraftConfirm) {
+                            final ContainerCraftConfirm ccc
+                                = (ContainerCraftConfirm) player.openContainer;
+                            ccc.setAutoStart(this.heldShift);
+                            ccc.setJob(futureJob);
+                            cca.detectAndSendChanges();
+                        }
+                    }
+                } catch (final Throwable e) {
+                    if (futureJob != null) {
+                        futureJob.cancel(true);
+                    }
+                    AELog.debug(e);
+                }
+            }
+        }
+    }
 }

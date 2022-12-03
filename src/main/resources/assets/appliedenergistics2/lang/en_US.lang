@@ -51,11 +51,12 @@ tile.appliedenergistics2.BlockCraftingAccelerator.name=Crafting Co-Processing Un
 tile.appliedenergistics2.BlockCraftingUnit.name=Crafting Unit
 tile.appliedenergistics2.BlockMolecularAssembler.name=Molecular Assembler
 
-#Legacy
+# Legacy
 tile.appliedenergistics2.BlockTerminal.name=ME Access Terminal
 tile.appliedenergistics2.BlockCraftTerminal.name=ME Crafting Terminal
 tile.appliedenergistics2.BlockCraftMonitor.name=ME Crafting Monitor
 tile.appliedenergistics2.BlockLegacyController.name=ME Controller (W.I.P)
+tile.appliedenergistics2.BlockWirelessAccessPoint.name=Wireless Access Point
 
 item.appliedenergistics2.ItemMaterial.ConversionMatrix.name=Conversion Matrix
 

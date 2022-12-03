@@ -18,6 +18,9 @@
 
 package appeng.integration.modules.NEIHelpers;
 
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import appeng.api.AEApi;
 import appeng.api.features.IInscriberRecipe;
@@ -35,171 +38,149 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
-
-
 /**
  * @author AlgorithmX2
  * @author thatsIch
  * @version rv2
  * @since rv0
  */
-public class NEIInscriberRecipeHandler extends TemplateRecipeHandler
-{
+public class NEIInscriberRecipeHandler extends TemplateRecipeHandler {
+    @Override
+    public void loadTransferRects() {
+        this.transferRects.add(new TemplateRecipeHandler.RecipeTransferRect(
+            new Rectangle(84, 23, 24, 18), "inscriber"
+        ));
+    }
 
-	@Override
-	public void loadTransferRects()
-	{
-		this.transferRects.add( new TemplateRecipeHandler.RecipeTransferRect( new Rectangle( 84, 23, 24, 18 ), "inscriber" ) );
-	}
+    @Override
+    public void loadCraftingRecipes(final String outputId, final Object... results) {
+        if ((outputId.equals("inscriber"))
+            && (this.getClass() == NEIInscriberRecipeHandler.class)) {
+            for (final IInscriberRecipe recipe :
+                 AEApi.instance().registries().inscriber().getRecipes()) {
+                final CachedInscriberRecipe cachedRecipe
+                    = new CachedInscriberRecipe(recipe);
+                cachedRecipe.computeVisuals();
+                this.arecipes.add(cachedRecipe);
+            }
+        } else {
+            super.loadCraftingRecipes(outputId, results);
+        }
+    }
 
-	@Override
-	public void loadCraftingRecipes( final String outputId, final Object... results )
-	{
-		if( ( outputId.equals( "inscriber" ) ) && ( this.getClass() == NEIInscriberRecipeHandler.class ) )
-		{
-			for( final IInscriberRecipe recipe : AEApi.instance().registries().inscriber().getRecipes() )
-			{
-				final CachedInscriberRecipe cachedRecipe = new CachedInscriberRecipe( recipe );
-				cachedRecipe.computeVisuals();
-				this.arecipes.add( cachedRecipe );
-			}
-		}
-		else
-		{
-			super.loadCraftingRecipes( outputId, results );
-		}
-	}
+    @Override
+    public void loadCraftingRecipes(final ItemStack result) {
+        for (final IInscriberRecipe recipe :
+             AEApi.instance().registries().inscriber().getRecipes()) {
+            if (NEIServerUtils.areStacksSameTypeCrafting(recipe.getOutput(), result)) {
+                final CachedInscriberRecipe cachedRecipe
+                    = new CachedInscriberRecipe(recipe);
+                cachedRecipe.computeVisuals();
+                this.arecipes.add(cachedRecipe);
+            }
+        }
+    }
 
-	@Override
-	public void loadCraftingRecipes( final ItemStack result )
-	{
-		for( final IInscriberRecipe recipe : AEApi.instance().registries().inscriber().getRecipes() )
-		{
-			if( NEIServerUtils.areStacksSameTypeCrafting( recipe.getOutput(), result ) )
-			{
-				final CachedInscriberRecipe cachedRecipe = new CachedInscriberRecipe( recipe );
-				cachedRecipe.computeVisuals();
-				this.arecipes.add( cachedRecipe );
-			}
-		}
-	}
+    @Override
+    public void loadUsageRecipes(final ItemStack ingredient) {
+        for (final IInscriberRecipe recipe :
+             AEApi.instance().registries().inscriber().getRecipes()) {
+            final CachedInscriberRecipe cachedRecipe = new CachedInscriberRecipe(recipe);
 
-	@Override
-	public void loadUsageRecipes( final ItemStack ingredient )
-	{
-		for( final IInscriberRecipe recipe : AEApi.instance().registries().inscriber().getRecipes() )
-		{
-			final CachedInscriberRecipe cachedRecipe = new CachedInscriberRecipe( recipe );
+            if ((cachedRecipe.contains(cachedRecipe.ingredients, ingredient.getItem()))) {
+                cachedRecipe.computeVisuals();
+                if (cachedRecipe.contains(cachedRecipe.ingredients, ingredient)) {
+                    cachedRecipe.setIngredientPermutation(
+                        cachedRecipe.ingredients, ingredient
+                    );
+                    this.arecipes.add(cachedRecipe);
+                }
+            }
+        }
+    }
 
-			if( ( cachedRecipe.contains( cachedRecipe.ingredients, ingredient.getItem() ) ) )
-			{
-				cachedRecipe.computeVisuals();
-				if( cachedRecipe.contains( cachedRecipe.ingredients, ingredient ) )
-				{
-					cachedRecipe.setIngredientPermutation( cachedRecipe.ingredients, ingredient );
-					this.arecipes.add( cachedRecipe );
-				}
-			}
-		}
-	}
+    @Override
+    public String getGuiTexture() {
+        final ResourceLocation loc
+            = new ResourceLocation("appliedenergistics2", "textures/guis/inscriber.png");
+        return loc.toString();
+    }
 
-	@Override
-	public String getGuiTexture()
-	{
-		final ResourceLocation loc = new ResourceLocation( "appliedenergistics2", "textures/guis/inscriber.png" );
-		return loc.toString();
-	}
+    @Override
+    public String getOverlayIdentifier() {
+        return "inscriber";
+    }
 
-	@Override
-	public String getOverlayIdentifier()
-	{
-		return "inscriber";
-	}
+    @Override
+    public Class<? extends GuiContainer> getGuiClass() {
+        return GuiInscriber.class;
+    }
 
-	@Override
-	public Class<? extends GuiContainer> getGuiClass()
-	{
-		return GuiInscriber.class;
-	}
+    @Override
+    public void drawBackground(final int recipe) {
+        GL11.glColor4f(1, 1, 1, 1);
+        GuiDraw.changeTexture(this.getGuiTexture());
+        GuiDraw.drawTexturedModalRect(0, 0, 5, 11, 166, 75);
+    }
 
-	@Override
-	public void drawBackground( final int recipe )
-	{
-		GL11.glColor4f( 1, 1, 1, 1 );
-		GuiDraw.changeTexture( this.getGuiTexture() );
-		GuiDraw.drawTexturedModalRect( 0, 0, 5, 11, 166, 75 );
-	}
+    @Override
+    public boolean
+    hasOverlay(final GuiContainer gui, final Container container, final int recipe) {
+        return false;
+    }
 
-	@Override
-	public boolean hasOverlay( final GuiContainer gui, final Container container, final int recipe )
-	{
-		return false;
-	}
+    @Override
+    public IRecipeOverlayRenderer
+    getOverlayRenderer(final GuiContainer gui, final int recipe) {
+        return null;
+    }
 
-	@Override
-	public IRecipeOverlayRenderer getOverlayRenderer( final GuiContainer gui, final int recipe )
-	{
-		return null;
-	}
+    @Override
+    public IOverlayHandler getOverlayHandler(final GuiContainer gui, final int recipe) {
+        return null;
+    }
 
-	@Override
-	public IOverlayHandler getOverlayHandler( final GuiContainer gui, final int recipe )
-	{
-		return null;
-	}
+    @Override
+    public String getRecipeName() {
+        return GuiText.Inscriber.getLocal();
+    }
 
-	@Override
-	public String getRecipeName()
-	{
-		return GuiText.Inscriber.getLocal();
-	}
+    private class CachedInscriberRecipe extends TemplateRecipeHandler.CachedRecipe {
+        private final List<PositionedStack> ingredients;
+        private final PositionedStack result;
 
-	private class CachedInscriberRecipe extends TemplateRecipeHandler.CachedRecipe
-	{
+        public CachedInscriberRecipe(final IInscriberRecipe recipe) {
+            this.result = new PositionedStack(recipe.getOutput(), 108, 29);
+            this.ingredients = new ArrayList<PositionedStack>();
 
-		private final List<PositionedStack> ingredients;
-		private final PositionedStack result;
+            for (final ItemStack top : recipe.getTopOptional().asSet()) {
+                this.ingredients.add(new PositionedStack(top, 40, 5));
+            }
 
-		public CachedInscriberRecipe( final IInscriberRecipe recipe )
-		{
-			this.result = new PositionedStack( recipe.getOutput(), 108, 29 );
-			this.ingredients = new ArrayList<PositionedStack>();
+            this.ingredients.add(new PositionedStack(recipe.getInputs(), 40 + 18, 28));
 
-			for( final ItemStack top : recipe.getTopOptional().asSet() )
-			{
-				this.ingredients.add( new PositionedStack( top, 40, 5 ) );
-			}
+            for (final ItemStack bot : recipe.getBottomOptional().asSet()) {
+                this.ingredients.add(new PositionedStack(bot, 40, 51));
+            }
+        }
 
-			this.ingredients.add( new PositionedStack( recipe.getInputs(), 40 + 18, 28 ) );
+        @Override
+        public PositionedStack getResult() {
+            return this.result;
+        }
 
-			for( final ItemStack bot : recipe.getBottomOptional().asSet() )
-			{
-				this.ingredients.add( new PositionedStack( bot, 40, 51 ) );
-			}
-		}
+        @Override
+        public List<PositionedStack> getIngredients() {
+            return this.getCycledIngredients(
+                NEIInscriberRecipeHandler.this.cycleticks / 20, this.ingredients
+            );
+        }
 
-		@Override
-		public PositionedStack getResult()
-		{
-			return this.result;
-		}
-
-		@Override
-		public List<PositionedStack> getIngredients()
-		{
-			return this.getCycledIngredients( NEIInscriberRecipeHandler.this.cycleticks / 20, this.ingredients );
-		}
-
-		private void computeVisuals()
-		{
-			for( final PositionedStack p : this.ingredients )
-			{
-				p.generatePermutations();
-			}
-			this.result.generatePermutations();
-		}
-	}
+        private void computeVisuals() {
+            for (final PositionedStack p : this.ingredients) {
+                p.generatePermutations();
+            }
+            this.result.generatePermutations();
+        }
+    }
 }

@@ -18,7 +18,6 @@
 
 package appeng.client.gui.implementations;
 
-
 import appeng.api.AEApi;
 import appeng.api.config.FullnessMode;
 import appeng.api.config.OperationMode;
@@ -36,92 +35,100 @@ import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.input.Mouse;
 
+public class GuiIOPort extends GuiUpgradeable {
+    private GuiImgButton fullMode;
+    private GuiImgButton operationMode;
 
-public class GuiIOPort extends GuiUpgradeable
-{
+    public GuiIOPort(final InventoryPlayer inventoryPlayer, final TileIOPort te) {
+        super(new ContainerIOPort(inventoryPlayer, te));
+        this.ySize = 166;
+    }
 
-	private GuiImgButton fullMode;
-	private GuiImgButton operationMode;
+    @Override
+    protected void addButtons() {
+        this.redstoneMode = new GuiImgButton(
+            this.guiLeft - 18,
+            this.guiTop + 28,
+            Settings.REDSTONE_CONTROLLED,
+            RedstoneMode.IGNORE
+        );
+        this.fullMode = new GuiImgButton(
+            this.guiLeft - 18, this.guiTop + 8, Settings.FULLNESS_MODE, FullnessMode.EMPTY
+        );
+        this.operationMode = new GuiImgButton(
+            this.guiLeft + 80,
+            this.guiTop + 17,
+            Settings.OPERATION_MODE,
+            OperationMode.EMPTY
+        );
 
-	public GuiIOPort( final InventoryPlayer inventoryPlayer, final TileIOPort te )
-	{
-		super( new ContainerIOPort( inventoryPlayer, te ) );
-		this.ySize = 166;
-	}
+        this.buttonList.add(this.operationMode);
+        this.buttonList.add(this.redstoneMode);
+        this.buttonList.add(this.fullMode);
+    }
 
-	@Override
-	protected void addButtons()
-	{
-		this.redstoneMode = new GuiImgButton( this.guiLeft - 18, this.guiTop + 28, Settings.REDSTONE_CONTROLLED, RedstoneMode.IGNORE );
-		this.fullMode = new GuiImgButton( this.guiLeft - 18, this.guiTop + 8, Settings.FULLNESS_MODE, FullnessMode.EMPTY );
-		this.operationMode = new GuiImgButton( this.guiLeft + 80, this.guiTop + 17, Settings.OPERATION_MODE, OperationMode.EMPTY );
+    @Override
+    public void
+    drawFG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
+        this.fontRendererObj.drawString(
+            this.getGuiDisplayName(GuiText.IOPort.getLocal()), 8, 6, 4210752
+        );
+        this.fontRendererObj.drawString(
+            GuiText.inventory.getLocal(), 8, this.ySize - 96 + 3, 4210752
+        );
 
-		this.buttonList.add( this.operationMode );
-		this.buttonList.add( this.redstoneMode );
-		this.buttonList.add( this.fullMode );
-	}
+        if (this.redstoneMode != null) {
+            this.redstoneMode.set(this.cvb.getRedStoneMode());
+        }
 
-	@Override
-	public void drawFG( final int offsetX, final int offsetY, final int mouseX, final int mouseY )
-	{
-		this.fontRendererObj.drawString( this.getGuiDisplayName( GuiText.IOPort.getLocal() ), 8, 6, 4210752 );
-		this.fontRendererObj.drawString( GuiText.inventory.getLocal(), 8, this.ySize - 96 + 3, 4210752 );
+        if (this.operationMode != null) {
+            this.operationMode.set(((ContainerIOPort) this.cvb).getOperationMode());
+        }
 
-		if( this.redstoneMode != null )
-		{
-			this.redstoneMode.set( this.cvb.getRedStoneMode() );
-		}
+        if (this.fullMode != null) {
+            this.fullMode.set(((ContainerIOPort) this.cvb).getFullMode());
+        }
+    }
 
-		if( this.operationMode != null )
-		{
-			this.operationMode.set( ( (ContainerIOPort) this.cvb ).getOperationMode() );
-		}
+    @Override
+    public void
+    drawBG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
+        super.drawBG(offsetX, offsetY, mouseX, mouseY);
 
-		if( this.fullMode != null )
-		{
-			this.fullMode.set( ( (ContainerIOPort) this.cvb ).getFullMode() );
-		}
-	}
+        final IDefinitions definitions = AEApi.instance().definitions();
 
-	@Override
-	public void drawBG( final int offsetX, final int offsetY, final int mouseX, final int mouseY )
-	{
-		super.drawBG( offsetX, offsetY, mouseX, mouseY );
+        for (final ItemStack cell1kStack :
+             definitions.items().cell1k().maybeStack(1).asSet()) {
+            this.drawItem(offsetX + 66 - 8, offsetY + 17, cell1kStack);
+        }
 
-		final IDefinitions definitions = AEApi.instance().definitions();
+        for (final ItemStack driveStack :
+             definitions.blocks().drive().maybeStack(1).asSet()) {
+            this.drawItem(offsetX + 94 + 8, offsetY + 17, driveStack);
+        }
+    }
 
-		for( final ItemStack cell1kStack : definitions.items().cell1k().maybeStack( 1 ).asSet() )
-		{
-			this.drawItem( offsetX + 66 - 8, offsetY + 17, cell1kStack );
-		}
+    @Override
+    protected String getBackground() {
+        return "guis/ioport.png";
+    }
 
-		for( final ItemStack driveStack : definitions.blocks().drive().maybeStack( 1 ).asSet() )
-		{
-			this.drawItem( offsetX + 94 + 8, offsetY + 17, driveStack );
-		}
-	}
+    @Override
+    protected void actionPerformed(final GuiButton btn) {
+        super.actionPerformed(btn);
 
-	@Override
-	protected String getBackground()
-	{
-		return "guis/ioport.png";
-	}
+        final boolean backwards = Mouse.isButtonDown(1);
 
-	@Override
-	protected void actionPerformed( final GuiButton btn )
-	{
-		super.actionPerformed( btn );
+        if (btn == this.fullMode) {
+            NetworkHandler.instance.sendToServer(
+                new PacketConfigButton(this.fullMode.getSetting(), backwards)
+            );
+        }
 
-		final boolean backwards = Mouse.isButtonDown( 1 );
-
-		if( btn == this.fullMode )
-		{
-			NetworkHandler.instance.sendToServer( new PacketConfigButton( this.fullMode.getSetting(), backwards ) );
-		}
-
-		if( btn == this.operationMode )
-		{
-			NetworkHandler.instance.sendToServer( new PacketConfigButton( this.operationMode.getSetting(), backwards ) );
-		}
-	}
+        if (btn == this.operationMode) {
+            NetworkHandler.instance.sendToServer(
+                new PacketConfigButton(this.operationMode.getSetting(), backwards)
+            );
+        }
+    }
 }

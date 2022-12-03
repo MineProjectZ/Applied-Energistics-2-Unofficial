@@ -18,7 +18,6 @@
 
 package appeng.me.storage;
 
-
 import appeng.api.config.Actionable;
 import appeng.api.implementations.tiles.IChestOrDrive;
 import appeng.api.networking.security.BaseActionSource;
@@ -27,58 +26,57 @@ import appeng.api.storage.IMEInventory;
 import appeng.api.storage.data.IAEStack;
 import net.minecraft.item.ItemStack;
 
+public class DriveWatcher<T extends IAEStack<T>> extends MEInventoryHandler<T> {
+    private final int oldStatus = 0;
+    private final ItemStack is;
+    private final ICellHandler handler;
+    private final IChestOrDrive cord;
 
-public class DriveWatcher<T extends IAEStack<T>> extends MEInventoryHandler<T>
-{
+    public DriveWatcher(
+        final IMEInventory<T> i,
+        final ItemStack is,
+        final ICellHandler han,
+        final IChestOrDrive cod
+    ) {
+        super(i, i.getChannel());
+        this.is = is;
+        this.handler = han;
+        this.cord = cod;
+    }
 
-	private final int oldStatus = 0;
-	private final ItemStack is;
-	private final ICellHandler handler;
-	private final IChestOrDrive cord;
+    @Override
+    public T
+    injectItems(final T input, final Actionable type, final BaseActionSource src) {
+        final long size = input.getStackSize();
 
-	public DriveWatcher( final IMEInventory<T> i, final ItemStack is, final ICellHandler han, final IChestOrDrive cod )
-	{
-		super( i, i.getChannel() );
-		this.is = is;
-		this.handler = han;
-		this.cord = cod;
-	}
+        final T a = super.injectItems(input, type, src);
 
-	@Override
-	public T injectItems( final T input, final Actionable type, final BaseActionSource src )
-	{
-		final long size = input.getStackSize();
+        if (a == null || a.getStackSize() != size) {
+            final int newStatus
+                = this.handler.getStatusForCell(this.is, this.getInternal());
 
-		final T a = super.injectItems( input, type, src );
+            if (newStatus != this.oldStatus) {
+                this.cord.blinkCell(this.getSlot());
+            }
+        }
 
-		if( a == null || a.getStackSize() != size )
-		{
-			final int newStatus = this.handler.getStatusForCell( this.is, this.getInternal() );
+        return a;
+    }
 
-			if( newStatus != this.oldStatus )
-			{
-				this.cord.blinkCell( this.getSlot() );
-			}
-		}
+    @Override
+    public T
+    extractItems(final T request, final Actionable type, final BaseActionSource src) {
+        final T a = super.extractItems(request, type, src);
 
-		return a;
-	}
+        if (a != null) {
+            final int newStatus
+                = this.handler.getStatusForCell(this.is, this.getInternal());
 
-	@Override
-	public T extractItems( final T request, final Actionable type, final BaseActionSource src )
-	{
-		final T a = super.extractItems( request, type, src );
+            if (newStatus != this.oldStatus) {
+                this.cord.blinkCell(this.getSlot());
+            }
+        }
 
-		if( a != null )
-		{
-			final int newStatus = this.handler.getStatusForCell( this.is, this.getInternal() );
-
-			if( newStatus != this.oldStatus )
-			{
-				this.cord.blinkCell( this.getSlot() );
-			}
-		}
-
-		return a;
-	}
+        return a;
+    }
 }

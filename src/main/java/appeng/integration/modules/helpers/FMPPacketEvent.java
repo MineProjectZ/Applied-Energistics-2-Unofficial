@@ -18,23 +18,17 @@
 
 package appeng.integration.modules.helpers;
 
-
 import cpw.mods.fml.common.eventhandler.Event;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+public class FMPPacketEvent extends Event {
+    private final EntityPlayerMP sender;
 
-public class FMPPacketEvent extends Event
-{
+    public FMPPacketEvent(final EntityPlayerMP sender) {
+        this.sender = sender;
+    }
 
-	private final EntityPlayerMP sender;
-
-	public FMPPacketEvent( final EntityPlayerMP sender )
-	{
-		this.sender = sender;
-	}
-
-	public EntityPlayerMP getSender()
-	{
-		return this.sender;
-	}
+    public EntityPlayerMP getSender() {
+        return this.sender;
+    }
 }

@@ -18,6 +18,10 @@
 
 package appeng.tile.misc;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 
 import appeng.api.AEApi;
 import appeng.api.config.Actionable;
@@ -44,252 +48,251 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
+public class TileCharger extends AENetworkPowerTile implements ICrankable {
+    private final int[] sides = { 0 };
+    private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 1);
+    private int tickTickTimer = 0;
 
+    private int lastUpdate = 0;
+    private boolean requiresUpdate = false;
 
-public class TileCharger extends AENetworkPowerTile implements ICrankable
-{
+    public TileCharger() {
+        this.getProxy().setValidSides(EnumSet.noneOf(ForgeDirection.class));
+        this.getProxy().setFlags();
+        this.setInternalMaxPower(1500);
+        this.getProxy().setIdlePowerUsage(0);
+    }
 
-	private final int[] sides = { 0 };
-	private final AppEngInternalInventory inv = new AppEngInternalInventory( this, 1 );
-	private int tickTickTimer = 0;
+    @Override
+    public AECableType getCableConnectionType(final ForgeDirection dir) {
+        return AECableType.COVERED;
+    }
 
-	private int lastUpdate = 0;
-	private boolean requiresUpdate = false;
+    @TileEvent(TileEventType.NETWORK_READ)
+    public boolean readFromStream_TileCharger(final ByteBuf data) {
+        try {
+            final IAEItemStack item = AEItemStack.loadItemStackFromPacket(data);
+            final ItemStack is = item.getItemStack();
+            this.inv.setInventorySlotContents(0, is);
+        } catch (final Throwable t) {
+            this.inv.setInventorySlotContents(0, null);
+        }
+        return false; // TESR doesn't need updates!
+    }
 
-	public TileCharger()
-	{
-		this.getProxy().setValidSides( EnumSet.noneOf( ForgeDirection.class ) );
-		this.getProxy().setFlags();
-		this.setInternalMaxPower( 1500 );
-		this.getProxy().setIdlePowerUsage( 0 );
-	}
+    @TileEvent(TileEventType.NETWORK_WRITE)
+    public void writeToStream_TileCharger(final ByteBuf data) throws IOException {
+        final AEItemStack is = AEItemStack.create(this.getStackInSlot(0));
+        if (is != null) {
+            is.writeToPacket(data);
+        }
+    }
 
-	@Override
-	public AECableType getCableConnectionType( final ForgeDirection dir )
-	{
-		return AECableType.COVERED;
-	}
+    @TileEvent(TileEventType.TICK)
+    public void Tick_TileCharger() {
+        if (this.lastUpdate > 60 && this.requiresUpdate) {
+            this.requiresUpdate = false;
+            this.markForUpdate();
+            this.lastUpdate = 0;
+        }
+        this.lastUpdate++;
 
-	@TileEvent( TileEventType.NETWORK_READ )
-	public boolean readFromStream_TileCharger( final ByteBuf data )
-	{
-		try
-		{
-			final IAEItemStack item = AEItemStack.loadItemStackFromPacket( data );
-			final ItemStack is = item.getItemStack();
-			this.inv.setInventorySlotContents( 0, is );
-		}
-		catch( final Throwable t )
-		{
-			this.inv.setInventorySlotContents( 0, null );
-		}
-		return false; // TESR doesn't need updates!
-	}
+        this.tickTickTimer++;
+        if (this.tickTickTimer < 20) {
+            return;
+        }
+        this.tickTickTimer = 0;
 
-	@TileEvent( TileEventType.NETWORK_WRITE )
-	public void writeToStream_TileCharger( final ByteBuf data ) throws IOException
-	{
-		final AEItemStack is = AEItemStack.create( this.getStackInSlot( 0 ) );
-		if( is != null )
-		{
-			is.writeToPacket( data );
-		}
-	}
+        final ItemStack myItem = this.getStackInSlot(0);
 
-	@TileEvent( TileEventType.TICK )
-	public void Tick_TileCharger()
-	{
-		if( this.lastUpdate > 60 && this.requiresUpdate )
-		{
-			this.requiresUpdate = false;
-			this.markForUpdate();
-			this.lastUpdate = 0;
-		}
-		this.lastUpdate++;
+        // charge from the network!
+        if (this.getInternalCurrentPower() < 1499) {
+            try {
+                this.injectExternalPower(
+                    PowerUnits.AE,
+                    this.getProxy().getEnergy().extractAEPower(
+                        Math.min(150.0, 1500.0 - this.getInternalCurrentPower()),
+                        Actionable.MODULATE,
+                        PowerMultiplier.ONE
+                    )
+                );
+                this.tickTickTimer = 20; // keep ticking...
+            } catch (final GridAccessException e) {
+                // continue!
+            }
+        }
 
-		this.tickTickTimer++;
-		if( this.tickTickTimer < 20 )
-		{
-			return;
-		}
-		this.tickTickTimer = 0;
+        if (myItem == null) {
+            return;
+        }
 
-		final ItemStack myItem = this.getStackInSlot( 0 );
+        final IMaterials materials = AEApi.instance().definitions().materials();
 
-		// charge from the network!
-		if( this.getInternalCurrentPower() < 1499 )
-		{
-			try
-			{
-				this.injectExternalPower( PowerUnits.AE, this.getProxy().getEnergy().extractAEPower( Math.min( 150.0, 1500.0 - this.getInternalCurrentPower() ), Actionable.MODULATE, PowerMultiplier.ONE ) );
-				this.tickTickTimer = 20; // keep ticking...
-			}
-			catch( final GridAccessException e )
-			{
-				// continue!
-			}
-		}
+        if (this.getInternalCurrentPower() > 149 && Platform.isChargeable(myItem)) {
+            final IAEItemPowerStorage ps = (IAEItemPowerStorage) myItem.getItem();
+            if (ps.getAEMaxPower(myItem) > ps.getAECurrentPower(myItem)) {
+                final double oldPower = this.getInternalCurrentPower();
 
-		if( myItem == null )
-		{
-			return;
-		}
-
-		final IMaterials materials = AEApi.instance().definitions().materials();
-
-		if( this.getInternalCurrentPower() > 149 && Platform.isChargeable( myItem ) )
-		{
-			final IAEItemPowerStorage ps = (IAEItemPowerStorage) myItem.getItem();
-			if( ps.getAEMaxPower( myItem ) > ps.getAECurrentPower( myItem ) )
-			{
-				final double oldPower = this.getInternalCurrentPower();
-
-				final double adjustment = ps.injectAEPower( myItem, this.extractAEPower( 150.0, Actionable.MODULATE, PowerMultiplier.CONFIG ) );
-				this.setInternalCurrentPower( this.getInternalCurrentPower() + adjustment );
-				if( oldPower > this.getInternalCurrentPower() )
-				{
-					this.requiresUpdate = true;
-				}
-				this.tickTickTimer = 20; // keep ticking...
-			}
-		}
+                final double adjustment = ps.injectAEPower(
+                    myItem,
+                    this.extractAEPower(
+                        150.0, Actionable.MODULATE, PowerMultiplier.CONFIG
+                    )
+                );
+                this.setInternalCurrentPower(this.getInternalCurrentPower() + adjustment);
+                if (oldPower > this.getInternalCurrentPower()) {
+                    this.requiresUpdate = true;
+                }
+                this.tickTickTimer = 20; // keep ticking...
+            }
+        }
 		else if( this.getInternalCurrentPower() > 1499 && materials.certusQuartzCrystal().isSameAs( myItem ) )
 		{
-			if( Platform.getRandomFloat() > 0.8f ) // simulate wait
-			{
-				this.extractAEPower( this.getInternalMaxPower(), Actionable.MODULATE, PowerMultiplier.CONFIG );// 1500
+            if (Platform.getRandomFloat() > 0.8f) // simulate wait
+            {
+                this.extractAEPower(
+                    this.getInternalMaxPower(),
+                    Actionable.MODULATE,
+                    PowerMultiplier.CONFIG
+                ); // 1500
 
-				for( final ItemStack charged : materials.certusQuartzCrystalCharged().maybeStack( myItem.stackSize ).asSet() )
-				{
-					this.setInventorySlotContents( 0, charged );
-				}
-			}
-		}
-	}
+                for (final ItemStack charged : materials.certusQuartzCrystalCharged()
+                                                   .maybeStack(myItem.stackSize)
+                                                   .asSet()) {
+                    this.setInventorySlotContents(0, charged);
+                }
+            }
+        }
+    }
 
-	@Override
-	public void setOrientation( final ForgeDirection inForward, final ForgeDirection inUp )
-	{
-		super.setOrientation( inForward, inUp );
-		this.getProxy().setValidSides( EnumSet.of( this.getUp(), this.getUp().getOpposite() ) );
-		this.setPowerSides( EnumSet.of( this.getUp(), this.getUp().getOpposite() ) );
-	}
+    @Override
+    public void
+    setOrientation(final ForgeDirection inForward, final ForgeDirection inUp) {
+        super.setOrientation(inForward, inUp);
+        this.getProxy().setValidSides(EnumSet.of(this.getUp(), this.getUp().getOpposite())
+        );
+        this.setPowerSides(EnumSet.of(this.getUp(), this.getUp().getOpposite()));
+    }
 
-	@Override
-	public boolean requiresTESR()
-	{
-		return true;
-	}
+    @Override
+    public boolean requiresTESR() {
+        return true;
+    }
 
-	@Override
-	public boolean canTurn()
-	{
-		return this.getInternalCurrentPower() < this.getInternalMaxPower();
-	}
+    @Override
+    public boolean canTurn() {
+        return this.getInternalCurrentPower() < this.getInternalMaxPower();
+    }
 
-	@Override
-	public void applyTurn()
-	{
-		this.injectExternalPower( PowerUnits.AE, 150 );
+    @Override
+    public void applyTurn() {
+        this.injectExternalPower(PowerUnits.AE, 150);
 
-		final ItemStack myItem = this.getStackInSlot( 0 );
-		if( this.getInternalCurrentPower() > 1499 )
-		{
-			final IMaterials materials = AEApi.instance().definitions().materials();
+        final ItemStack myItem = this.getStackInSlot(0);
+        if (this.getInternalCurrentPower() > 1499) {
+            final IMaterials materials = AEApi.instance().definitions().materials();
 
-			if( materials.certusQuartzCrystal().isSameAs( myItem ) )
-			{
-				this.extractAEPower( this.getInternalMaxPower(), Actionable.MODULATE, PowerMultiplier.CONFIG );// 1500
+            if (materials.certusQuartzCrystal().isSameAs(myItem)) {
+                this.extractAEPower(
+                    this.getInternalMaxPower(),
+                    Actionable.MODULATE,
+                    PowerMultiplier.CONFIG
+                ); // 1500
 
-				for( final ItemStack charged : materials.certusQuartzCrystalCharged().maybeStack( myItem.stackSize ).asSet() )
-				{
-					this.setInventorySlotContents( 0, charged );
-				}
-			}
-		}
-	}
+                for (final ItemStack charged : materials.certusQuartzCrystalCharged()
+                                                   .maybeStack(myItem.stackSize)
+                                                   .asSet()) {
+                    this.setInventorySlotContents(0, charged);
+                }
+            }
+        }
+    }
 
-	@Override
-	public boolean canCrankAttach( final ForgeDirection directionToCrank )
-	{
-		return this.getUp() == directionToCrank || this.getUp().getOpposite() == directionToCrank;
-	}
+    @Override
+    public boolean canCrankAttach(final ForgeDirection directionToCrank) {
+        return this.getUp() == directionToCrank
+            || this.getUp().getOpposite() == directionToCrank;
+    }
 
-	@Override
-	public IInventory getInternalInventory()
-	{
-		return this.inv;
-	}
+    @Override
+    public IInventory getInternalInventory() {
+        return this.inv;
+    }
 
-	@Override
-	public int getInventoryStackLimit()
-	{
-		return 1;
-	}
+    @Override
+    public int getInventoryStackLimit() {
+        return 1;
+    }
 
-	@Override
-	public boolean isItemValidForSlot( final int i, final ItemStack itemstack )
-	{
-		final IItemDefinition cert = AEApi.instance().definitions().materials().certusQuartzCrystal();
+    @Override
+    public boolean isItemValidForSlot(final int i, final ItemStack itemstack) {
+        final IItemDefinition cert
+            = AEApi.instance().definitions().materials().certusQuartzCrystal();
 
-		return Platform.isChargeable( itemstack ) || cert.isSameAs( itemstack );
-	}
+        return Platform.isChargeable(itemstack) || cert.isSameAs(itemstack);
+    }
 
-	@Override
-	public void onChangeInventory( final IInventory inv, final int slot, final InvOperation mc, final ItemStack removed, final ItemStack added )
-	{
-		this.markForUpdate();
-	}
+    @Override
+    public void onChangeInventory(
+        final IInventory inv,
+        final int slot,
+        final InvOperation mc,
+        final ItemStack removed,
+        final ItemStack added
+    ) {
+        this.markForUpdate();
+    }
 
-	@Override
-	public boolean canExtractItem( final int slotIndex, final ItemStack extractedItem, final int side )
-	{
-		if( Platform.isChargeable( extractedItem ) )
-		{
-			final IAEItemPowerStorage ips = (IAEItemPowerStorage) extractedItem.getItem();
-			if( ips.getAECurrentPower( extractedItem ) >= ips.getAEMaxPower( extractedItem ) )
-			{
-				return true;
-			}
-		}
+    @Override
+    public boolean
+    canExtractItem(final int slotIndex, final ItemStack extractedItem, final int side) {
+        if (Platform.isChargeable(extractedItem)) {
+            final IAEItemPowerStorage ips = (IAEItemPowerStorage) extractedItem.getItem();
+            if (ips.getAECurrentPower(extractedItem)
+                >= ips.getAEMaxPower(extractedItem)) {
+                return true;
+            }
+        }
 
-		return AEApi.instance().definitions().materials().certusQuartzCrystalCharged().isSameAs( extractedItem );
-	}
+        return AEApi.instance()
+            .definitions()
+            .materials()
+            .certusQuartzCrystalCharged()
+            .isSameAs(extractedItem);
+    }
 
-	@Override
-	public int[] getAccessibleSlotsBySide( final ForgeDirection whichSide )
-	{
-		return this.sides;
-	}
+    @Override
+    public int[] getAccessibleSlotsBySide(final ForgeDirection whichSide) {
+        return this.sides;
+    }
 
-	public void activate( final EntityPlayer player )
-	{
-		if( !Platform.hasPermissions( new DimensionalCoord( this ), player ) )
-		{
-			return;
-		}
+    public void activate(final EntityPlayer player) {
+        if (!Platform.hasPermissions(new DimensionalCoord(this), player)) {
+            return;
+        }
 
-		final ItemStack myItem = this.getStackInSlot( 0 );
-		if( myItem == null )
-		{
-			ItemStack held = player.inventory.getCurrentItem();
+        final ItemStack myItem = this.getStackInSlot(0);
+        if (myItem == null) {
+            ItemStack held = player.inventory.getCurrentItem();
 
-			if( AEApi.instance().definitions().materials().certusQuartzCrystal().isSameAs( held ) || Platform.isChargeable( held ) )
-			{
-				held = player.inventory.decrStackSize( player.inventory.currentItem, 1 );
-				this.setInventorySlotContents( 0, held );
-			}
-		}
-		else
-		{
-			final List<ItemStack> drops = new ArrayList<ItemStack>();
-			drops.add( myItem );
-			this.setInventorySlotContents( 0, null );
-			Platform.spawnDrops( this.worldObj, this.xCoord + this.getForward().offsetX, this.yCoord + this.getForward().offsetY, this.zCoord + this.getForward().offsetZ, drops );
-		}
-	}
+            if (AEApi.instance().definitions().materials().certusQuartzCrystal().isSameAs(
+                    held
+                )
+                || Platform.isChargeable(held)) {
+                held = player.inventory.decrStackSize(player.inventory.currentItem, 1);
+                this.setInventorySlotContents(0, held);
+            }
+        } else {
+            final List<ItemStack> drops = new ArrayList<ItemStack>();
+            drops.add(myItem);
+            this.setInventorySlotContents(0, null);
+            Platform.spawnDrops(
+                this.worldObj,
+                this.xCoord + this.getForward().offsetX,
+                this.yCoord + this.getForward().offsetY,
+                this.zCoord + this.getForward().offsetZ,
+                drops
+            );
+        }
+    }
 }

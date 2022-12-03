@@ -18,6 +18,8 @@
 
 package appeng.items.misc;
 
+import java.util.EnumSet;
+import java.util.List;
 
 import appeng.api.util.AEColor;
 import appeng.client.render.items.PaintBallRender;
@@ -30,76 +32,63 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.client.MinecraftForgeClient;
 
-import java.util.EnumSet;
-import java.util.List;
+public class ItemPaintBall extends AEBaseItem {
+    private static final int DAMAGE_THRESHOLD = 20;
 
+    public ItemPaintBall() {
+        this.setFeature(EnumSet.of(AEFeature.PaintBalls));
+        this.setHasSubtypes(true);
 
-public class ItemPaintBall extends AEBaseItem
-{
+        if (Platform.isClient()) {
+            MinecraftForgeClient.registerItemRenderer(this, new PaintBallRender());
+        }
+    }
 
-	private static final int DAMAGE_THRESHOLD = 20;
+    @Override
+    public String getItemStackDisplayName(final ItemStack is) {
+        return super.getItemStackDisplayName(is) + " - " + this.getExtraName(is);
+    }
 
-	public ItemPaintBall()
-	{
-		this.setFeature( EnumSet.of( AEFeature.PaintBalls ) );
-		this.setHasSubtypes( true );
+    private String getExtraName(final ItemStack is) {
+        return (is.getItemDamage() >= DAMAGE_THRESHOLD ? GuiText.Lumen.getLocal() + ' '
+                                                       : "")
+            + this.getColor(is);
+    }
 
-		if( Platform.isClient() )
-		{
-			MinecraftForgeClient.registerItemRenderer( this, new PaintBallRender() );
-		}
-	}
+    public AEColor getColor(final ItemStack is) {
+        int dmg = is.getItemDamage();
+        if (dmg >= DAMAGE_THRESHOLD) {
+            dmg -= DAMAGE_THRESHOLD;
+        }
 
-	@Override
-	public String getItemStackDisplayName( final ItemStack is )
-	{
-		return super.getItemStackDisplayName( is ) + " - " + this.getExtraName( is );
-	}
+        if (dmg >= AEColor.values().length) {
+            return AEColor.Transparent;
+        }
 
-	private String getExtraName( final ItemStack is )
-	{
-		return ( is.getItemDamage() >= DAMAGE_THRESHOLD ? GuiText.Lumen.getLocal() + ' ' : "" ) + this.getColor( is );
-	}
+        return AEColor.values()[dmg];
+    }
 
-	public AEColor getColor( final ItemStack is )
-	{
-		int dmg = is.getItemDamage();
-		if( dmg >= DAMAGE_THRESHOLD )
-		{
-			dmg -= DAMAGE_THRESHOLD;
-		}
+    @Override
+    protected void getCheckedSubItems(
+        final Item sameItem,
+        final CreativeTabs creativeTab,
+        final List<ItemStack> itemStacks
+    ) {
+        for (final AEColor c : AEColor.values()) {
+            if (c != AEColor.Transparent) {
+                itemStacks.add(new ItemStack(this, 1, c.ordinal()));
+            }
+        }
 
-		if( dmg >= AEColor.values().length )
-		{
-			return AEColor.Transparent;
-		}
+        for (final AEColor c : AEColor.values()) {
+            if (c != AEColor.Transparent) {
+                itemStacks.add(new ItemStack(this, 1, DAMAGE_THRESHOLD + c.ordinal()));
+            }
+        }
+    }
 
-		return AEColor.values()[dmg];
-	}
-
-	@Override
-	protected void getCheckedSubItems( final Item sameItem, final CreativeTabs creativeTab, final List<ItemStack> itemStacks )
-	{
-		for( final AEColor c : AEColor.values() )
-		{
-			if( c != AEColor.Transparent )
-			{
-				itemStacks.add( new ItemStack( this, 1, c.ordinal() ) );
-			}
-		}
-
-		for( final AEColor c : AEColor.values() )
-		{
-			if( c != AEColor.Transparent )
-			{
-				itemStacks.add( new ItemStack( this, 1, DAMAGE_THRESHOLD + c.ordinal() ) );
-			}
-		}
-	}
-
-	public boolean isLumen( final ItemStack is )
-	{
-		final int dmg = is.getItemDamage();
-		return dmg >= DAMAGE_THRESHOLD;
-	}
+    public boolean isLumen(final ItemStack is) {
+        final int dmg = is.getItemDamage();
+        return dmg >= DAMAGE_THRESHOLD;
+    }
 }

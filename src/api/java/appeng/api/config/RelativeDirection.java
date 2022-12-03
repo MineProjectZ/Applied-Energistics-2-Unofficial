@@ -23,8 +23,4 @@
 
 package appeng.api.config;
 
-
-public enum RelativeDirection
-{
-	LEFT, RIGHT, UP, DOW
-}
+public enum RelativeDirection { LEFT, RIGHT, UP, DOW }

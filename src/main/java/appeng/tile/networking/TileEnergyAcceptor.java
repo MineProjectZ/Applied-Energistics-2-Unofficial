@@ -18,7 +18,6 @@
 
 package appeng.tile.networking;
 
-
 import appeng.api.config.Actionable;
 import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.util.AECableType;
@@ -31,89 +30,75 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.util.ForgeDirection;
 
+public class TileEnergyAcceptor extends AENetworkPowerTile {
+    private static final AppEngInternalInventory INTERNAL_INVENTORY
+        = new AppEngInternalInventory(null, 0);
+    private final int[] sides = {};
 
-public class TileEnergyAcceptor extends AENetworkPowerTile
-{
+    public TileEnergyAcceptor() {
+        this.getProxy().setIdlePowerUsage(0.0);
+        this.setInternalMaxPower(0);
+    }
 
-	private static final AppEngInternalInventory INTERNAL_INVENTORY = new AppEngInternalInventory( null, 0 );
-	private final int[] sides = {};
+    @Override
+    public void readFromNBT_AENetwork(final NBTTagCompound data) {
+        /**
+         * Does nothing here since the NBT tag in the parent is not needed anymore
+         */
+    }
 
-	public TileEnergyAcceptor()
-	{
-		this.getProxy().setIdlePowerUsage( 0.0 );
-		this.setInternalMaxPower( 0 );
-	}
+    @Override
+    public void writeToNBT_AENetwork(final NBTTagCompound data) {
+        /**
+         * Does nothing here since the NBT tag in the parent is not needed anymore
+         */
+    }
 
-	@Override
-	public void readFromNBT_AENetwork( final NBTTagCompound data )
-	{
-		/**
-		 * Does nothing here since the NBT tag in the parent is not needed anymore
-		 */
-	}
+    @Override
+    public AECableType getCableConnectionType(final ForgeDirection dir) {
+        return AECableType.COVERED;
+    }
 
-	@Override
-	public void writeToNBT_AENetwork( final NBTTagCompound data )
-	{
-		/**
-		 * Does nothing here since the NBT tag in the parent is not needed anymore
-		 */
-	}
+    @Override
+    protected double getFunnelPowerDemand(final double maxRequired) {
+        try {
+            final IEnergyGrid grid = this.getProxy().getEnergy();
+            return grid.getEnergyDemand(maxRequired);
+        } catch (final GridAccessException e) {
+            return this.getInternalMaxPower();
+        }
+    }
 
-	@Override
-	public AECableType getCableConnectionType( final ForgeDirection dir )
-	{
-		return AECableType.COVERED;
-	}
+    @Override
+    protected double funnelPowerIntoStorage(final double power, final Actionable mode) {
+        try {
+            final IEnergyGrid grid = this.getProxy().getEnergy();
+            final double leftOver = grid.injectPower(power, mode);
+            if (mode == Actionable.SIMULATE) {
+                return leftOver;
+            }
+            return 0.0;
+        } catch (final GridAccessException e) {
+            return super.funnelPowerIntoStorage(power, mode);
+        }
+    }
 
-	@Override
-	protected double getFunnelPowerDemand( final double maxRequired )
-	{
-		try
-		{
-			final IEnergyGrid grid = this.getProxy().getEnergy();
-			return grid.getEnergyDemand( maxRequired );
-		}
-		catch( final GridAccessException e )
-		{
-			return this.getInternalMaxPower();
-		}
-	}
+    @Override
+    public IInventory getInternalInventory() {
+        return INTERNAL_INVENTORY;
+    }
 
-	@Override
-	protected double funnelPowerIntoStorage( final double power, final Actionable mode )
-	{
-		try
-		{
-			final IEnergyGrid grid = this.getProxy().getEnergy();
-			final double leftOver = grid.injectPower( power, mode );
-			if( mode == Actionable.SIMULATE )
-			{
-				return leftOver;
-			}
-			return 0.0;
-		}
-		catch( final GridAccessException e )
-		{
-			return super.funnelPowerIntoStorage( power, mode );
-		}
-	}
+    @Override
+    public void onChangeInventory(
+        final IInventory inv,
+        final int slot,
+        final InvOperation mc,
+        final ItemStack removed,
+        final ItemStack added
+    ) {}
 
-	@Override
-	public IInventory getInternalInventory()
-	{
-		return INTERNAL_INVENTORY;
-	}
-
-	@Override
-	public void onChangeInventory( final IInventory inv, final int slot, final InvOperation mc, final ItemStack removed, final ItemStack added )
-	{
-
-	}
-
-	@Override
-	public int[] getAccessibleSlotsBySide( final ForgeDirection side )
-	{
-		return this.sides;
-	}
+    @Override
+    public int[] getAccessibleSlotsBySide(final ForgeDirection side) {
+        return this.sides;
+    }
 }

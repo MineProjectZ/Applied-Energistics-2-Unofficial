@@ -18,6 +18,7 @@
 
 package appeng.block.grindstone;
 
+import java.util.EnumSet;
 
 import appeng.block.AEBaseTileBlock;
 import appeng.core.features.AEFeature;
@@ -29,30 +30,34 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import java.util.EnumSet;
+public class BlockGrinder extends AEBaseTileBlock {
+    public BlockGrinder() {
+        super(Material.rock);
 
+        this.setTileEntity(TileGrinder.class);
+        this.setHardness(3.2F);
+        this.setFeature(EnumSet.of(AEFeature.GrindStone));
+    }
 
-public class BlockGrinder extends AEBaseTileBlock
-{
-
-	public BlockGrinder()
-	{
-		super( Material.rock );
-
-		this.setTileEntity( TileGrinder.class );
-		this.setHardness( 3.2F );
-		this.setFeature( EnumSet.of( AEFeature.GrindStone ) );
-	}
-
-	@Override
-	public boolean onActivated( final World w, final int x, final int y, final int z, final EntityPlayer p, final int side, final float hitX, final float hitY, final float hitZ )
-	{
-		final TileGrinder tg = this.getTileEntity( w, x, y, z );
-		if( tg != null && !p.isSneaking() )
-		{
-			Platform.openGUI( p, tg, ForgeDirection.getOrientation( side ), GuiBridge.GUI_GRINDER );
-			return true;
-		}
-		return false;
-	}
+    @Override
+    public boolean onActivated(
+        final World w,
+        final int x,
+        final int y,
+        final int z,
+        final EntityPlayer p,
+        final int side,
+        final float hitX,
+        final float hitY,
+        final float hitZ
+    ) {
+        final TileGrinder tg = this.getTileEntity(w, x, y, z);
+        if (tg != null && !p.isSneaking()) {
+            Platform.openGUI(
+                p, tg, ForgeDirection.getOrientation(side), GuiBridge.GUI_GRINDER
+            );
+            return true;
+        }
+        return false;
+    }
 }

@@ -52,55 +52,47 @@
 
 package appeng.core.api.imc;
 
-
 import appeng.api.AEApi;
 import appeng.core.api.IIMCProcessor;
 import cpw.mods.fml.common.event.FMLInterModComms.IMCMessage;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
+public class IMCGrinder implements IIMCProcessor {
+    @Override
+    public void process(final IMCMessage m) {
+        final NBTTagCompound msg = m.getNBTValue();
+        final NBTTagCompound inTag = (NBTTagCompound) msg.getTag("in");
+        final NBTTagCompound outTag = (NBTTagCompound) msg.getTag("out");
 
-public class IMCGrinder implements IIMCProcessor
-{
-	@Override
-	public void process( final IMCMessage m )
-	{
-		final NBTTagCompound msg = m.getNBTValue();
-		final NBTTagCompound inTag = (NBTTagCompound) msg.getTag( "in" );
-		final NBTTagCompound outTag = (NBTTagCompound) msg.getTag( "out" );
+        final ItemStack in = ItemStack.loadItemStackFromNBT(inTag);
+        final ItemStack out = ItemStack.loadItemStackFromNBT(outTag);
 
-		final ItemStack in = ItemStack.loadItemStackFromNBT( inTag );
-		final ItemStack out = ItemStack.loadItemStackFromNBT( outTag );
+        final int turns = msg.getInteger("turns");
 
-		final int turns = msg.getInteger( "turns" );
+        if (in == null) {
+            throw new IllegalStateException("invalid input");
+        }
 
-		if( in == null )
-		{
-			throw new IllegalStateException( "invalid input" );
-		}
+        if (out == null) {
+            throw new IllegalStateException("invalid output");
+        }
 
-		if( out == null )
-		{
-			throw new IllegalStateException( "invalid output" );
-		}
+        if (msg.hasKey("optional")) {
+            final NBTTagCompound optionalTag = (NBTTagCompound) msg.getTag("optional");
+            final ItemStack optional = ItemStack.loadItemStackFromNBT(optionalTag);
 
-		if( msg.hasKey( "optional" ) )
-		{
-			final NBTTagCompound optionalTag = (NBTTagCompound) msg.getTag( "optional" );
-			final ItemStack optional = ItemStack.loadItemStackFromNBT( optionalTag );
+            if (optional == null) {
+                throw new IllegalStateException("invalid optional");
+            }
 
-			if( optional == null )
-			{
-				throw new IllegalStateException( "invalid optional" );
-			}
+            final float chance = msg.getFloat("chance");
 
-			final float chance = msg.getFloat( "chance" );
-
-			AEApi.instance().registries().grinder().addRecipe( in, out, optional, chance, turns );
-		}
-		else
-		{
-			AEApi.instance().registries().grinder().addRecipe( in, out, turns );
-		}
-	}
+            AEApi.instance().registries().grinder().addRecipe(
+                in, out, optional, chance, turns
+            );
+        } else {
+            AEApi.instance().registries().grinder().addRecipe(in, out, turns);
+        }
+    }
 }

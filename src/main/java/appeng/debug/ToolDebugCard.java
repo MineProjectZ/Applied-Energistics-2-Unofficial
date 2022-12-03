@@ -18,6 +18,9 @@
 
 package appeng.debug;
 
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Set;
 
 import appeng.api.networking.IGridConnection;
 import appeng.api.networking.IGridHost;
@@ -47,183 +50,175 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.event.ForgeEventFactory;
 
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Set;
+public class ToolDebugCard extends AEBaseItem {
+    public ToolDebugCard() {
+        this.setFeature(
+            EnumSet.of(AEFeature.UnsupportedDeveloperTools, AEFeature.Creative)
+        );
+    }
 
+    @Override
+    public boolean onItemUseFirst(
+        final ItemStack stack,
+        final EntityPlayer player,
+        final World world,
+        final int x,
+        final int y,
+        final int z,
+        final int side,
+        final float hitX,
+        final float hitY,
+        final float hitZ
+    ) {
+        if (ForgeEventFactory.onItemUseStart(player, stack, 1) <= 0)
+            return true;
 
-public class ToolDebugCard extends AEBaseItem
-{
-	public ToolDebugCard()
-	{
-		this.setFeature( EnumSet.of( AEFeature.UnsupportedDeveloperTools, AEFeature.Creative ) );
-	}
+        if (Platform.isClient()) {
+            return false;
+        }
 
-	@Override
-	public boolean onItemUseFirst( final ItemStack stack, final EntityPlayer player, final World world, final int x, final int y, final int z, final int side, final float hitX, final float hitY, final float hitZ )
-	{
-		if( ForgeEventFactory.onItemUseStart( player, stack, 1 ) <= 0 )
-			return true;
+        if (player.isSneaking()) {
+            int grids = 0;
+            int totalNodes = 0;
 
-		if( Platform.isClient() )
-		{
-			return false;
-		}
+            for (final Grid g : TickHandler.INSTANCE.getGridList()) {
+                grids++;
+                totalNodes += g.getNodes().size();
+            }
 
-		if( player.isSneaking() )
-		{
-			int grids = 0;
-			int totalNodes = 0;
+            this.outputMsg(player, "Grids: " + grids);
+            this.outputMsg(player, "Total Nodes: " + totalNodes);
+        } else {
+            final TileEntity te = world.getTileEntity(x, y, z);
 
-			for( final Grid g : TickHandler.INSTANCE.getGridList() )
-			{
-				grids++;
-				totalNodes += g.getNodes().size();
-			}
+            if (te instanceof IGridHost) {
+                final GridNode node
+                    = (GridNode) ((IGridHost) te)
+                          .getGridNode(ForgeDirection.getOrientation(side));
+                if (node != null) {
+                    final Grid g = node.getInternalGrid();
+                    final IGridNode center = g.getPivot();
+                    this.outputMsg(player, "This Node: " + node.toString());
+                    this.outputMsg(player, "Center Node: " + center.toString());
 
-			this.outputMsg( player, "Grids: " + grids );
-			this.outputMsg( player, "Total Nodes: " + totalNodes );
-		}
-		else
-		{
-			final TileEntity te = world.getTileEntity( x, y, z );
+                    final IPathingGrid pg = g.getCache(IPathingGrid.class);
+                    if (pg.getControllerState() == ControllerState.CONTROLLER_ONLINE) {
+                        Set<IGridNode> next = new HashSet<IGridNode>();
+                        next.add(node);
 
-			if( te instanceof IGridHost )
-			{
-				final GridNode node = (GridNode) ( (IGridHost) te ).getGridNode( ForgeDirection.getOrientation( side ) );
-				if( node != null )
-				{
-					final Grid g = node.getInternalGrid();
-					final IGridNode center = g.getPivot();
-					this.outputMsg( player, "This Node: " + node.toString() );
-					this.outputMsg( player, "Center Node: " + center.toString() );
+                        final int maxLength = 10000;
 
-					final IPathingGrid pg = g.getCache( IPathingGrid.class );
-					if( pg.getControllerState() == ControllerState.CONTROLLER_ONLINE )
-					{
+                        int length = 0;
+                    outer:
+                        while (!next.isEmpty()) {
+                            final Iterable<IGridNode> current = next;
+                            next = new HashSet<IGridNode>();
 
-						Set<IGridNode> next = new HashSet<IGridNode>();
-						next.add( node );
+                            for (final IGridNode n : current) {
+                                if (n.getMachine() instanceof TileController) {
+                                    break outer;
+                                }
 
-						final int maxLength = 10000;
+                                for (final IGridConnection c : n.getConnections()) {
+                                    next.add(c.getOtherSide(n));
+                                }
+                            }
 
-						int length = 0;
-						outer:
-						while( !next.isEmpty() )
-						{
-							final Iterable<IGridNode> current = next;
-							next = new HashSet<IGridNode>();
+                            length++;
 
-							for( final IGridNode n : current )
-							{
-								if( n.getMachine() instanceof TileController )
-								{
-									break outer;
-								}
+                            if (length > maxLength) {
+                                break;
+                            }
+                        }
 
-								for( final IGridConnection c : n.getConnections() )
-								{
-									next.add( c.getOtherSide( n ) );
-								}
-							}
+                        this.outputMsg(player, "Cable Distance: " + length);
+                    }
 
-							length++;
+                    if (center.getMachine() instanceof PartP2PTunnel) {
+                        this.outputMsg(
+                            player,
+                            "Freq: "
+                                + ((PartP2PTunnel) center.getMachine()).getFrequency()
+                        );
+                    }
 
-							if( length > maxLength )
-							{
-								break;
-							}
-						}
+                    final TickManagerCache tmc = g.getCache(ITickManager.class);
+                    for (final Class<? extends IGridHost> c : g.getMachineClasses()) {
+                        int o = 0;
+                        long nanos = 0;
+                        for (final IGridNode oj : g.getMachines(c)) {
+                            o++;
+                            nanos += tmc.getAvgNanoTime(oj);
+                        }
 
-						this.outputMsg( player, "Cable Distance: " + length );
-					}
+                        if (nanos < 0) {
+                            this.outputMsg(player, c.getSimpleName() + " - " + o);
+                        } else {
+                            this.outputMsg(
+                                player,
+                                c.getSimpleName() + " - " + o + "; "
+                                    + this.timeMeasurement(nanos)
+                            );
+                        }
+                    }
+                } else {
+                    this.outputMsg(player, "No Node Available.");
+                }
+            } else {
+                this.outputMsg(player, "Not Networked Block");
+            }
 
-					if( center.getMachine() instanceof PartP2PTunnel )
-					{
-						this.outputMsg( player, "Freq: " + ( (PartP2PTunnel) center.getMachine() ).getFrequency() );
-					}
+            if (te instanceof IPartHost) {
+                final IPart center = ((IPartHost) te).getPart(ForgeDirection.UNKNOWN);
+                ((IPartHost) te).markForUpdate();
+                if (center != null) {
+                    final GridNode n = (GridNode) center.getGridNode();
+                    this.outputMsg(player, "Node Channels: " + n.usedChannels());
+                    for (final IGridConnection gc : n.getConnections()) {
+                        final ForgeDirection fd = gc.getDirection(n);
+                        if (fd != ForgeDirection.UNKNOWN) {
+                            this.outputMsg(
+                                player, fd.toString() + ": " + gc.getUsedChannels()
+                            );
+                        }
+                    }
+                }
+            }
 
-					final TickManagerCache tmc = g.getCache( ITickManager.class );
-					for( final Class<? extends IGridHost> c : g.getMachineClasses() )
-					{
-						int o = 0;
-						long nanos = 0;
-						for( final IGridNode oj : g.getMachines( c ) )
-						{
-							o++;
-							nanos += tmc.getAvgNanoTime( oj );
-						}
+            if (te instanceof IAEPowerStorage) {
+                final IAEPowerStorage ps = (IAEPowerStorage) te;
+                this.outputMsg(
+                    player,
+                    "Energy: " + ps.getAECurrentPower() + " / " + ps.getAEMaxPower()
+                );
 
-						if( nanos < 0 )
-						{
-							this.outputMsg( player, c.getSimpleName() + " - " + o );
-						}
-						else
-						{
-							this.outputMsg( player, c.getSimpleName() + " - " + o + "; " + this.timeMeasurement( nanos ) );
-						}
-					}
-				}
-				else
-				{
-					this.outputMsg( player, "No Node Available." );
-				}
-			}
-			else
-			{
-				this.outputMsg( player, "Not Networked Block" );
-			}
+                if (te instanceof IGridHost) {
+                    final IGridNode node
+                        = ((IGridHost) te)
+                              .getGridNode(ForgeDirection.getOrientation(side));
+                    if (node != null && node.getGrid() != null) {
+                        final IEnergyGrid eg = node.getGrid().getCache(IEnergyGrid.class);
+                        this.outputMsg(
+                            player,
+                            "GridEnergy: " + eg.getStoredPower() + " : "
+                                + eg.getEnergyDemand(Double.MAX_VALUE)
+                        );
+                    }
+                }
+            }
+        }
+        return true;
+    }
 
-			if( te instanceof IPartHost )
-			{
-				final IPart center = ( (IPartHost) te ).getPart( ForgeDirection.UNKNOWN );
-				( (IPartHost) te ).markForUpdate();
-				if( center != null )
-				{
-					final GridNode n = (GridNode) center.getGridNode();
-					this.outputMsg( player, "Node Channels: " + n.usedChannels() );
-					for( final IGridConnection gc : n.getConnections() )
-					{
-						final ForgeDirection fd = gc.getDirection( n );
-						if( fd != ForgeDirection.UNKNOWN )
-						{
-							this.outputMsg( player, fd.toString() + ": " + gc.getUsedChannels() );
-						}
-					}
-				}
-			}
+    private void outputMsg(final ICommandSender player, final String string) {
+        player.addChatMessage(new ChatComponentText(string));
+    }
 
-			if( te instanceof IAEPowerStorage )
-			{
-				final IAEPowerStorage ps = (IAEPowerStorage) te;
-				this.outputMsg( player, "Energy: " + ps.getAECurrentPower() + " / " + ps.getAEMaxPower() );
-
-				if( te instanceof IGridHost )
-				{
-					final IGridNode node = ( (IGridHost) te ).getGridNode( ForgeDirection.getOrientation( side ) );
-					if( node != null && node.getGrid() != null )
-					{
-						final IEnergyGrid eg = node.getGrid().getCache( IEnergyGrid.class );
-						this.outputMsg( player, "GridEnergy: " + eg.getStoredPower() + " : " + eg.getEnergyDemand( Double.MAX_VALUE ) );
-					}
-				}
-			}
-		}
-		return true;
-	}
-
-	private void outputMsg( final ICommandSender player, final String string )
-	{
-		player.addChatMessage( new ChatComponentText( string ) );
-	}
-
-	private String timeMeasurement( final long nanos )
-	{
-		final long ms = nanos / 100000;
-		if( nanos <= 100000 )
-		{
-			return nanos + "ns";
-		}
-		return ( ms / 10.0f ) + "ms";
-	}
+    private String timeMeasurement(final long nanos) {
+        final long ms = nanos / 100000;
+        if (nanos <= 100000) {
+            return nanos + "ns";
+        }
+        return (ms / 10.0f) + "ms";
+    }
 }

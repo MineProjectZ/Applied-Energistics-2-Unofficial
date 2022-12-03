@@ -18,7 +18,6 @@
 
 package appeng.container.slot;
 
-
 import appeng.container.AEBaseContainer;
 import appeng.tile.inventory.AppEngInternalInventory;
 import net.minecraft.entity.player.EntityPlayer;
@@ -26,227 +25,180 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
+public class AppEngSlot extends Slot {
+    private final int defX;
+    private final int defY;
+    private boolean isDraggable = true;
+    private boolean isPlayerSide = false;
+    private AEBaseContainer myContainer = null;
+    private int IIcon = -1;
+    private hasCalculatedValidness isValid;
+    private boolean isDisplay = false;
 
-public class AppEngSlot extends Slot
-{
+    public AppEngSlot(final IInventory inv, final int idx, final int x, final int y) {
+        super(inv, idx, x, y);
+        this.defX = x;
+        this.defY = y;
+        this.setIsValid(hasCalculatedValidness.NotAvailable);
+    }
 
-	private final int defX;
-	private final int defY;
-	private boolean isDraggable = true;
-	private boolean isPlayerSide = false;
-	private AEBaseContainer myContainer = null;
-	private int IIcon = -1;
-	private hasCalculatedValidness isValid;
-	private boolean isDisplay = false;
+    public Slot setNotDraggable() {
+        this.setDraggable(false);
+        return this;
+    }
 
-	public AppEngSlot( final IInventory inv, final int idx, final int x, final int y )
-	{
-		super( inv, idx, x, y );
-		this.defX = x;
-		this.defY = y;
-		this.setIsValid( hasCalculatedValidness.NotAvailable );
-	}
+    public Slot setPlayerSide() {
+        this.isPlayerSide = true;
+        return this;
+    }
 
-	public Slot setNotDraggable()
-	{
-		this.setDraggable( false );
-		return this;
-	}
+    public String getTooltip() {
+        return null;
+    }
 
-	public Slot setPlayerSide()
-	{
-		this.isPlayerSide = true;
-		return this;
-	}
+    public void clearStack() {
+        super.putStack(null);
+    }
 
-	public String getTooltip()
-	{
-		return null;
-	}
+    @Override
+    public boolean isItemValid(final ItemStack par1ItemStack) {
+        if (this.isEnabled()) {
+            return super.isItemValid(par1ItemStack);
+        }
+        return false;
+    }
 
-	public void clearStack()
-	{
-		super.putStack( null );
-	}
+    @Override
+    public ItemStack getStack() {
+        if (!this.isEnabled()) {
+            return null;
+        }
 
-	@Override
-	public boolean isItemValid( final ItemStack par1ItemStack )
-	{
-		if( this.isEnabled() )
-		{
-			return super.isItemValid( par1ItemStack );
-		}
-		return false;
-	}
+        if (this.inventory.getSizeInventory() <= this.getSlotIndex()) {
+            return null;
+        }
 
-	@Override
-	public ItemStack getStack()
-	{
-		if( !this.isEnabled() )
-		{
-			return null;
-		}
+        if (this.isDisplay()) {
+            this.setDisplay(false);
+            return this.getDisplayStack();
+        }
+        return super.getStack();
+    }
 
-		if( this.inventory.getSizeInventory() <= this.getSlotIndex() )
-		{
-			return null;
-		}
+    @Override
+    public void putStack(final ItemStack par1ItemStack) {
+        if (this.isEnabled()) {
+            super.putStack(par1ItemStack);
 
-		if( this.isDisplay() )
-		{
-			this.setDisplay( false );
-			return this.getDisplayStack();
-		}
-		return super.getStack();
-	}
+            if (this.getContainer() != null) {
+                this.getContainer().onSlotChange(this);
+            }
+        }
+    }
 
-	@Override
-	public void putStack( final ItemStack par1ItemStack )
-	{
-		if( this.isEnabled() )
-		{
-			super.putStack( par1ItemStack );
+    @Override
+    public void onSlotChanged() {
+        if (this.inventory instanceof AppEngInternalInventory) {
+            ((AppEngInternalInventory) this.inventory).markDirty(this.getSlotIndex());
+        } else {
+            super.onSlotChanged();
+        }
 
-			if( this.getContainer() != null )
-			{
-				this.getContainer().onSlotChange( this );
-			}
-		}
-	}
+        this.setIsValid(hasCalculatedValidness.NotAvailable);
+    }
 
-	@Override
-	public void onSlotChanged()
-	{
-		if( this.inventory instanceof AppEngInternalInventory )
-		{
-			( (AppEngInternalInventory) this.inventory ).markDirty( this.getSlotIndex() );
-		}
-		else
-		{
-			super.onSlotChanged();
-		}
+    @Override
+    public boolean canTakeStack(final EntityPlayer par1EntityPlayer) {
+        if (this.isEnabled()) {
+            return super.canTakeStack(par1EntityPlayer);
+        }
+        return false;
+    }
 
-		this.setIsValid( hasCalculatedValidness.NotAvailable );
-	}
+    @Override
+    public boolean func_111238_b() {
+        return this.isEnabled();
+    }
 
-	@Override
-	public boolean canTakeStack( final EntityPlayer par1EntityPlayer )
-	{
-		if( this.isEnabled() )
-		{
-			return super.canTakeStack( par1EntityPlayer );
-		}
-		return false;
-	}
+    public ItemStack getDisplayStack() {
+        return super.getStack();
+    }
 
-	@Override
-	public boolean func_111238_b()
-	{
-		return this.isEnabled();
-	}
+    public boolean isEnabled() {
+        return true;
+    }
 
-	public ItemStack getDisplayStack()
-	{
-		return super.getStack();
-	}
+    public float getOpacityOfIcon() {
+        return 0.4f;
+    }
 
-	public boolean isEnabled()
-	{
-		return true;
-	}
+    public boolean renderIconWithItem() {
+        return false;
+    }
 
-	public float getOpacityOfIcon()
-	{
-		return 0.4f;
-	}
+    public int getIcon() {
+        return this.getIIcon();
+    }
 
-	public boolean renderIconWithItem()
-	{
-		return false;
-	}
+    public boolean isPlayerSide() {
+        return this.isPlayerSide;
+    }
 
-	public int getIcon()
-	{
-		return this.getIIcon();
-	}
+    public boolean shouldDisplay() {
+        return this.isEnabled();
+    }
 
-	public boolean isPlayerSide()
-	{
-		return this.isPlayerSide;
-	}
+    public int getX() {
+        return this.defX;
+    }
 
-	public boolean shouldDisplay()
-	{
-		return this.isEnabled();
-	}
+    public int getY() {
+        return this.defY;
+    }
 
-	public int getX()
-	{
-		return this.defX;
-	}
+    private int getIIcon() {
+        return this.IIcon;
+    }
 
-	public int getY()
-	{
-		return this.defY;
-	}
+    public void setIIcon(final int iIcon) {
+        this.IIcon = iIcon;
+    }
 
-	private int getIIcon()
-	{
-		return this.IIcon;
-	}
+    private boolean isDisplay() {
+        return this.isDisplay;
+    }
 
-	public void setIIcon( final int iIcon )
-	{
-		this.IIcon = iIcon;
-	}
+    public void setDisplay(final boolean isDisplay) {
+        this.isDisplay = isDisplay;
+    }
 
-	private boolean isDisplay()
-	{
-		return this.isDisplay;
-	}
+    public boolean isDraggable() {
+        return this.isDraggable;
+    }
 
-	public void setDisplay( final boolean isDisplay )
-	{
-		this.isDisplay = isDisplay;
-	}
+    private void setDraggable(final boolean isDraggable) {
+        this.isDraggable = isDraggable;
+    }
 
-	public boolean isDraggable()
-	{
-		return this.isDraggable;
-	}
+    void setPlayerSide(final boolean isPlayerSide) {
+        this.isPlayerSide = isPlayerSide;
+    }
 
-	private void setDraggable( final boolean isDraggable )
-	{
-		this.isDraggable = isDraggable;
-	}
+    public hasCalculatedValidness getIsValid() {
+        return this.isValid;
+    }
 
-	void setPlayerSide( final boolean isPlayerSide )
-	{
-		this.isPlayerSide = isPlayerSide;
-	}
+    public void setIsValid(final hasCalculatedValidness isValid) {
+        this.isValid = isValid;
+    }
 
-	public hasCalculatedValidness getIsValid()
-	{
-		return this.isValid;
-	}
+    AEBaseContainer getContainer() {
+        return this.myContainer;
+    }
 
-	public void setIsValid( final hasCalculatedValidness isValid )
-	{
-		this.isValid = isValid;
-	}
+    public void setContainer(final AEBaseContainer myContainer) {
+        this.myContainer = myContainer;
+    }
 
-	AEBaseContainer getContainer()
-	{
-		return this.myContainer;
-	}
-
-	public void setContainer( final AEBaseContainer myContainer )
-	{
-		this.myContainer = myContainer;
-	}
-
-	public enum hasCalculatedValidness
-	{
-		NotAvailable, Valid, Invalid
-	}
+    public enum hasCalculatedValidness { NotAvailable, Valid, Invalid }
 }

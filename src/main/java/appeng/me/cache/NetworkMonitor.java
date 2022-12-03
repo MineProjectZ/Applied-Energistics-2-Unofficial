@@ -18,6 +18,11 @@
 
 package appeng.me.cache;
 
+import java.util.*;
+import java.util.Map.Entry;
+import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import appeng.api.config.AccessRestriction;
 import appeng.api.config.Actionable;
@@ -33,307 +38,275 @@ import appeng.me.storage.ItemWatcher;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import javax.annotation.Nonnegative;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.*;
-import java.util.Map.Entry;
+public class NetworkMonitor<T extends IAEStack<T>> implements IMEMonitor<T> {
+    @Nonnull
+    private static final Deque<NetworkMonitor<?>> GLOBAL_DEPTH = Lists.newLinkedList();
 
+    @Nonnull
+    private final GridStorageCache myGridCache;
+    @Nonnull
+    private final StorageChannel myChannel;
+    @Nonnull
+    private final IItemList<T> cachedList;
+    @Nonnull
+    private final Map<IMEMonitorHandlerReceiver<T>, Object> listeners;
 
-public class NetworkMonitor<T extends IAEStack<T>> implements IMEMonitor<T>
-{
-	@Nonnull
-	private static final Deque<NetworkMonitor<?>> GLOBAL_DEPTH = Lists.newLinkedList();
+    private boolean sendEvent = false;
+    private boolean hasChanged = false;
+    @Nonnegative
+    private int localDepthSemaphore = 0;
 
-	@Nonnull
-	private final GridStorageCache myGridCache;
-	@Nonnull
-	private final StorageChannel myChannel;
-	@Nonnull
-	private final IItemList<T> cachedList;
-	@Nonnull
-	private final Map<IMEMonitorHandlerReceiver<T>, Object> listeners;
+    public NetworkMonitor(final GridStorageCache cache, final StorageChannel chan) {
+        this.myGridCache = cache;
+        this.myChannel = chan;
+        this.cachedList = (IItemList<T>) chan.createList();
+        this.listeners = new HashMap<IMEMonitorHandlerReceiver<T>, Object>();
+    }
 
-	private boolean sendEvent = false;
-	private boolean hasChanged = false;
-	@Nonnegative
-	private int localDepthSemaphore = 0;
+    @Override
+    public void
+    addListener(final IMEMonitorHandlerReceiver<T> l, final Object verificationToken) {
+        this.listeners.put(l, verificationToken);
+    }
 
-	public NetworkMonitor( final GridStorageCache cache, final StorageChannel chan )
-	{
-		this.myGridCache = cache;
-		this.myChannel = chan;
-		this.cachedList = (IItemList<T>) chan.createList();
-		this.listeners = new HashMap<IMEMonitorHandlerReceiver<T>, Object>();
-	}
+    @Override
+    public boolean canAccept(final T input) {
+        return this.getHandler().canAccept(input);
+    }
 
-	@Override
-	public void addListener( final IMEMonitorHandlerReceiver<T> l, final Object verificationToken )
-	{
-		this.listeners.put( l, verificationToken );
-	}
+    @Override
+    public T
+    extractItems(final T request, final Actionable mode, final BaseActionSource src) {
+        if (mode == Actionable.SIMULATE) {
+            return this.getHandler().extractItems(request, mode, src);
+        }
 
-	@Override
-	public boolean canAccept( final T input )
-	{
-		return this.getHandler().canAccept( input );
-	}
+        localDepthSemaphore++;
+        final T leftover = this.getHandler().extractItems(request, mode, src);
+        localDepthSemaphore--;
 
-	@Override
-	public T extractItems( final T request, final Actionable mode, final BaseActionSource src )
-	{
-		if( mode == Actionable.SIMULATE )
-		{
-			return this.getHandler().extractItems( request, mode, src );
-		}
+        if (localDepthSemaphore == 0) {
+            this.monitorDifference(request.copy(), leftover, true, src);
+        }
 
-		localDepthSemaphore++;
-		final T leftover = this.getHandler().extractItems( request, mode, src );
-		localDepthSemaphore--;
+        return leftover;
+    }
 
-		if( localDepthSemaphore == 0 )
-		{
-			this.monitorDifference( request.copy(), leftover, true, src );
-		}
+    @Override
+    public AccessRestriction getAccess() {
+        return this.getHandler().getAccess();
+    }
 
-		return leftover;
-	}
+    @Override
+    public IItemList<T> getAvailableItems(final IItemList out) {
+        return this.getHandler().getAvailableItems(out);
+    }
 
-	@Override
-	public AccessRestriction getAccess()
-	{
-		return this.getHandler().getAccess();
-	}
+    @Override
+    public StorageChannel getChannel() {
+        return this.getHandler().getChannel();
+    }
 
-	@Override
-	public IItemList<T> getAvailableItems( final IItemList out )
-	{
-		return this.getHandler().getAvailableItems( out );
-	}
+    @Override
+    public int getPriority() {
+        return this.getHandler().getPriority();
+    }
 
-	@Override
-	public StorageChannel getChannel()
-	{
-		return this.getHandler().getChannel();
-	}
+    @Override
+    public int getSlot() {
+        return this.getHandler().getSlot();
+    }
 
-	@Override
-	public int getPriority()
-	{
-		return this.getHandler().getPriority();
-	}
+    @Nonnull
+    @Override
+    public IItemList<T> getStorageList() {
+        if (this.hasChanged) {
+            this.hasChanged = false;
+            this.cachedList.resetStatus();
+            return this.getAvailableItems(this.cachedList);
+        }
 
-	@Override
-	public int getSlot()
-	{
-		return this.getHandler().getSlot();
-	}
+        return this.cachedList;
+    }
 
-	@Nonnull
-	@Override
-	public IItemList<T> getStorageList()
-	{
-		if( this.hasChanged )
-		{
-			this.hasChanged = false;
-			this.cachedList.resetStatus();
-			return this.getAvailableItems( this.cachedList );
-		}
+    @Override
+    public T
+    injectItems(final T input, final Actionable mode, final BaseActionSource src) {
+        if (mode == Actionable.SIMULATE) {
+            return this.getHandler().injectItems(input, mode, src);
+        }
 
-		return this.cachedList;
-	}
+        localDepthSemaphore++;
+        final T leftover = this.getHandler().injectItems(input, mode, src);
+        localDepthSemaphore--;
 
-	@Override
-	public T injectItems( final T input, final Actionable mode, final BaseActionSource src )
-	{
-		if( mode == Actionable.SIMULATE )
-		{
-			return this.getHandler().injectItems( input, mode, src );
-		}
+        if (localDepthSemaphore == 0) {
+            this.monitorDifference(input.copy(), leftover, false, src);
+        }
 
-		localDepthSemaphore++;
-		final T leftover = this.getHandler().injectItems( input, mode, src );
-		localDepthSemaphore--;
+        return leftover;
+    }
 
-		if( localDepthSemaphore == 0 )
-		{
-			this.monitorDifference( input.copy(), leftover, false, src );
-		}
+    @Override
+    public boolean isPrioritized(final T input) {
+        return this.getHandler().isPrioritized(input);
+    }
 
-		return leftover;
-	}
+    @Override
+    public void removeListener(final IMEMonitorHandlerReceiver<T> l) {
+        this.listeners.remove(l);
+    }
 
-	@Override
-	public boolean isPrioritized( final T input )
-	{
-		return this.getHandler().isPrioritized( input );
-	}
+    @Override
+    public boolean validForPass(final int i) {
+        return this.getHandler().validForPass(i);
+    }
 
-	@Override
-	public void removeListener( final IMEMonitorHandlerReceiver<T> l )
-	{
-		this.listeners.remove( l );
-	}
+    @Nullable
+    @SuppressWarnings("unchecked")
+    private IMEInventoryHandler<T> getHandler() {
+        switch (this.myChannel) {
+            case ITEMS:
+                return (IMEInventoryHandler<T>) this.myGridCache.getItemInventoryHandler(
+                );
+            case FLUIDS:
+                return (IMEInventoryHandler<T>) this.myGridCache.getFluidInventoryHandler(
+                );
+            default:
+        }
+        return null;
+    }
 
-	@Override
-	public boolean validForPass( final int i )
-	{
-		return this.getHandler().validForPass( i );
-	}
+    private Iterator<Entry<IMEMonitorHandlerReceiver<T>, Object>> getListeners() {
+        return this.listeners.entrySet().iterator();
+    }
 
-	@Nullable
-	@SuppressWarnings( "unchecked" )
-	private IMEInventoryHandler<T> getHandler()
-	{
-		switch( this.myChannel )
-		{
-			case ITEMS:
-				return (IMEInventoryHandler<T>) this.myGridCache.getItemInventoryHandler();
-			case FLUIDS:
-				return (IMEInventoryHandler<T>) this.myGridCache.getFluidInventoryHandler();
-			default:
-		}
-		return null;
-	}
+    private T monitorDifference(
+        final IAEStack original,
+        final T leftOvers,
+        final boolean extraction,
+        final BaseActionSource src
+    ) {
+        final T diff = (T) original.copy();
 
-	private Iterator<Entry<IMEMonitorHandlerReceiver<T>, Object>> getListeners()
-	{
-		return this.listeners.entrySet().iterator();
-	}
+        if (extraction) {
+            diff.setStackSize(leftOvers == null ? 0 : -leftOvers.getStackSize());
+        } else if (leftOvers != null) {
+            diff.decStackSize(leftOvers.getStackSize());
+        }
 
-	private T monitorDifference( final IAEStack original, final T leftOvers, final boolean extraction, final BaseActionSource src )
-	{
-		final T diff = (T) original.copy();
+        if (diff.getStackSize() != 0) {
+            this.postChangesToListeners(ImmutableList.of(diff), src);
+        }
 
-		if( extraction )
-		{
-			diff.setStackSize( leftOvers == null ? 0 : -leftOvers.getStackSize() );
-		}
-		else if( leftOvers != null )
-		{
-			diff.decStackSize( leftOvers.getStackSize() );
-		}
+        return leftOvers;
+    }
 
-		if( diff.getStackSize() != 0 )
-		{
-			this.postChangesToListeners( ImmutableList.of( diff ), src );
-		}
+    private void
+    notifyListenersOfChange(final Iterable<T> diff, final BaseActionSource src) {
+        this.hasChanged = true;
+        final Iterator<Entry<IMEMonitorHandlerReceiver<T>, Object>> i
+            = this.getListeners();
 
-		return leftOvers;
-	}
+        while (i.hasNext()) {
+            final Entry<IMEMonitorHandlerReceiver<T>, Object> o = i.next();
+            final IMEMonitorHandlerReceiver<T> receiver = o.getKey();
+            if (receiver.isValid(o.getValue())) {
+                receiver.postChange(this, diff, src);
+            } else {
+                i.remove();
+            }
+        }
+    }
 
-	private void notifyListenersOfChange( final Iterable<T> diff, final BaseActionSource src )
-	{
-		this.hasChanged = true;
-		final Iterator<Entry<IMEMonitorHandlerReceiver<T>, Object>> i = this.getListeners();
+    private void
+    postChangesToListeners(final Iterable<T> changes, final BaseActionSource src) {
+        this.postChange(true, changes, src);
+    }
 
-		while( i.hasNext() )
-		{
-			final Entry<IMEMonitorHandlerReceiver<T>, Object> o = i.next();
-			final IMEMonitorHandlerReceiver<T> receiver = o.getKey();
-			if( receiver.isValid( o.getValue() ) )
-			{
-				receiver.postChange( this, diff, src );
-			}
-			else
-			{
-				i.remove();
-			}
-		}
-	}
+    protected void
+    postChange(final boolean add, final Iterable<T> changes, final BaseActionSource src) {
+        if (localDepthSemaphore > 0 || GLOBAL_DEPTH.contains(this)) {
+            return;
+        }
 
-	private void postChangesToListeners( final Iterable<T> changes, final BaseActionSource src )
-	{
-		this.postChange( true, changes, src );
-	}
+        GLOBAL_DEPTH.push(this);
+        localDepthSemaphore++;
 
-	protected void postChange( final boolean add, final Iterable<T> changes, final BaseActionSource src )
-	{
-		if( localDepthSemaphore > 0 || GLOBAL_DEPTH.contains( this ) )
-		{
-			return;
-		}
+        this.sendEvent = true;
 
-		GLOBAL_DEPTH.push( this );
-		localDepthSemaphore++;
+        this.notifyListenersOfChange(changes, src);
 
-		this.sendEvent = true;
+        for (final T changedItem : changes) {
+            T difference = changedItem;
 
-		this.notifyListenersOfChange( changes, src );
+            if (!add && changedItem != null) {
+                difference = changedItem.copy();
+                difference.setStackSize(-changedItem.getStackSize());
+            }
 
-		for( final T changedItem : changes )
-		{
-			T difference = changedItem;
+            if (this.myGridCache.getInterestManager().containsKey(changedItem)) {
+                final Collection<ItemWatcher> list
+                    = this.myGridCache.getInterestManager().get(changedItem);
 
-			if( !add && changedItem != null )
-			{
-				difference = changedItem.copy();
-				difference.setStackSize( -changedItem.getStackSize() );
-			}
+                if (!list.isEmpty()) {
+                    IAEStack fullStack = this.getStorageList().findPrecise(changedItem);
 
-			if( this.myGridCache.getInterestManager().containsKey( changedItem ) )
-			{
-				final Collection<ItemWatcher> list = this.myGridCache.getInterestManager().get( changedItem );
+                    if (fullStack == null) {
+                        fullStack = changedItem.copy();
+                        fullStack.setStackSize(0);
+                    }
 
-				if( !list.isEmpty() )
-				{
-					IAEStack fullStack = this.getStorageList().findPrecise( changedItem );
+                    this.myGridCache.getInterestManager().enableTransactions();
 
-					if( fullStack == null )
-					{
-						fullStack = changedItem.copy();
-						fullStack.setStackSize( 0 );
-					}
+                    for (final ItemWatcher iw : list) {
+                        iw.getHost().onStackChange(
+                            this.getStorageList(),
+                            fullStack,
+                            difference,
+                            src,
+                            this.getChannel()
+                        );
+                    }
 
-					this.myGridCache.getInterestManager().enableTransactions();
+                    this.myGridCache.getInterestManager().disableTransactions();
+                }
+            }
+        }
 
-					for( final ItemWatcher iw : list )
-					{
-						iw.getHost().onStackChange( this.getStorageList(), fullStack, difference, src, this.getChannel() );
-					}
+        final NetworkMonitor<?> last = GLOBAL_DEPTH.pop();
+        localDepthSemaphore--;
 
-					this.myGridCache.getInterestManager().disableTransactions();
-				}
-			}
-		}
+        if (last != this) {
+            throw new IllegalStateException(
+                "Invalid Access to Networked Storage API detected."
+            );
+        }
+    }
 
-		final NetworkMonitor<?> last = GLOBAL_DEPTH.pop();
-		localDepthSemaphore--;
+    void forceUpdate() {
+        this.hasChanged = true;
 
-		if( last != this )
-		{
-			throw new IllegalStateException( "Invalid Access to Networked Storage API detected." );
-		}
-	}
+        final Iterator<Entry<IMEMonitorHandlerReceiver<T>, Object>> i
+            = this.getListeners();
+        while (i.hasNext()) {
+            final Entry<IMEMonitorHandlerReceiver<T>, Object> o = i.next();
+            final IMEMonitorHandlerReceiver<T> receiver = o.getKey();
 
-	void forceUpdate()
-	{
-		this.hasChanged = true;
+            if (receiver.isValid(o.getValue())) {
+                receiver.onListUpdate();
+            } else {
+                i.remove();
+            }
+        }
+    }
 
-		final Iterator<Entry<IMEMonitorHandlerReceiver<T>, Object>> i = this.getListeners();
-		while( i.hasNext() )
-		{
-			final Entry<IMEMonitorHandlerReceiver<T>, Object> o = i.next();
-			final IMEMonitorHandlerReceiver<T> receiver = o.getKey();
-
-			if( receiver.isValid( o.getValue() ) )
-			{
-				receiver.onListUpdate();
-			}
-			else
-			{
-				i.remove();
-			}
-		}
-	}
-
-	void onTick()
-	{
-		if( this.sendEvent )
-		{
-			this.sendEvent = false;
-			this.myGridCache.getGrid().postEvent( new MENetworkStorageEvent( this, this.myChannel ) );
-		}
-	}
-
+    void onTick() {
+        if (this.sendEvent) {
+            this.sendEvent = false;
+            this.myGridCache.getGrid().postEvent(
+                new MENetworkStorageEvent(this, this.myChannel)
+            );
+        }
+    }
 }

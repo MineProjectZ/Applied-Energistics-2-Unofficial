@@ -18,7 +18,6 @@
 
 package appeng.core.sync.packets;
 
-
 import appeng.client.ClientHelper;
 import appeng.client.render.effects.EnergyFx;
 import appeng.core.CommonHelper;
@@ -38,77 +37,96 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+public class PacketTransitionEffect extends AppEngPacket {
+    private final boolean mode;
+    private final double x;
+    private final double y;
+    private final double z;
+    private final ForgeDirection d;
 
-public class PacketTransitionEffect extends AppEngPacket
-{
+    // automatic.
+    public PacketTransitionEffect(final ByteBuf stream) {
+        this.x = stream.readFloat();
+        this.y = stream.readFloat();
+        this.z = stream.readFloat();
+        this.d = ForgeDirection.getOrientation(stream.readByte());
+        this.mode = stream.readBoolean();
+    }
 
-	private final boolean mode;
-	private final double x;
-	private final double y;
-	private final double z;
-	private final ForgeDirection d;
+    // api
+    public PacketTransitionEffect(
+        final double x,
+        final double y,
+        final double z,
+        final ForgeDirection dir,
+        final boolean wasBlock
+    ) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.d = dir;
+        this.mode = wasBlock;
 
-	// automatic.
-	public PacketTransitionEffect( final ByteBuf stream )
-	{
-		this.x = stream.readFloat();
-		this.y = stream.readFloat();
-		this.z = stream.readFloat();
-		this.d = ForgeDirection.getOrientation( stream.readByte() );
-		this.mode = stream.readBoolean();
-	}
+        final ByteBuf data = Unpooled.buffer();
 
-	// api
-	public PacketTransitionEffect( final double x, final double y, final double z, final ForgeDirection dir, final boolean wasBlock )
-	{
-		this.x = x;
-		this.y = y;
-		this.z = z;
-		this.d = dir;
-		this.mode = wasBlock;
+        data.writeInt(this.getPacketID());
+        data.writeFloat((float) x);
+        data.writeFloat((float) y);
+        data.writeFloat((float) z);
+        data.writeByte(this.d.ordinal());
+        data.writeBoolean(wasBlock);
 
-		final ByteBuf data = Unpooled.buffer();
+        this.configureWrite(data);
+    }
 
-		data.writeInt( this.getPacketID() );
-		data.writeFloat( (float) x );
-		data.writeFloat( (float) y );
-		data.writeFloat( (float) z );
-		data.writeByte( this.d.ordinal() );
-		data.writeBoolean( wasBlock );
+    @Override
+    @SideOnly(Side.CLIENT)
+    public void clientPacketData(
+        final INetworkInfo network, final AppEngPacket packet, final EntityPlayer player
+    ) {
+        final World world = ClientHelper.proxy.getWorld();
 
-		this.configureWrite( data );
-	}
+        for (int zz = 0; zz < (this.mode ? 32 : 8); zz++) {
+            if (CommonHelper.proxy.shouldAddParticles(Platform.getRandom())) {
+                final EnergyFx fx = new EnergyFx(
+                    world,
+                    this.x
+                        + (this.mode ? (Platform.getRandomInt() % 100) * 0.01
+                                     : (Platform.getRandomInt() % 100) * 0.005 - 0.25),
+                    this.y
+                        + (this.mode ? (Platform.getRandomInt() % 100) * 0.01
+                                     : (Platform.getRandomInt() % 100) * 0.005 - 0.25),
+                    this.z
+                        + (this.mode ? (Platform.getRandomInt() % 100) * 0.01
+                                     : (Platform.getRandomInt() % 100) * 0.005 - 0.25),
+                    Items.diamond
+                );
 
-	@Override
-	@SideOnly( Side.CLIENT )
-	public void clientPacketData( final INetworkInfo network, final AppEngPacket packet, final EntityPlayer player )
-	{
-		final World world = ClientHelper.proxy.getWorld();
+                if (!this.mode) {
+                    fx.fromItem(this.d);
+                }
 
-		for( int zz = 0; zz < ( this.mode ? 32 : 8 ); zz++ )
-		{
-			if( CommonHelper.proxy.shouldAddParticles( Platform.getRandom() ) )
-			{
-				final EnergyFx fx = new EnergyFx( world, this.x + ( this.mode ? ( Platform.getRandomInt() % 100 ) * 0.01 : ( Platform.getRandomInt() % 100 ) * 0.005 - 0.25 ), this.y + ( this.mode ? ( Platform.getRandomInt() % 100 ) * 0.01 : ( Platform.getRandomInt() % 100 ) * 0.005 - 0.25 ), this.z + ( this.mode ? ( Platform.getRandomInt() % 100 ) * 0.01 : ( Platform.getRandomInt() % 100 ) * 0.005 - 0.25 ), Items.diamond );
+                fx.motionX = -0.1 * this.d.offsetX;
+                fx.motionY = -0.1 * this.d.offsetY;
+                fx.motionZ = -0.1 * this.d.offsetZ;
 
-				if( !this.mode )
-				{
-					fx.fromItem( this.d );
-				}
+                Minecraft.getMinecraft().effectRenderer.addEffect(fx);
+            }
+        }
 
-				fx.motionX = -0.1 * this.d.offsetX;
-				fx.motionY = -0.1 * this.d.offsetY;
-				fx.motionZ = -0.1 * this.d.offsetZ;
+        if (this.mode) {
+            final Block block = world.getBlock((int) this.x, (int) this.y, (int) this.z);
 
-				Minecraft.getMinecraft().effectRenderer.addEffect( fx );
-			}
-		}
-
-		if( this.mode )
-		{
-			final Block block = world.getBlock( (int) this.x, (int) this.y, (int) this.z );
-
-			Minecraft.getMinecraft().getSoundHandler().playSound( new PositionedSoundRecord( new ResourceLocation( block.stepSound.getBreakSound() ), ( block.stepSound.getVolume() + 1.0F ) / 2.0F, block.stepSound.getPitch() * 0.8F, (float) this.x + 0.5F, (float) this.y + 0.5F, (float) this.z + 0.5F ) );
-		}
-	}
+            Minecraft.getMinecraft().getSoundHandler().playSound(
+                new PositionedSoundRecord(
+                    new ResourceLocation(block.stepSound.getBreakSound()),
+                    (block.stepSound.getVolume() + 1.0F) / 2.0F,
+                    block.stepSound.getPitch() * 0.8F,
+                    (float) this.x + 0.5F,
+                    (float) this.y + 0.5F,
+                    (float) this.z + 0.5F
+                )
+            );
+        }
+    }
 }

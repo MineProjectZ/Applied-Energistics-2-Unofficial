@@ -18,24 +18,19 @@
 
 package appeng.core;
 
-
-import appeng.core.features.IAEFeature;
-
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import appeng.core.features.IAEFeature;
 
-public final class FeatureRegistry
-{
-	private final Set<IAEFeature> registry = new LinkedHashSet<IAEFeature>();
+public final class FeatureRegistry {
+    private final Set<IAEFeature> registry = new LinkedHashSet<IAEFeature>();
 
-	public void addFeature( final IAEFeature feature )
-	{
-		this.registry.add( feature );
-	}
+    public void addFeature(final IAEFeature feature) {
+        this.registry.add(feature);
+    }
 
-	Set<IAEFeature> getRegisteredFeatures()
-	{
-		return this.registry;
-	}
+    Set<IAEFeature> getRegisteredFeatures() {
+        return this.registry;
+    }
 }

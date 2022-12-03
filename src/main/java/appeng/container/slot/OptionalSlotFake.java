@@ -18,76 +18,70 @@
 
 package appeng.container.slot;
 
-
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 
+public class OptionalSlotFake extends SlotFake {
+    private final int srcX;
+    private final int srcY;
+    private final int groupNum;
+    private final IOptionalSlotHost host;
+    private boolean renderDisabled = true;
 
-public class OptionalSlotFake extends SlotFake
-{
+    public OptionalSlotFake(
+        final IInventory inv,
+        final IOptionalSlotHost containerBus,
+        final int idx,
+        final int x,
+        final int y,
+        final int offX,
+        final int offY,
+        final int groupNum
+    ) {
+        super(inv, idx, x + offX * 18, y + offY * 18);
+        this.srcX = x;
+        this.srcY = y;
+        this.groupNum = groupNum;
+        this.host = containerBus;
+    }
 
-	private final int srcX;
-	private final int srcY;
-	private final int groupNum;
-	private final IOptionalSlotHost host;
-	private boolean renderDisabled = true;
+    @Override
+    public ItemStack getStack() {
+        if (!this.isEnabled()) {
+            if (this.getDisplayStack() != null) {
+                this.clearStack();
+            }
+        }
 
-	public OptionalSlotFake( final IInventory inv, final IOptionalSlotHost containerBus, final int idx, final int x, final int y, final int offX, final int offY, final int groupNum )
-	{
-		super( inv, idx, x + offX * 18, y + offY * 18 );
-		this.srcX = x;
-		this.srcY = y;
-		this.groupNum = groupNum;
-		this.host = containerBus;
-	}
+        return super.getStack();
+    }
 
-	@Override
-	public ItemStack getStack()
-	{
-		if( !this.isEnabled() )
-		{
-			if( this.getDisplayStack() != null )
-			{
-				this.clearStack();
-			}
-		}
+    @Override
+    public boolean isEnabled() {
+        if (this.host == null) {
+            return false;
+        }
 
-		return super.getStack();
-	}
+        return this.host.isSlotEnabled(this.groupNum);
+    }
 
-	@Override
-	public boolean isEnabled()
-	{
-		if( this.host == null )
-		{
-			return false;
-		}
+    public boolean renderDisabled() {
+        return this.isRenderDisabled();
+    }
 
-		return this.host.isSlotEnabled( this.groupNum );
-	}
+    private boolean isRenderDisabled() {
+        return this.renderDisabled;
+    }
 
-	public boolean renderDisabled()
-	{
-		return this.isRenderDisabled();
-	}
+    public void setRenderDisabled(final boolean renderDisabled) {
+        this.renderDisabled = renderDisabled;
+    }
 
-	private boolean isRenderDisabled()
-	{
-		return this.renderDisabled;
-	}
+    public int getSourceX() {
+        return this.srcX;
+    }
 
-	public void setRenderDisabled( final boolean renderDisabled )
-	{
-		this.renderDisabled = renderDisabled;
-	}
-
-	public int getSourceX()
-	{
-		return this.srcX;
-	}
-
-	public int getSourceY()
-	{
-		return this.srcY;
-	}
+    public int getSourceY() {
+        return this.srcY;
+    }
 }

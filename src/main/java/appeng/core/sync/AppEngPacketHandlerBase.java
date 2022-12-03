@@ -18,113 +18,103 @@
 
 package appeng.core.sync;
 
-
-import appeng.core.sync.packets.*;
-import io.netty.buffer.ByteBuf;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
+import appeng.core.sync.packets.*;
+import io.netty.buffer.ByteBuf;
 
-public class AppEngPacketHandlerBase
-{
-	private static final Map<Class<? extends AppEngPacket>, PacketTypes> REVERSE_LOOKUP = new HashMap<Class<? extends AppEngPacket>, AppEngPacketHandlerBase.PacketTypes>();
+public class AppEngPacketHandlerBase {
+    private static final Map<Class<? extends AppEngPacket>, PacketTypes> REVERSE_LOOKUP
+        = new HashMap<Class<? extends AppEngPacket>, AppEngPacketHandlerBase.PacketTypes>(
+        );
 
+    public enum PacketTypes {
+        PACKET_COMPASS_REQUEST(PacketCompassRequest.class),
 
-	public enum PacketTypes
-	{
-		PACKET_COMPASS_REQUEST( PacketCompassRequest.class ),
+        PACKET_COMPASS_RESPONSE(PacketCompassResponse.class),
 
-		PACKET_COMPASS_RESPONSE( PacketCompassResponse.class ),
+        PACKET_INVENTORY_ACTION(PacketInventoryAction.class),
 
-		PACKET_INVENTORY_ACTION( PacketInventoryAction.class ),
+        PACKET_ME_INVENTORY_UPDATE(PacketMEInventoryUpdate.class),
 
-		PACKET_ME_INVENTORY_UPDATE( PacketMEInventoryUpdate.class ),
+        PACKET_CONFIG_BUTTON(PacketConfigButton.class),
 
-		PACKET_CONFIG_BUTTON( PacketConfigButton.class ),
+        PACKET_MULTIPART(PacketMultiPart.class),
 
-		PACKET_MULTIPART( PacketMultiPart.class ),
+        PACKET_PART_PLACEMENT(PacketPartPlacement.class),
 
-		PACKET_PART_PLACEMENT( PacketPartPlacement.class ),
+        PACKET_LIGHTNING(PacketLightning.class),
 
-		PACKET_LIGHTNING( PacketLightning.class ),
+        PACKET_MATTER_CANNON(PacketMatterCannon.class),
 
-		PACKET_MATTER_CANNON( PacketMatterCannon.class ),
+        PACKET_MOCK_EXPLOSION(PacketMockExplosion.class),
 
-		PACKET_MOCK_EXPLOSION( PacketMockExplosion.class ),
+        PACKET_VALUE_CONFIG(PacketValueConfig.class),
 
-		PACKET_VALUE_CONFIG( PacketValueConfig.class ),
+        PACKET_TRANSITION_EFFECT(PacketTransitionEffect.class),
 
-		PACKET_TRANSITION_EFFECT( PacketTransitionEffect.class ),
+        PACKET_PROGRESS_VALUE(PacketProgressBar.class),
 
-		PACKET_PROGRESS_VALUE( PacketProgressBar.class ),
+        PACKET_CLICK(PacketClick.class),
 
-		PACKET_CLICK( PacketClick.class ),
+        PACKET_NEW_STORAGE_DIMENSION(PacketNewStorageDimension.class),
 
-		PACKET_NEW_STORAGE_DIMENSION( PacketNewStorageDimension.class ),
+        PACKET_SWITCH_GUIS(PacketSwitchGuis.class),
 
-		PACKET_SWITCH_GUIS( PacketSwitchGuis.class ),
+        PACKET_SWAP_SLOTS(PacketSwapSlots.class),
 
-		PACKET_SWAP_SLOTS( PacketSwapSlots.class ),
+        PACKET_PATTERN_SLOT(PacketPatternSlot.class),
 
-		PACKET_PATTERN_SLOT( PacketPatternSlot.class ),
+        PACKET_RECIPE_NEI(PacketNEIRecipe.class),
 
-		PACKET_RECIPE_NEI( PacketNEIRecipe.class ),
+        PACKET_PARTIAL_ITEM(PacketPartialItem.class),
 
-		PACKET_PARTIAL_ITEM( PacketPartialItem.class ),
+        PACKET_CRAFTING_REQUEST(PacketCraftRequest.class),
 
-		PACKET_CRAFTING_REQUEST( PacketCraftRequest.class ),
+        PACKET_ASSEMBLER_ANIMATION(PacketAssemblerAnimation.class),
 
-		PACKET_ASSEMBLER_ANIMATION( PacketAssemblerAnimation.class ),
+        PACKET_COMPRESSED_NBT(PacketCompressedNBT.class),
 
-		PACKET_COMPRESSED_NBT( PacketCompressedNBT.class ),
+        PACKET_PAINTED_ENTITY(PacketPaintedEntity.class);
 
-		PACKET_PAINTED_ENTITY( PacketPaintedEntity.class );
+        private final Class<? extends AppEngPacket> packetClass;
+        private final Constructor<? extends AppEngPacket> packetConstructor;
 
-		private final Class<? extends AppEngPacket> packetClass;
-		private final Constructor<? extends AppEngPacket> packetConstructor;
+        PacketTypes(final Class<? extends AppEngPacket> c) {
+            this.packetClass = c;
 
-		PacketTypes( final Class<? extends AppEngPacket> c )
-		{
-			this.packetClass = c;
+            Constructor<? extends AppEngPacket> x = null;
+            try {
+                x = this.packetClass.getConstructor(ByteBuf.class);
+            } catch (final NoSuchMethodException ignored) {
+            } catch (final SecurityException ignored) {}
 
-			Constructor<? extends AppEngPacket> x = null;
-			try
-			{
-				x = this.packetClass.getConstructor( ByteBuf.class );
-			}
-			catch( final NoSuchMethodException ignored )
-			{
-			}
-			catch( final SecurityException ignored )
-			{
-			}
+            this.packetConstructor = x;
+            REVERSE_LOOKUP.put(this.packetClass, this);
 
-			this.packetConstructor = x;
-			REVERSE_LOOKUP.put( this.packetClass, this );
+            if (this.packetConstructor == null) {
+                throw new IllegalStateException(
+                    "Invalid Packet Class " + c
+                    + ", must be constructable on DataInputStream"
+                );
+            }
+        }
 
-			if( this.packetConstructor == null )
-			{
-				throw new IllegalStateException( "Invalid Packet Class " + c + ", must be constructable on DataInputStream" );
-			}
-		}
+        public static PacketTypes getPacket(final int id) {
+            return (values())[id];
+        }
 
-		public static PacketTypes getPacket( final int id )
-		{
-			return ( values() )[id];
-		}
+        static PacketTypes getID(final Class<? extends AppEngPacket> c) {
+            return REVERSE_LOOKUP.get(c);
+        }
 
-		static PacketTypes getID( final Class<? extends AppEngPacket> c )
-		{
-			return REVERSE_LOOKUP.get( c );
-		}
-
-		public AppEngPacket parsePacket( final ByteBuf in )
-				throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
-		{
-			return this.packetConstructor.newInstance( in );
-		}
-	}
+        public AppEngPacket parsePacket(final ByteBuf in)
+            throws InstantiationException, IllegalAccessException,
+                   IllegalArgumentException, InvocationTargetException {
+            return this.packetConstructor.newInstance(in);
+        }
+    }
 }

@@ -18,13 +18,13 @@
 
 package appeng.tile.powersink;
 
-
 /*
  * import net.minecraftforge.common.util.ForgeDirection;
  * import universalelectricity.core.block.IElectrical;
  * import universalelectricity.core.electricity.ElectricityPack;
  * import appeng.api.config.PowerUnits;
- * public abstract class UniversalElectricity extends ThermalExpansion implements IElectrical
+ * public abstract class UniversalElectricity extends ThermalExpansion implements
+ * IElectrical
  * {
  * @Override
  * public final boolean canConnect(ForgeDirection direction)
@@ -32,13 +32,15 @@ package appeng.tile.powersink;
  * return internalCanAcceptPower && getPowerSides().contains( direction );
  * }
  * @Override
- * public final float receiveElectricity(ForgeDirection from, ElectricityPack receive, boolean doReceive)
+ * public final float receiveElectricity(ForgeDirection from, ElectricityPack receive,
+ * boolean doReceive)
  * {
  * float accepted = 0;
  * double receivedPower = receive.getWatts();
  * if ( doReceive )
  * {
- * accepted = (float) (receivedPower - injectExternalPower( PowerUnits.KJ, receivedPower ));
+ * accepted = (float) (receivedPower - injectExternalPower( PowerUnits.KJ, receivedPower
+ * ));
  * }
  * else
  * {
@@ -61,7 +63,8 @@ package appeng.tile.powersink;
  * return 120;
  * }
  * @Override
- * public final ElectricityPack provideElectricity(ForgeDirection from, ElectricityPack request, boolean doProvide)
+ * public final ElectricityPack provideElectricity(ForgeDirection from, ElectricityPack
+ * request, boolean doProvide)
  * {
  * return null; // cannot be dis-charged
  * }

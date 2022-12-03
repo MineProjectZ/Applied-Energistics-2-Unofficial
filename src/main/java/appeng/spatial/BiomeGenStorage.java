@@ -18,28 +18,23 @@
 
 package appeng.spatial;
 
-
 import net.minecraft.world.biome.BiomeGenBase;
 
+public class BiomeGenStorage extends BiomeGenBase {
+    public BiomeGenStorage(final int id) {
+        super(id);
+        this.setBiomeName("Storage Cell");
 
-public class BiomeGenStorage extends BiomeGenBase
-{
+        this.setDisableRain();
+        this.temperature = -100;
 
-	public BiomeGenStorage( final int id )
-	{
-		super( id );
-		this.setBiomeName( "Storage Cell" );
+        this.theBiomeDecorator.treesPerChunk = 0;
+        this.theBiomeDecorator.flowersPerChunk = 0;
+        this.theBiomeDecorator.grassPerChunk = 0;
 
-		this.setDisableRain();
-		this.temperature = -100;
-
-		this.theBiomeDecorator.treesPerChunk = 0;
-		this.theBiomeDecorator.flowersPerChunk = 0;
-		this.theBiomeDecorator.grassPerChunk = 0;
-
-		this.spawnableMonsterList.clear();
-		this.spawnableCreatureList.clear();
-		this.spawnableWaterCreatureList.clear();
-		this.spawnableCaveCreatureList.clear();
-	}
+        this.spawnableMonsterList.clear();
+        this.spawnableCreatureList.clear();
+        this.spawnableWaterCreatureList.clear();
+        this.spawnableCaveCreatureList.clear();
+    }
 }
