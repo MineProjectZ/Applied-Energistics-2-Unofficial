@@ -31,6 +31,7 @@ import appeng.api.features.IWirelessTermHandler;
 import appeng.api.features.IWorldGen.WorldGenType;
 import appeng.api.movable.IMovableRegistry;
 import appeng.api.networking.IGridCacheRegistry;
+import appeng.api.networking.IWirelessCache;
 import appeng.api.networking.crafting.ICraftingGrid;
 import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.networking.pathing.IPathingGrid;
@@ -528,6 +529,7 @@ public final class Registration {
         gcr.registerGridCache(ISpatialCache.class, SpatialPylonCache.class);
         gcr.registerGridCache(ISecurityGrid.class, SecurityCache.class);
         gcr.registerGridCache(ICraftingGrid.class, CraftingGridCache.class);
+        gcr.registerGridCache(IWirelessCache.class, WirelessGridCache.class);
 
         registries.externalStorage().addExternalStorageInterface(new AEExternalHandler());
 

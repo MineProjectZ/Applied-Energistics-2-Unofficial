@@ -4,8 +4,6 @@ publishing {
         mavenJava(MavenPublication) {
             artifactId = project.archivesBaseName
 
-            from components.java
-
             artifact devJar
             artifact sourceJar
             artifact javadocJar

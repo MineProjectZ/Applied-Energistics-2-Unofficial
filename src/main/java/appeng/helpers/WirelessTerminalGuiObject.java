@@ -18,6 +18,8 @@
 
 package appeng.helpers;
 
+import java.util.Set;
+
 import appeng.api.AEApi;
 import appeng.api.config.AccessRestriction;
 import appeng.api.config.Actionable;
@@ -29,7 +31,7 @@ import appeng.api.implementations.tiles.IWirelessAccessPoint;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
-import appeng.api.networking.IMachineSet;
+import appeng.api.networking.IWirelessCache;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.storage.IStorageGrid;
@@ -43,7 +45,6 @@ import appeng.api.util.AECableType;
 import appeng.api.util.DimensionalCoord;
 import appeng.api.util.IConfigManager;
 import appeng.container.interfaces.IInventorySlotAware;
-import appeng.tile.networking.TileWireless;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
@@ -285,12 +286,13 @@ public class WirelessTerminalGuiObject
                 return false;
             }
 
-            final IMachineSet tw = this.targetGrid.getMachines(TileWireless.class);
+            //final IMachineSet tw = this.targetGrid.getMachines(TileWireless.class);
+            IWirelessCache cache = this.targetGrid.getCache(IWirelessCache.class);
+            final Set<IWirelessAccessPoint> tw = cache.getAccessPoints();
 
             this.myWap = null;
 
-            for (final IGridNode n : tw) {
-                final IWirelessAccessPoint wap = (IWirelessAccessPoint) n.getMachine();
+            for (final IWirelessAccessPoint wap : tw) {
                 if (this.testWap(wap)) {
                     this.myWap = wap;
                 }
