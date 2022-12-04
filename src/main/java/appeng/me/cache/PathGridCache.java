@@ -42,8 +42,6 @@ import net.minecraftforge.common.util.ForgeDirection;
 public class PathGridCache implements IPathingGrid {
     private final LinkedList<PathSegment> active = new LinkedList<PathSegment>();
     private final Set<TileController> controllers = new HashSet<TileController>();
-    private final Set<TileLegacyController> legacyControllers
-        = new HashSet<TileLegacyController>();
     private final Set<IGridNode> requireChannels = new HashSet<IGridNode>();
     private final Set<IGridNode> blockDense = new HashSet<IGridNode>();
     private final IGrid myGrid;
@@ -76,64 +74,18 @@ public class PathGridCache implements IPathingGrid {
             this.booting = true;
             this.updateNetwork = false;
             this.setChannelsInUse(0);
+            IControllerCache ccache = this.myGrid.getCache(IControllerCache.class);
 
-            if (this.controllerState == ControllerState.CONTROLLER_INFINITE) {
-                final int used = this.calculateRequiredChannels();
-
-                final int nodes = this.myGrid.getNodes().size();
-                this.ticksUntilReady = 20 + Math.max(0, nodes / 100 - 20);
-                this.setChannelsByBlocks(nodes * used);
-                this.setChannelPowerUsage(this.getChannelsByBlocks() / 128.0);
-
-                this.myGrid.getPivot().beginVisit(new AdHocChannelUpdater(used));
-            } else if (this.controllerState == ControllerState.NO_CONTROLLER) {
-                if (AEConfig.instance.NeedController) {
-                    this.ticksUntilReady = 20;
-                    this.myGrid.getPivot().beginVisit(new AdHocChannelUpdater(0));
-                } else {
-                    final int requiredChannels = this.calculateRequiredChannels();
-                    int used = requiredChannels;
-                    if (requiredChannels > 8) {
-                        used = 0;
-                    }
-
-                    final int nodes = this.myGrid.getNodes().size();
-                    this.setChannelsInUse(used);
-
-                    this.ticksUntilReady = 20 + Math.max(0, nodes / 100 - 20);
-                    this.setChannelsByBlocks(nodes * used);
-                    this.setChannelPowerUsage(this.getChannelsByBlocks() / 128.0);
-
-                    this.myGrid.getPivot().beginVisit(new AdHocChannelUpdater(used));
-                }
+            if (!ccache.canRun()) {
+                this.updateOffline();
             } else if (this.controllerState == ControllerState.CONTROLLER_CONFLICT) {
-                this.ticksUntilReady = 20;
-                this.myGrid.getPivot().beginVisit(new AdHocChannelUpdater(0));
-            } else {
-                final int nodes = this.myGrid.getNodes().size();
-                this.ticksUntilReady = 20 + Math.max(0, nodes / 100 - 20);
-                final HashSet<IPathItem> closedList = new HashSet<IPathItem>();
-                this.semiOpen = new HashSet<IPathItem>();
-
-                // myGrid.getPivot().beginVisit( new AdHocChannelUpdater( 0 )
-                // );
-                for (final IGridNode node :
-                     this.myGrid.getMachines(TileController.class)) {
-                    closedList.add((IPathItem) node);
-                    for (final IGridConnection gcc : node.getConnections()) {
-                        final GridConnection gc = (GridConnection) gcc;
-                        if (!(gc.getOtherSide(node).getMachine() instanceof TileController
-                            )) {
-                            final List<IPathItem> open = new LinkedList<IPathItem>();
-                            closedList.add(gc);
-                            open.add(gc);
-                            gc.setControllerRoute((GridNode) node, true);
-                            this.active.add(
-                                new PathSegment(this, open, this.semiOpen, closedList)
-                            );
-                        }
-                    }
-                }
+                this.updateOffline();
+            } else if (!ccache.requiresChannels()) {
+                this.updateInfinite();
+            } else if (this.controllerState == ControllerState.NO_CONTROLLER) {
+                this.updateNoController();
+            } else if (this.controllerState == ControllerState.CONTROLLER_ONLINE) {
+                this.updateController();
             }
         }
 
@@ -150,8 +102,7 @@ public class PathGridCache implements IPathingGrid {
             this.ticksUntilReady--;
 
             if (this.active.isEmpty() && this.ticksUntilReady <= 0) {
-                if (this.controllerState == ControllerState.CONTROLLER_ONLINE
-                    || this.controllerState == ControllerState.CONTROLLER_INFINITE) {
+                if (this.controllerState == ControllerState.CONTROLLER_ONLINE) {
                     final Iterator<TileController> controllerIterator
                         = this.controllers.iterator();
                     if (controllerIterator.hasNext()) {
@@ -177,7 +128,6 @@ public class PathGridCache implements IPathingGrid {
             this.controllers.remove(machine);
             this.recalculateControllerNextTick = true;
         } else if (machine instanceof TileLegacyController) {
-            this.legacyControllers.remove(machine);
             this.recalculateControllerNextTick = true;
         }
 
@@ -200,7 +150,6 @@ public class PathGridCache implements IPathingGrid {
             this.controllers.add((TileController) machine);
             this.recalculateControllerNextTick = true;
         } else if (machine instanceof TileLegacyController) {
-            this.legacyControllers.add((TileLegacyController) machine);
             this.recalculateControllerNextTick = true;
         }
 
@@ -230,10 +179,10 @@ public class PathGridCache implements IPathingGrid {
         this.recalculateControllerNextTick = false;
         final ControllerState old = this.controllerState;
 
-        if (this.legacyControllers.size() > 1) {
+        IControllerCache ccache = this.myGrid.getCache(IControllerCache.class);
+
+        if (ccache.hasConflict()) {
             this.controllerState = ControllerState.CONTROLLER_CONFLICT;
-        } else if (this.legacyControllers.size() == 1 && !AEConfig.instance.HardLegacyController) {
-            this.controllerState = ControllerState.CONTROLLER_INFINITE;
         } else if (this.controllers.isEmpty()) {
             this.controllerState = ControllerState.NO_CONTROLLER;
         } else {
@@ -250,13 +199,7 @@ public class PathGridCache implements IPathingGrid {
             startingNode.beginVisit(cv);
 
             if (cv.isValid() && cv.getFound() == this.controllers.size()) {
-                if (this.legacyControllers.size() == 1 && this.controllers.size() >= 68) {
-                    this.controllerState = ControllerState.CONTROLLER_INFINITE;
-                } else if (AEConfig.instance.isFeatureEnabled(AEFeature.Channels)) {
-                    this.controllerState = ControllerState.CONTROLLER_ONLINE;
-                } else {
-                    this.controllerState = ControllerState.CONTROLLER_INFINITE;
-                }
+                this.controllerState = ControllerState.CONTROLLER_ONLINE;
             } else {
                 this.controllerState = ControllerState.CONTROLLER_CONFLICT;
             }
@@ -387,5 +330,65 @@ public class PathGridCache implements IPathingGrid {
 
     public void setChannelsInUse(final int channelsInUse) {
         this.channelsInUse = channelsInUse;
+    }
+
+    public void updateInfinite() {
+        final int used = this.calculateRequiredChannels();
+
+        final int nodes = this.myGrid.getNodes().size();
+        this.ticksUntilReady = 20 + Math.max(0, nodes / 100 - 20);
+        this.setChannelsByBlocks(nodes * used);
+        this.setChannelPowerUsage(this.getChannelsByBlocks() / 128.0);
+
+        this.myGrid.getPivot().beginVisit(new AdHocChannelUpdater(used));
+    }
+
+    public void updateNoController() {
+        final int requiredChannels = this.calculateRequiredChannels();
+        int used = requiredChannels;
+        if (requiredChannels > 8) {
+            used = 0;
+        }
+
+        final int nodes = this.myGrid.getNodes().size();
+        this.setChannelsInUse(used);
+
+        this.ticksUntilReady = 20 + Math.max(0, nodes / 100 - 20);
+        this.setChannelsByBlocks(nodes * used);
+        this.setChannelPowerUsage(this.getChannelsByBlocks() / 128.0);
+
+        this.myGrid.getPivot().beginVisit(new AdHocChannelUpdater(used));
+    }
+
+    public void updateController() {
+        final int nodes = this.myGrid.getNodes().size();
+                this.ticksUntilReady = 20 + Math.max(0, nodes / 100 - 20);
+                final HashSet<IPathItem> closedList = new HashSet<IPathItem>();
+                this.semiOpen = new HashSet<IPathItem>();
+
+                // myGrid.getPivot().beginVisit( new AdHocChannelUpdater( 0 )
+                // );
+                for (final IGridNode node :
+                     this.myGrid.getMachines(TileController.class)) {
+                    closedList.add((IPathItem) node);
+                    for (final IGridConnection gcc : node.getConnections()) {
+                        final GridConnection gc = (GridConnection) gcc;
+                        if (!(gc.getOtherSide(node).getMachine() instanceof TileController
+                            )) {
+                            final List<IPathItem> open = new LinkedList<IPathItem>();
+                            closedList.add(gc);
+                            open.add(gc);
+                            gc.setControllerRoute((GridNode) node, true);
+                            this.active.add(
+                                new PathSegment(this, open, this.semiOpen, closedList)
+                            );
+                        }
+                    }
+                }
+    }
+
+    public void updateOffline() {
+        this.ticksUntilReady = 20;
+        this.myGrid.getPivot().beginVisit(new AdHocChannelUpdater(0));
     }
 }
