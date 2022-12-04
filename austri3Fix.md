@@ -1,2 +1,4 @@
 - we demultiblocked the transition plane
 - transition plane doesn't collect items
+- legacy controller doesn't correctly render energy bar
+- legacy blocks aren't colorable

@@ -2,19 +2,17 @@ package appeng.block.legacy;
 
 import java.util.EnumSet;
 
-import appeng.block.AEBaseTileBlock;
 import appeng.core.features.AEFeature;
 import appeng.core.sync.GuiBridge;
 import appeng.tile.legacy.TileCraftTerminal;
 import appeng.util.Platform;
-import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public class BlockCraftTerminal extends AEBaseTileBlock {
+public class BlockCraftTerminal extends BlockTerminal {
     public BlockCraftTerminal() {
-        super(Material.iron);
+        super();
         this.setTileEntity(TileCraftTerminal.class);
         this.setFeature(EnumSet.of(AEFeature.Legacy));
     }

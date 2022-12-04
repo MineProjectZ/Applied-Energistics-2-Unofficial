@@ -7,18 +7,18 @@ import appeng.api.config.SortDir;
 import appeng.api.config.SortOrder;
 import appeng.api.config.ViewItems;
 import appeng.api.networking.GridFlags;
-import appeng.api.storage.*;
+import appeng.api.storage.IMEMonitor;
+import appeng.api.storage.ITerminalHost;
 import appeng.api.storage.data.IAEFluidStack;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.util.IConfigManager;
 import appeng.me.GridAccessException;
-import appeng.tile.grid.AENetworkTile;
 import appeng.util.ConfigManager;
 import appeng.util.IConfigManagerHost;
 import net.minecraftforge.common.util.ForgeDirection;
 
 public class TileTerminal
-    extends AENetworkTile implements ITerminalHost, IConfigManagerHost {
+    extends TileLegacyDisplay implements ITerminalHost, IConfigManagerHost {
     private final IConfigManager cm = new ConfigManager(this);
 
     public TileTerminal() {

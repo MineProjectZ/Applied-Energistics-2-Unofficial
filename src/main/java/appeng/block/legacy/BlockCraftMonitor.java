@@ -2,7 +2,6 @@ package appeng.block.legacy;
 
 import java.util.EnumSet;
 
-import appeng.block.AEBaseTileBlock;
 import appeng.core.features.AEFeature;
 import appeng.core.sync.GuiBridge;
 import appeng.tile.legacy.TileCraftingMonitor;
@@ -12,7 +11,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public class BlockCraftMonitor extends AEBaseTileBlock {
+public class BlockCraftMonitor extends BlockLegacyDisplay {
     public BlockCraftMonitor() {
         super(Material.iron);
         this.setTileEntity(TileCraftingMonitor.class);
