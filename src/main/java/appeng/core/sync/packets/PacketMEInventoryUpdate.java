@@ -29,6 +29,7 @@ import java.util.zip.GZIPOutputStream;
 import javax.annotation.Nullable;
 
 import appeng.api.storage.data.IAEItemStack;
+import appeng.client.gui.implementations.GuiController;
 import appeng.client.gui.implementations.GuiCraftConfirm;
 import appeng.client.gui.implementations.GuiCraftingCPU;
 import appeng.client.gui.implementations.GuiMEMonitorable;
@@ -149,6 +150,10 @@ public class PacketMEInventoryUpdate extends AppEngPacket {
 
         if (gs instanceof GuiNetworkStatus) {
             ((GuiNetworkStatus) gs).postUpdate(this.list);
+        }
+
+        if (gs instanceof GuiController) {
+            ((GuiController) gs).postUpdate(this.list);
         }
     }
 

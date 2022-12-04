@@ -126,7 +126,7 @@ public enum GuiBridge implements IGuiHandler {
     ),
 
     GUI_NETWORK_STATUS_BLOCK(
-        ContainerNetworkStatus.class, TileLegacyController.class, GuiHostType.WORLD, null
+        ContainerController.class, TileLegacyController.class, GuiHostType.WORLD, null
     ),
 
     GUI_CRAFTING_CPU(
