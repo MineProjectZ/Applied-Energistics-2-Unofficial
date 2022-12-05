@@ -15,18 +15,19 @@ public class TileLegacyDisplay extends AENetworkTile {
     }
 
     @TileEvent(TileEventType.NETWORK_WRITE)
-    public void writeToStreamTileLegacyTerminal(ByteBuf data) {
+    public void writeToStreamTileLegacyDisplay(ByteBuf data) {
         data.writeBoolean(this.displayPowered);
     }
 
     @TileEvent(TileEventType.NETWORK_READ)
-    public void readFromStreamTileLegacyTerminal(ByteBuf data) {
+    public void readFromStreamTileLegacyDisplay(ByteBuf data) {
         this.displayPowered = data.readBoolean();
         this.worldObj.func_147451_t(this.xCoord, this.yCoord, this.zCoord);
     }
 
     @MENetworkEventSubscribe
     public void powerUpdate(final MENetworkPowerStatusChange changed) {
+        System.out.println("ALEC");
         this.displayPowered = this.getProxy().isPowered();
         this.worldObj.func_147451_t(this.xCoord, this.yCoord, this.zCoord);
         this.markForUpdate();

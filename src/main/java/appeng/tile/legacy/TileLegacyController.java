@@ -152,5 +152,4 @@ public class TileLegacyController extends AENetworkPowerTile implements ILocatab
             new LocatableEventAnnounce(this, LocatableEvent.Unregister)
         );
     }
-
 }

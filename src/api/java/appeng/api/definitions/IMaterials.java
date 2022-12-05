@@ -134,4 +134,6 @@ public interface IMaterials {
     IItemDefinition qESingularity();
 
     IItemDefinition blankPattern();
+
+    IItemDefinition conversionMatrix();
 }

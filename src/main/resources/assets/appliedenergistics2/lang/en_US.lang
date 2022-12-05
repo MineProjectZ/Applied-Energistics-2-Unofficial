@@ -57,6 +57,7 @@ tile.appliedenergistics2.BlockCraftTerminal.name=ME Crafting Terminal
 tile.appliedenergistics2.BlockCraftMonitor.name=ME Crafting Monitor
 tile.appliedenergistics2.BlockLegacyController.name=ME Controller (W.I.P)
 tile.appliedenergistics2.BlockWirelessAccessPoint.name=Wireless Access Point
+tile.appliedenergistics2.BlockStorageMonitor.name=Storage Monitor
 
 item.appliedenergistics2.ItemMaterial.ConversionMatrix.name=Conversion Matrix
 

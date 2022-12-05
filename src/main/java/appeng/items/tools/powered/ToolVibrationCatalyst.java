@@ -3,8 +3,6 @@ package appeng.items.tools.powered;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.common.base.Optional;
-
 import appeng.block.misc.BlockTinyTNT;
 import appeng.util.InWorldToolOperationResult;
 import appeng.util.Platform;

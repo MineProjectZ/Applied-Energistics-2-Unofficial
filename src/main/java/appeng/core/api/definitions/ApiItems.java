@@ -61,16 +61,16 @@ public final class ApiItems implements IItems {
     private final IItemDefinition netherQuartzWrench;
     private final IItemDefinition netherQuartzKnife;
 
-	private final IItemDefinition entropyManipulator;
-	private final IItemDefinition vibrationCatalyst;
-	private final IItemDefinition entropyAccelerator;
-	private final IItemDefinition wirelessTerminal;
-	private final IItemDefinition biometricCard;
-	private final IItemDefinition chargedStaff;
-	private final IItemDefinition massCannon;
-	private final IItemDefinition memoryCard;
-	private final IItemDefinition networkTool;
-	private final IItemDefinition portableCell;
+    private final IItemDefinition entropyManipulator;
+    private final IItemDefinition vibrationCatalyst;
+    private final IItemDefinition entropyAccelerator;
+    private final IItemDefinition wirelessTerminal;
+    private final IItemDefinition biometricCard;
+    private final IItemDefinition chargedStaff;
+    private final IItemDefinition massCannon;
+    private final IItemDefinition memoryCard;
+    private final IItemDefinition networkTool;
+    private final IItemDefinition portableCell;
 
     private final IItemDefinition cellCreative;
     private final IItemDefinition viewCell;
@@ -146,17 +146,21 @@ public final class ApiItems implements IItems {
             new ToolQuartzCuttingKnife(AEFeature.NetherQuartzTools)
         );
 
-		this.entropyManipulator = constructor.registerItemDefinition( new ToolEntropyManipulator() );
-		this.vibrationCatalyst = constructor.registerItemDefinition( new ToolVibrationCatalyst() );
-		this.entropyAccelerator = constructor.registerItemDefinition( new ToolEntropyAccelerator() );
+        this.entropyManipulator
+            = constructor.registerItemDefinition(new ToolEntropyManipulator());
+        this.vibrationCatalyst
+            = constructor.registerItemDefinition(new ToolVibrationCatalyst());
+        this.entropyAccelerator
+            = constructor.registerItemDefinition(new ToolEntropyAccelerator());
 
-		this.wirelessTerminal = constructor.registerItemDefinition( new ToolWirelessTerminal() );
-		this.biometricCard = constructor.registerItemDefinition( new ToolBiometricCard() );
-		this.chargedStaff = constructor.registerItemDefinition( new ToolChargedStaff() );
-		this.massCannon = constructor.registerItemDefinition( new ToolMassCannon() );
-		this.memoryCard = constructor.registerItemDefinition( new ToolMemoryCard() );
-		this.networkTool = constructor.registerItemDefinition( new ToolNetworkTool() );
-		this.portableCell = constructor.registerItemDefinition( new ToolPortableCell() );
+        this.wirelessTerminal
+            = constructor.registerItemDefinition(new ToolWirelessTerminal());
+        this.biometricCard = constructor.registerItemDefinition(new ToolBiometricCard());
+        this.chargedStaff = constructor.registerItemDefinition(new ToolChargedStaff());
+        this.massCannon = constructor.registerItemDefinition(new ToolMassCannon());
+        this.memoryCard = constructor.registerItemDefinition(new ToolMemoryCard());
+        this.networkTool = constructor.registerItemDefinition(new ToolNetworkTool());
+        this.portableCell = constructor.registerItemDefinition(new ToolPortableCell());
 
         this.cellCreative
             = constructor.registerItemDefinition(new ItemCreativeStorageCell());

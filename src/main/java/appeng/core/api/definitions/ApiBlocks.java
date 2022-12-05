@@ -32,6 +32,7 @@ import appeng.block.grindstone.BlockGrinder;
 import appeng.block.legacy.BlockCraftMonitor;
 import appeng.block.legacy.BlockCraftTerminal;
 import appeng.block.legacy.BlockLegacyController;
+import appeng.block.legacy.BlockStorageMonitor;
 import appeng.block.legacy.BlockTerminal;
 import appeng.block.legacy.BlockTransitionPlane;
 import appeng.block.legacy.BlockWirelessAccessPoint;
@@ -139,6 +140,7 @@ public final class ApiBlocks implements IBlocks {
     private final ITileDefinition legacyController;
     private final ITileDefinition legacyWirelessAccessPoint;
     private final ITileDefinition transitionPlane;
+    private final ITileDefinition storageMonitor;
 
     public ApiBlocks(final DefinitionConstructor constructor) {
         final BlockLightDetector lightDetector = new BlockLightDetector();
@@ -316,6 +318,8 @@ public final class ApiBlocks implements IBlocks {
             = constructor.registerTileDefinition(new BlockWirelessAccessPoint());
         this.transitionPlane
             = constructor.registerTileDefinition(new BlockTransitionPlane());
+        this.storageMonitor
+            = constructor.registerTileDefinition(new BlockStorageMonitor());
     }
 
     @Override

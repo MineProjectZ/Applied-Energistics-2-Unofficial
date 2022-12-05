@@ -562,4 +562,9 @@ public final class ApiMaterials implements IMaterials {
     public IItemDefinition blankPattern() {
         return this.blankPattern;
     }
+
+    @Override
+    public IItemDefinition conversionMatrix() {
+        return this.conversionMatrix;
+    }
 }
