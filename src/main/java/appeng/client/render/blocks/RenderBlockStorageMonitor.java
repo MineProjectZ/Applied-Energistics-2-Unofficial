@@ -76,12 +76,12 @@ public class RenderBlockStorageMonitor extends RenderBlockLegacyDisplay {
             case UP:
                 GL11.glScalef(1.0f, -1.0f, 1.0f);
                 GL11.glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-                GL11.glRotatef(tile.getUp().ordinal() * 90.0F, 0, 0, 1);
+                GL11.glRotatef((tile.getUp().ordinal() - 2) * 90.0F, 0, 0, 1);
                 break;
             case DOWN:
                 GL11.glScalef(1.0f, -1.0f, 1.0f);
                 GL11.glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-                GL11.glRotatef(tile.getUp().ordinal() * -90.0F, 0, 0, 1);
+                GL11.glRotatef((tile.getUp().ordinal() - 2) * -90.0F, 0, 0, 1);
                 break;
             case EAST:
                 GL11.glScalef(-1.0f, -1.0f, -1.0f);

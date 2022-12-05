@@ -4,7 +4,14 @@ import java.io.IOException;
 import java.util.EnumSet;
 
 import appeng.api.networking.GridFlags;
+import appeng.api.networking.security.BaseActionSource;
+import appeng.api.networking.storage.IStackWatcher;
+import appeng.api.networking.storage.IStackWatcherHost;
+import appeng.api.storage.StorageChannel;
 import appeng.api.storage.data.IAEItemStack;
+import appeng.api.storage.data.IAEStack;
+import appeng.api.storage.data.IItemList;
+import appeng.me.GridAccessException;
 import appeng.tile.TileEvent;
 import appeng.tile.events.TileEventType;
 import appeng.util.item.AEItemStack;
@@ -12,11 +19,13 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileStorageMonitor extends TileLegacyDisplay {
+public class TileStorageMonitor extends TileLegacyDisplay implements IStackWatcherHost {
     public boolean isLocked;
     public boolean upgraded;
     public IAEItemStack myItem;
     public boolean updateDisplayList;
+
+    private IStackWatcher watcher;
 
     public TileStorageMonitor() {
         this.getProxy().setFlags(GridFlags.REQUIRE_CHANNEL);
@@ -86,5 +95,55 @@ public class TileStorageMonitor extends TileLegacyDisplay {
         } else {
             this.myItem = null;
         }
+    }
+
+    public void configureWatchers() {
+        if (this.watcher == null)
+            return;
+
+        this.watcher.clear();
+
+        if (this.myItem != null) {
+            this.watcher.add(this.myItem);
+
+            try {
+                IAEItemStack meitem = this.getProxy()
+                                          .getStorage()
+                                          .getItemInventory()
+                                          .getStorageList()
+                                          .findPrecise(this.myItem);
+
+                this.myItem.setStackSize(meitem == null ? 0 : meitem.getStackSize());
+            } catch (GridAccessException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void updateWatcher(IStackWatcher newWatcher) {
+        this.watcher = newWatcher;
+        this.configureWatchers();
+    }
+
+    @Override
+    public void onStackChange(
+        IItemList o,
+        IAEStack fullStack,
+        IAEStack diffStack,
+        BaseActionSource src,
+        StorageChannel chan
+    ) {
+        if (this.myItem == null)
+            return;
+
+        if (fullStack == null) {
+            this.myItem.setStackSize(0);
+        } else {
+            this.myItem.setStackSize(fullStack.getStackSize());
+        }
+
+        this.markForUpdate();
     }
 }

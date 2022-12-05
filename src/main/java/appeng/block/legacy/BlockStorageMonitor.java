@@ -9,6 +9,7 @@ import appeng.core.Api;
 import appeng.core.features.AEFeature;
 import appeng.tile.AEBaseTile;
 import appeng.tile.legacy.TileStorageMonitor;
+import appeng.util.Platform;
 import appeng.util.item.AEItemStack;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
@@ -42,13 +43,19 @@ public class BlockStorageMonitor extends BlockLegacyDisplay {
         TileStorageMonitor tile = (TileStorageMonitor) w.getTileEntity(x, y, z);
 
         if (player.getHeldItem() != null) {
+            if (Platform.isWrench(player, player.getHeldItem(), x, y, z)
+                && player.isSneaking()) {
+                tile.isLocked = !tile.isLocked;
+                tile.markForUpdate();
+                return true;
+            }
             if (player.getHeldItem().getItem()
                     == Api.INSTANCE.definitions()
                            .materials()
                            .conversionMatrix()
                            .maybeItem()
                            .get()
-                && player.isSneaking() && !tile.upgraded) {
+                && !tile.upgraded && player.isSneaking()) {
                 if (!w.isRemote) {
                     player.inventory.decrStackSize(player.inventory.currentItem, 1);
                     tile.upgraded = true;
@@ -59,15 +66,16 @@ public class BlockStorageMonitor extends BlockLegacyDisplay {
                 if (!w.isRemote) {
                     tile.myItem = AEItemStack.create(new ItemStack(
                         player.getHeldItem().getItem(),
-                        1,
+                        0,
                         player.getHeldItem().getItemDamage()
                     ));
+                    tile.configureWatchers();
                     tile.markForUpdate();
                 }
                 return true;
             }
         }
 
-        return false;
+        return super.onBlockActivated(w, x, y, z, player, side, hitX, hitY, hitZ);
     }
 }
