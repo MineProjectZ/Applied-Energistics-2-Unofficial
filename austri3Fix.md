@@ -1,6 +1,6 @@
 - we demultiblocked the transition plane
 - transition plane doesn't collect items
-- legacy controller doesn't correctly render energy bar
 - legacy blocks aren't colorable
-- storage monitor doesn't update when rotated
 - storage monitor doesn't display if it's upgraded
+- BlockLegacyDisplays don't rotate their faces correctly on the top and bottom
+- storage monitors all show the same item

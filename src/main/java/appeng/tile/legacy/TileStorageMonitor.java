@@ -48,8 +48,7 @@ public class TileStorageMonitor extends TileLegacyDisplay implements IStackWatch
 
             data.writeByte(flags);
             if (this.myItem != null)
-                ;
-            this.myItem.writeToPacket(data);
+                this.myItem.writeToPacket(data);
         } catch (IOException kek) {
             throw new RuntimeException(kek);
         }

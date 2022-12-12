@@ -125,7 +125,9 @@ public enum ExtraBlockTextures {
     Controller3("Controller3"),
     Controller4("Controller4"),
     Controller5("BlockLegacyControllerFront"),
-    ControllerLinked("ControllerLinked");
+    ControllerLinked("ControllerLinked"),
+
+    BlockStorageMonitorFrontMatrix("BlockStorageMonitorFront_Matrix");
 
     private final String name;
     private IIcon IIcon;
