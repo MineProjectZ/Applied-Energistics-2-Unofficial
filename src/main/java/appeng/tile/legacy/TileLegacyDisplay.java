@@ -23,6 +23,9 @@ public class TileLegacyDisplay extends AENetworkTile {
     public void readFromStreamTileLegacyDisplay(ByteBuf data) {
         this.displayPowered = data.readBoolean();
         this.worldObj.func_147451_t(this.xCoord, this.yCoord, this.zCoord);
+        this.worldObj.markBlockRangeForRenderUpdate(
+            this.xCoord, this.yCoord, this.zCoord, this.xCoord, this.yCoord, this.zCoord
+        );
     }
 
     @MENetworkEventSubscribe
