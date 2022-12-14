@@ -9,7 +9,6 @@ import appeng.tile.legacy.TileStorageMonitor;
 import appeng.util.ReadableNumberConverter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.GLAllocation;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.Tessellator;
@@ -19,19 +18,6 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
 public class RenderBlockStorageMonitor extends RenderBlockLegacyDisplay {
-    private int dspList;
-
-    public RenderBlockStorageMonitor() {
-        this.dspList = GLAllocation.generateDisplayLists(1);
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-
-        GLAllocation.deleteDisplayLists(this.dspList);
-    }
-
     @Override
     public boolean hasTESR() {
         return true;
@@ -54,11 +40,11 @@ public class RenderBlockStorageMonitor extends RenderBlockLegacyDisplay {
             GL11.glTranslated(x + 0.5, y + 0.5, z + 0.5);
             if (tile.updateDisplayList) {
                 tile.updateDisplayList = false;
-                GL11.glNewList(this.dspList, GL11.GL_COMPILE_AND_EXECUTE);
+                GL11.glNewList(tile.dspList, GL11.GL_COMPILE_AND_EXECUTE);
                 this.tesrRenderScreen(tile, tess, tile.myItem);
                 GL11.glEndList();
             } else {
-                GL11.glCallList(this.dspList);
+                GL11.glCallList(tile.dspList);
             }
             GL11.glPopMatrix();
         }

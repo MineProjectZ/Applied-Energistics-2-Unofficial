@@ -14,8 +14,10 @@ import appeng.api.storage.data.IItemList;
 import appeng.me.GridAccessException;
 import appeng.tile.TileEvent;
 import appeng.tile.events.TileEventType;
+import appeng.util.Platform;
 import appeng.util.item.AEItemStack;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.client.renderer.GLAllocation;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.util.ForgeDirection;
 
@@ -25,12 +27,27 @@ public class TileStorageMonitor extends TileLegacyDisplay implements IStackWatch
     public IAEItemStack myItem;
     public boolean updateDisplayList;
 
+    public int dspList;
+
     private IStackWatcher watcher;
 
     public TileStorageMonitor() {
         this.getProxy().setFlags(GridFlags.REQUIRE_CHANNEL);
         this.getProxy().setIdlePowerUsage(0.5);
         this.getProxy().setValidSides(EnumSet.allOf(ForgeDirection.class));
+
+        if (Platform.isClient()) {
+            this.dspList = GLAllocation.generateDisplayLists(1);
+        }
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+
+        if (Platform.isClient()) {
+            GLAllocation.deleteDisplayLists(this.dspList);
+        }
     }
 
     @Override

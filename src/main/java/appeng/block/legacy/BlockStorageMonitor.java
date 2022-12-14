@@ -67,7 +67,7 @@ public class BlockStorageMonitor extends BlockLegacyDisplay {
                            .conversionMatrix()
                            .maybeItem()
                            .get()
-                && !tile.upgraded && player.isSneaking()) {
+                && !tile.upgraded) {
                 if (!w.isRemote) {
                     player.inventory.decrStackSize(player.inventory.currentItem, 1);
                     tile.upgraded = true;
@@ -184,6 +184,10 @@ public class BlockStorageMonitor extends BlockLegacyDisplay {
     @Override
     public IIcon getIcon(IBlockAccess w, int x, int y, int z, int s) {
         TileStorageMonitor te = (TileStorageMonitor) w.getTileEntity(x, y, z);
+
+        System.out.println(
+            "AAALEC: " + te.upgraded + " " + s + " " + te.getForward().ordinal()
+        );
 
         if (te != null && te.upgraded && s == te.getForward().ordinal()) {
             return ExtraBlockTextures.BlockStorageMonitorFrontMatrix.getIcon();
