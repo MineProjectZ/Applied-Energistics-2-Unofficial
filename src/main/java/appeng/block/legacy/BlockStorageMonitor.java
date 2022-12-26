@@ -185,10 +185,6 @@ public class BlockStorageMonitor extends BlockLegacyDisplay {
     public IIcon getIcon(IBlockAccess w, int x, int y, int z, int s) {
         TileStorageMonitor te = (TileStorageMonitor) w.getTileEntity(x, y, z);
 
-        System.out.println(
-            "AAALEC: " + te.upgraded + " " + s + " " + te.getForward().ordinal()
-        );
-
         if (te != null && te.upgraded && s == te.getForward().ordinal()) {
             return ExtraBlockTextures.BlockStorageMonitorFrontMatrix.getIcon();
         }

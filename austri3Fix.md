@@ -2,3 +2,4 @@
 - transition plane doesn't collect items
 - legacy blocks aren't colorable
 - BlockLegacyDisplays don't rotate their faces correctly on the top and bottom
+- pattern encoder can create pattern with no inputs

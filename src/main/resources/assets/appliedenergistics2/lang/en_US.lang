@@ -4,7 +4,7 @@ tile.appliedenergistics2.BlockCellWorkbench.name=Cell Workbench
 tile.appliedenergistics2.BlockCharger.name=Charger
 tile.appliedenergistics2.BlockChest.name=ME Chest
 tile.appliedenergistics2.BlockCondenser.name=Matter Condenser
-tile.appliedenergistics2.BlockController.name=ME Controller
+tile.appliedenergistics2.BlockController.name=ME Core
 tile.appliedenergistics2.BlockCrank.name=Wooden Crank
 tile.appliedenergistics2.BlockCreativeEnergyCell.name=Creative Energy Cell
 tile.appliedenergistics2.BlockDenseEnergyCell.name=Dense Energy Cell
@@ -52,14 +52,20 @@ tile.appliedenergistics2.BlockCraftingUnit.name=Crafting Unit
 tile.appliedenergistics2.BlockMolecularAssembler.name=Molecular Assembler
 
 # Legacy
-tile.appliedenergistics2.BlockTerminal.name=ME Access Terminal
-tile.appliedenergistics2.BlockCraftTerminal.name=ME Crafting Terminal
 tile.appliedenergistics2.BlockCraftMonitor.name=ME Crafting Monitor
-tile.appliedenergistics2.BlockLegacyController.name=ME Controller (W.I.P)
-tile.appliedenergistics2.BlockWirelessAccessPoint.name=Wireless Access Point
+tile.appliedenergistics2.BlockCraftTerminal.name=ME Crafting Terminal
+tile.appliedenergistics2.BlockLegacyController.name=ME Controller
+tile.appliedenergistics2.BlockPatternEncoder.name=Pattern Encoder
 tile.appliedenergistics2.BlockStorageMonitor.name=Storage Monitor
+tile.appliedenergistics2.BlockTerminal.name=ME Access Terminal
+tile.appliedenergistics2.BlockWirelessAccessPoint.name=Wireless Access Point
 
 item.appliedenergistics2.ItemMaterial.ConversionMatrix.name=Conversion Matrix
+
+# Legacy GUI
+gui.appliedenergistics2.PatternEncoder.clear=Clear
+gui.appliedenergistics2.PatternEncoder.encode=Encode
+gui.appliedenergistics2.PatternEncoder=Pattern Encoder
 
 # Stairs
 tile.appliedenergistics2.ChiseledQuartzStairBlock.name=Chiseled Certus Quartz Stairs

@@ -56,25 +56,24 @@ public class TileStorageMonitor extends TileLegacyDisplay implements IStackWatch
     }
 
     @TileEvent(TileEventType.NETWORK_WRITE)
-    public void writeToStreamTileStorageMonitor(ByteBuf data) {
+    public boolean writeToStreamTileStorageMonitor(ByteBuf data) {
         try {
-            // TODO: this is a hack because the stupid AE2 reflection BS doesn't work
-            super.writeToStreamTileLegacyDisplay(data);
             int flags = (this.isLocked ? 1 : 0) | (this.upgraded ? 0b10 : 0)
                 | (this.myItem != null ? 0b100 : 0);
 
             data.writeByte(flags);
             if (this.myItem != null)
                 this.myItem.writeToPacket(data);
+
+            return true;
         } catch (IOException kek) {
             throw new RuntimeException(kek);
         }
     }
 
     @TileEvent(TileEventType.NETWORK_READ)
-    public void readFromStreamTileStorageMonitor(ByteBuf data) {
+    public boolean readFromStreamTileStorageMonitor(ByteBuf data) {
         try {
-            // TODO: this is a hack because the stupid AE2 reflection BS doesn't work
             super.readFromStreamTileLegacyDisplay(data);
             byte flags = data.readByte();
             this.isLocked = (flags & 0b1) > 0;
@@ -84,11 +83,13 @@ public class TileStorageMonitor extends TileLegacyDisplay implements IStackWatch
             if ((flags & 0b100) > 0) {
                 this.myItem = AEItemStack.loadItemStackFromPacket(data);
             }
+
+            this.updateDisplayList = true;
+
+            return true;
         } catch (IOException kek) {
             throw new RuntimeException(kek);
         }
-
-        this.updateDisplayList = true;
     }
 
     @TileEvent(TileEventType.WORLD_NBT_WRITE)
@@ -131,7 +132,6 @@ public class TileStorageMonitor extends TileLegacyDisplay implements IStackWatch
 
                 this.myItem.setStackSize(meitem == null ? 0 : meitem.getStackSize());
             } catch (GridAccessException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }

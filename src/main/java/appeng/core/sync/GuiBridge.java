@@ -60,6 +60,7 @@ import appeng.tile.crafting.TileCraftingTile;
 import appeng.tile.crafting.TileMolecularAssembler;
 import appeng.tile.grindstone.TileGrinder;
 import appeng.tile.legacy.TileLegacyController;
+import appeng.tile.legacy.TilePatternEncoder;
 import appeng.tile.misc.*;
 import appeng.tile.networking.TileWireless;
 import appeng.tile.qnb.TileQuantumBridge;
@@ -271,6 +272,13 @@ public enum GuiBridge implements IGuiHandler {
         ContainerCraftingStatus.class,
         ITerminalHost.class,
         GuiHostType.ITEM_OR_WORLD,
+        SecurityPermissions.CRAFT
+    ),
+
+    GUI_PATTERN_ENCODER(
+        ContainerPatternEncoder.class,
+        TilePatternEncoder.class,
+        GuiHostType.WORLD,
         SecurityPermissions.CRAFT
     );
 
