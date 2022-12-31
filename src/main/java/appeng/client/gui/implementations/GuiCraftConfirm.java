@@ -42,6 +42,8 @@ import appeng.helpers.WirelessTerminalGuiObject;
 import appeng.parts.reporting.PartCraftingTerminal;
 import appeng.parts.reporting.PartPatternTerminal;
 import appeng.parts.reporting.PartTerminal;
+import appeng.tile.legacy.TileCraftTerminal;
+import appeng.tile.legacy.TileTerminal;
 import appeng.util.Platform;
 import com.google.common.base.Joiner;
 import net.minecraft.client.gui.GuiButton;
@@ -86,11 +88,11 @@ public class GuiCraftConfirm extends AEBaseGui {
             this.OriginalGui = GuiBridge.GUI_WIRELESS_TERM;
         }
 
-        if (te instanceof PartTerminal) {
+        if (te instanceof PartTerminal || te instanceof TileTerminal) {
             this.OriginalGui = GuiBridge.GUI_ME;
         }
 
-        if (te instanceof PartCraftingTerminal) {
+        if (te instanceof PartCraftingTerminal || te instanceof TileCraftTerminal) {
             this.OriginalGui = GuiBridge.GUI_CRAFTING_TERMINAL;
         }
 
@@ -138,9 +140,9 @@ public class GuiCraftConfirm extends AEBaseGui {
                 20,
                 GuiText.Cancel.getLocal()
             );
+            this.buttonList.add(this.cancel);
         }
-
-        this.buttonList.add(this.cancel);
+        
     }
 
     @Override

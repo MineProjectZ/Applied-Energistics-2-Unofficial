@@ -31,6 +31,7 @@ import appeng.block.grindstone.BlockCrank;
 import appeng.block.grindstone.BlockGrinder;
 import appeng.block.legacy.BlockCraftMonitor;
 import appeng.block.legacy.BlockCraftTerminal;
+import appeng.block.legacy.BlockLegacyChest;
 import appeng.block.legacy.BlockLegacyController;
 import appeng.block.legacy.BlockPatternEncoder;
 import appeng.block.legacy.BlockStorageMonitor;

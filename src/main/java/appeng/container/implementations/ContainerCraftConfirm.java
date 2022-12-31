@@ -51,6 +51,8 @@ import appeng.helpers.WirelessTerminalGuiObject;
 import appeng.parts.reporting.PartCraftingTerminal;
 import appeng.parts.reporting.PartPatternTerminal;
 import appeng.parts.reporting.PartTerminal;
+import appeng.tile.legacy.TileCraftTerminal;
+import appeng.tile.legacy.TileTerminal;
 import appeng.util.Platform;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.entity.player.EntityPlayer;
@@ -285,11 +287,11 @@ public class ContainerCraftConfirm extends AEBaseContainer {
             originalGui = GuiBridge.GUI_WIRELESS_TERM;
         }
 
-        if (ah instanceof PartTerminal) {
+        if (ah instanceof PartTerminal || ah instanceof TileTerminal) {
             originalGui = GuiBridge.GUI_ME;
         }
 
-        if (ah instanceof PartCraftingTerminal) {
+        if (ah instanceof PartCraftingTerminal || ah instanceof TileCraftTerminal) {
             originalGui = GuiBridge.GUI_CRAFTING_TERMINAL;
         }
 
