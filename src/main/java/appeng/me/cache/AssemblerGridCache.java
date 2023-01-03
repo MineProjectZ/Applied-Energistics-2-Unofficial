@@ -2,7 +2,9 @@ package appeng.me.cache;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import appeng.api.networking.IAssemblerCache;
 import appeng.api.networking.IGrid;
@@ -12,7 +14,13 @@ import appeng.api.networking.IGridStorage;
 import appeng.me.cluster.implementations.AssemblerCluster;
 
 public class AssemblerGridCache implements IAssemblerCache {
-    Set<AssemblerCluster> assemblers = new HashSet<>();
+    // This needs to be a ConcurrentHashMap to prevent errors when a cluster is invalidated
+    // while another is added.
+    //
+    // Java has no ConcurrentHashSet
+    Map<AssemblerCluster, Object> assemblers = new ConcurrentHashMap<>();
+    static Object PRESENT = new Object();
+    
     int cooldown = 0;
 
     public AssemblerGridCache(IGrid grid) {}
@@ -23,12 +31,9 @@ public class AssemblerGridCache implements IAssemblerCache {
             return;
         this.cooldown = 20;
 
-
-        Iterator<AssemblerCluster> it = this.assemblers.iterator();
-        while (it.hasNext()) {
-            AssemblerCluster ac = it.next();
+        for (AssemblerCluster ac : assemblers.keySet()) {
             if (ac.isDestroyed) {
-                it.remove();
+                assemblers.remove(ac);
                 continue;
             }
             ac.onOperation();
@@ -51,6 +56,6 @@ public class AssemblerGridCache implements IAssemblerCache {
     public void populateGridStorage(IGridStorage destinationStorage) {}
 
     public void addCluster(AssemblerCluster cluster) {
-        this.assemblers.add(cluster);
+        this.assemblers.put(cluster, PRESENT);
     }
 }
