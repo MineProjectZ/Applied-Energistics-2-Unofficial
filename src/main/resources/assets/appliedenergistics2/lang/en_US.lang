@@ -56,16 +56,23 @@ tile.appliedenergistics2.BlockCraftMonitor.name=ME Crafting Monitor
 tile.appliedenergistics2.BlockCraftTerminal.name=ME Crafting Terminal
 tile.appliedenergistics2.BlockLegacyController.name=ME Controller
 tile.appliedenergistics2.BlockPatternEncoder.name=Pattern Encoder
-tile.appliedenergistics2.BlockStorageMonitor.name=Storage Monitor
+tile.appliedenergistics2.BlockStorageMonitor.name=ME Storage Monitor
 tile.appliedenergistics2.BlockTerminal.name=ME Access Terminal
 tile.appliedenergistics2.BlockWirelessAccessPoint.name=Wireless Access Point
 
 item.appliedenergistics2.ItemMaterial.ConversionMatrix.name=Conversion Matrix
 
+tile.appliedenergistics2.BlockAssembler.name=ME Assembler Pattern Provider
+tile.appliedenergistics2.BlockAssemblerCraftingAccelerator.name=ME Assembler Crafting CPU
+tile.appliedenergistics2.BlockAssemblerHeatVent.name=ME Assembler Heat Vent
+tile.appliedenergistics2.BlockAssemblerWall.name=ME Assembler Containment Wall
+
 # Legacy GUI
 gui.appliedenergistics2.PatternEncoder.clear=Clear
 gui.appliedenergistics2.PatternEncoder.encode=Encode
 gui.appliedenergistics2.PatternEncoder=Pattern Encoder
+gui.appliedenergistics2.Assembler=ME Pattern Provider
+gui.appliedenergistics2.MAC=ME Molecular Assembler Chamber
 
 # Stairs
 tile.appliedenergistics2.ChiseledQuartzStairBlock.name=Chiseled Certus Quartz Stairs
@@ -211,6 +218,7 @@ gui.appliedenergistics2.SelectAmount=Select Amount
 gui.appliedenergistics2.CopyMode=Copy Mode
 gui.appliedenergistics2.CopyModeDesc=Controls if the contents of the configuration pane are cleared when you remove the cell.
 gui.appliedenergistics2.Next=Next
+gui.appliedenergistics2.Prev=Prev
 gui.appliedenergistics2.Lumen=Lumen
 gui.appliedenergistics2.Empty=Empty
 gui.appliedenergistics2.Stored=Stored

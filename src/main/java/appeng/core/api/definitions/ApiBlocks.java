@@ -29,6 +29,10 @@ import appeng.block.AEBaseSlabBlock;
 import appeng.block.crafting.*;
 import appeng.block.grindstone.BlockCrank;
 import appeng.block.grindstone.BlockGrinder;
+import appeng.block.legacy.BlockAssembler;
+import appeng.block.legacy.BlockAssemblerCraftingAccelerator;
+import appeng.block.legacy.BlockAssemblerHeatVent;
+import appeng.block.legacy.BlockAssemblerWall;
 import appeng.block.legacy.BlockCraftMonitor;
 import appeng.block.legacy.BlockCraftTerminal;
 import appeng.block.legacy.BlockLegacyController;
@@ -143,6 +147,10 @@ public final class ApiBlocks implements IBlocks {
     private final ITileDefinition transitionPlane;
     private final ITileDefinition storageMonitor;
     private final ITileDefinition patternEncoder;
+    private final ITileDefinition assembler;
+    private final ITileDefinition assemblerWall;
+    private final ITileDefinition assemblerHeatVent;
+    private final ITileDefinition assemblerCraftingAccelerator;
 
     public ApiBlocks(final DefinitionConstructor constructor) {
         final BlockLightDetector lightDetector = new BlockLightDetector();
@@ -324,6 +332,12 @@ public final class ApiBlocks implements IBlocks {
             = constructor.registerTileDefinition(new BlockStorageMonitor());
         this.patternEncoder
             = constructor.registerTileDefinition(new BlockPatternEncoder());
+        this.assembler = constructor.registerTileDefinition(new BlockAssembler());
+        this.assemblerWall = constructor.registerTileDefinition(new BlockAssemblerWall());
+        this.assemblerHeatVent
+            = constructor.registerTileDefinition(new BlockAssemblerHeatVent());
+        this.assemblerCraftingAccelerator
+            = constructor.registerTileDefinition(new BlockAssemblerCraftingAccelerator());
     }
 
     @Override

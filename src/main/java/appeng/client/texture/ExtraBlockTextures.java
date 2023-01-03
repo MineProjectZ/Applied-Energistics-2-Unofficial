@@ -127,7 +127,10 @@ public enum ExtraBlockTextures {
     Controller5("BlockLegacyControllerFront"),
     ControllerLinked("ControllerLinked"),
 
-    BlockStorageMonitorFrontMatrix("BlockStorageMonitorFront_Matrix");
+    BlockStorageMonitorFrontMatrix("BlockStorageMonitorFront_Matrix"),
+
+    BlockAssemblerWallMerged("BlockAssemblerWallMerged"),
+    BlockAssemblerHeatVentMerged("BlockAssemblerHeatVentMerged");
 
     private final String name;
     private IIcon IIcon;

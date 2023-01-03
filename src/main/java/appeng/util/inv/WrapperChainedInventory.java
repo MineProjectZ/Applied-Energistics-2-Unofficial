@@ -37,7 +37,7 @@ public class WrapperChainedInventory implements IInventory {
         this.setInventory(inventories);
     }
 
-    private void setInventory(final IInventory... a) {
+    public void setInventory(final IInventory... a) {
         this.l = ImmutableList.copyOf(a);
         this.calculateSizes();
     }
@@ -66,7 +66,7 @@ public class WrapperChainedInventory implements IInventory {
         this.setInventory(inventories);
     }
 
-    private void setInventory(final List<IInventory> a) {
+    public void setInventory(final List<IInventory> a) {
         this.l = a;
         this.calculateSizes();
     }

@@ -30,6 +30,7 @@ import appeng.api.features.IRegistryContainer;
 import appeng.api.features.IWirelessTermHandler;
 import appeng.api.features.IWorldGen.WorldGenType;
 import appeng.api.movable.IMovableRegistry;
+import appeng.api.networking.IAssemblerCache;
 import appeng.api.networking.IControllerCache;
 import appeng.api.networking.IGridCacheRegistry;
 import appeng.api.networking.IWirelessCache;
@@ -532,6 +533,7 @@ public final class Registration {
         gcr.registerGridCache(ICraftingGrid.class, CraftingGridCache.class);
         gcr.registerGridCache(IWirelessCache.class, WirelessGridCache.class);
         gcr.registerGridCache(IControllerCache.class, ControllerGridCache.class);
+        gcr.registerGridCache(IAssemblerCache.class, AssemblerGridCache.class);
 
         registries.externalStorage().addExternalStorageInterface(new AEExternalHandler());
 

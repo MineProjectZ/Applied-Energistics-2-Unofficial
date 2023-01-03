@@ -1,3 +1,5 @@
+import=legacy/assembler.recipe
+
 shaped=
     oredictionary:ingotIron netherCrystal oredictionary:ingotIron,
     oreDictionary:dustFluix ae2:ItemMaterial.LogicProcessor oreDictionary:dustFluix,
@@ -39,3 +41,9 @@ shaped=
     ae2:CableGlass.Fluix ae2:ItemMaterial.Wireless glass,
     oredictionary:ingotIron glass oredictionary:ingotIron,
     -> ae2:BlockWirelessAccessPoint
+
+shaped=
+    oredictionary:ingotIron ae2:ItemMaterial.ConversionMatrix oredictionary:ingotIron,
+    oredictionary:ingotIron oredictionary:craftingTableWood oredictionary:ingotIron,
+    oredictionary:ingotIron oredictionary:ingotIron oredictionary:ingotIron,
+    -> ae2:BlockPatternEncoder

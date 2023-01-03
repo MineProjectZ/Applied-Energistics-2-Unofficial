@@ -78,7 +78,11 @@ public class AppEngPacketHandlerBase {
 
         PACKET_COMPRESSED_NBT(PacketCompressedNBT.class),
 
-        PACKET_PAINTED_ENTITY(PacketPaintedEntity.class);
+        PACKET_PAINTED_ENTITY(PacketPaintedEntity.class),
+
+        PACKET_CHANGE_ASSEMBLER_GUI_PAGE(PacketChangeAssemblerGuiPage.class),
+
+        PACKET_UPDATE_ASSEMBLER_GUI_PAGE_NUM(PacketUpdateAssemblerGuiPageNum.class);
 
         private final Class<? extends AppEngPacket> packetClass;
         private final Constructor<? extends AppEngPacket> packetConstructor;

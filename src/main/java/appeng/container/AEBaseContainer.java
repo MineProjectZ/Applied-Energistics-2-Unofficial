@@ -72,7 +72,7 @@ public abstract class AEBaseContainer extends Container {
     private final InventoryPlayer invPlayer;
     private final BaseActionSource mySrc;
     private final HashSet<Integer> locked = new HashSet<Integer>();
-    private final TileEntity tileEntity;
+    private TileEntity tileEntity;
     private final IPart part;
     private final IGuiItemObject obj;
     private final List<PacketPartialItem> dataChunks
@@ -323,6 +323,10 @@ public abstract class AEBaseContainer extends Container {
 
     public TileEntity getTileEntity() {
         return this.tileEntity;
+    }
+
+    public void setTileEntity(TileEntity te) {
+        this.tileEntity = te;
     }
 
     public final void updateFullProgressBar(final int idx, final long value) {

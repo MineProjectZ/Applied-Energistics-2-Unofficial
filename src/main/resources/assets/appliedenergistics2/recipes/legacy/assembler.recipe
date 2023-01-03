@@ -1,0 +1,23 @@
+shaped=
+    oredictionary:ingotIron oredictionary:craftingTableWood oredictionary:ingotIron,
+    ae2:ItemMaterial.ConversionMatrix ae2:ItemMaterial.EngProcessor ae2:ItemMaterial.ConversionMatrix,
+    oredictionary:ingotIron ae2:ItemMaterial.Cell1kPart oredictionary:ingotIron,
+    -> ae2:BlockAssembler
+
+shaped=
+    oredictionary:ingotIron certusCrystal oredictionary:ingotIron,
+    oredictionary:dustGlowstone ae2:ItemMaterial.EngProcessor oredictionary:dustGlowstone,
+    oredictionary:ingotIron certusCrystal oredictionary:ingotIron,
+    -> ae2:BlockAssemblerCraftingAccelerator
+
+shaped=
+    oredictionary:ingotIron mc:iron_bars oredictionary:ingotIron,
+    mc:iron_bars ae2:CableGlass.Fluix mc:iron_bars,
+    oredictionary:ingotIron mc:iron_bars oredictionary:ingotIron,
+    -> ae2:BlockAssemblerHeatVent
+
+shaped=
+    oredictionary:ingotIron oredictionary:ingotGold oredictionary:ingotIron,
+    oredictionary:ingotGold certusCrystal oredictionary:ingotGold,
+    oredictionary:ingotIron oredictionary:ingotGold oredictionary:ingotIron,
+    -> ae2:BlockAssemblerWall

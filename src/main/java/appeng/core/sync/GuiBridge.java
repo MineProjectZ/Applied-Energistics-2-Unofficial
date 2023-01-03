@@ -59,6 +59,7 @@ import appeng.parts.reporting.PartPatternTerminal;
 import appeng.tile.crafting.TileCraftingTile;
 import appeng.tile.crafting.TileMolecularAssembler;
 import appeng.tile.grindstone.TileGrinder;
+import appeng.tile.legacy.TileAssembler;
 import appeng.tile.legacy.TileLegacyController;
 import appeng.tile.legacy.TilePatternEncoder;
 import appeng.tile.misc.*;
@@ -75,6 +76,7 @@ import cpw.mods.fml.common.network.IGuiHandler;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -280,6 +282,20 @@ public enum GuiBridge implements IGuiHandler {
         TilePatternEncoder.class,
         GuiHostType.WORLD,
         SecurityPermissions.CRAFT
+    ),
+
+    GUI_ASSEMBLER(
+        ContainerAssembler.class,
+        TileAssembler.class,
+        GuiHostType.WORLD,
+        SecurityPermissions.BUILD
+    ),
+
+    GUI_ASSEMBLER_MB(
+        ContainerAssemblerMB.class,
+        TileAssembler.class,
+        GuiHostType.WORLD,
+        SecurityPermissions.BUILD
     );
 
     private final Class tileClass;
