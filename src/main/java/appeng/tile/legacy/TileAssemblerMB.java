@@ -397,7 +397,6 @@ public class TileAssemblerMB extends AENetworkTile implements IAssemblerMB, IInv
         this.worldObj.markBlockRangeForRenderUpdate(
             this.xCoord, this.yCoord, this.zCoord, this.xCoord, this.yCoord, this.zCoord
         );
-        System.out.println("ALEC: " + this.complete);
         return true;
     }
 

@@ -317,6 +317,8 @@ public class TileAssembler extends AENetworkTile
                 if (max.x - min.x >= 2 && max.y - min.y >= 2 && max.z - min.z >= 2) {
                     AssemblerCluster ac = verifyOwnedRegion(w, min, max);
                     if (ac != null && verifyUnownedRegion(w, min, max)) {
+                        if (start.getCluster() != null)
+                            ac = (AssemblerCluster) start.getCluster();
                         completeRegion(w, min, max, ac);
                         return;
                     }
