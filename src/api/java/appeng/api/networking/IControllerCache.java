@@ -7,5 +7,9 @@ public interface IControllerCache extends IGridCache {
     boolean canRun();
 
     boolean hasConflict();
+
+    boolean hasController();
+
+    IGridHost getController();
     
 }

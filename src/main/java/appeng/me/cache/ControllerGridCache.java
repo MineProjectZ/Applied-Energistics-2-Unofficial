@@ -73,5 +73,18 @@ public class ControllerGridCache implements IControllerCache {
     public boolean hasConflict() {
         return controllers.size() > 1;
     }
+
+    @Override
+    public boolean hasController() {
+        return !controllers.isEmpty();
+    }
+
+    @Override
+    public IGridHost getController() {
+        for (TileLegacyController c : controllers) {
+            return c;
+        }
+        return null;
+    }
     
 }

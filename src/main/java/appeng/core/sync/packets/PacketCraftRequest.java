@@ -25,6 +25,8 @@ import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.crafting.ICraftingGrid;
 import appeng.api.networking.crafting.ICraftingJob;
+import appeng.api.networking.request.IRequestGrid;
+import appeng.api.storage.data.IAEItemStack;
 import appeng.container.ContainerOpenContext;
 import appeng.container.implementations.ContainerCraftAmount;
 import appeng.container.implementations.ContainerCraftConfirm;
@@ -82,7 +84,17 @@ public class PacketCraftRequest extends AppEngPacket {
                 }
 
                 cca.getItemToCraft().setStackSize(this.amount);
+                final ContainerOpenContext context = cca.getOpenContext();
+                if (context == null) return;
 
+                IRequestGrid rg = g.getCache(IRequestGrid.class);
+                IAEItemStack leftover = rg.requestItems(cca.getItemToCraft());
+                
+                if (leftover == null) {
+                    final TileEntity te = context.getTile();
+                    cca.closeGui();
+                    return;
+                } 
                 Future<ICraftingJob> futureJob = null;
                 try {
                     final ICraftingGrid cg = g.getCache(ICraftingGrid.class);
@@ -90,11 +102,10 @@ public class PacketCraftRequest extends AppEngPacket {
                         cca.getWorld(),
                         cca.getGrid(),
                         cca.getActionSrc(),
-                        cca.getItemToCraft(),
+                        leftover,
                         null
                     );
 
-                    final ContainerOpenContext context = cca.getOpenContext();
                     if (context != null) {
                         final TileEntity te = context.getTile();
                         Platform.openGUI(
