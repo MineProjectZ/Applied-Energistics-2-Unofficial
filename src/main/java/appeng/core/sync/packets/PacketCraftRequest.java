@@ -20,6 +20,8 @@ package appeng.core.sync.packets;
 
 import java.util.concurrent.Future;
 
+import appeng.api.config.Actionable;
+import appeng.api.networking.IControllerCache;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
@@ -85,13 +87,12 @@ public class PacketCraftRequest extends AppEngPacket {
 
                 cca.getItemToCraft().setStackSize(this.amount);
                 final ContainerOpenContext context = cca.getOpenContext();
-                if (context == null) return;
 
                 IRequestGrid rg = g.getCache(IRequestGrid.class);
+                IControllerCache cgc = g.getCache(IControllerCache.class);
                 IAEItemStack leftover = rg.requestItems(cca.getItemToCraft());
                 
-                if (leftover == null) {
-                    final TileEntity te = context.getTile();
+                if (leftover == null || cgc.requestCrafting(leftover, Actionable.MODULATE)) {
                     cca.closeGui();
                     return;
                 } 

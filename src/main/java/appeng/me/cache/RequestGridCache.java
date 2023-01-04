@@ -9,14 +9,13 @@ import java.util.Set;
 
 import appeng.api.config.AccessRestriction;
 import appeng.api.config.Actionable;
-import appeng.api.networking.IControllerCache;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridStorage;
-import appeng.api.networking.crafting.ICraftingGrid;
 import appeng.api.networking.events.MENetworkEventSubscribe;
 import appeng.api.networking.events.MENetworkPostCacheConstruction;
+import appeng.api.networking.events.MENetworkRequestableChange;
 import appeng.api.networking.request.IRequestGrid;
 import appeng.api.networking.request.IRequestProvider;
 import appeng.api.networking.security.BaseActionSource;
@@ -26,14 +25,12 @@ import appeng.api.storage.IMEInventoryHandler;
 import appeng.api.storage.StorageChannel;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IItemList;
-import appeng.util.item.AEItemStack;
 
 public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEItemStack>, ICellProvider {
 
     private IGrid grid;
     private IStorageGrid storageGrid;
-    private IControllerCache controllerGrid;
-    private Map<AEItemStack, Set<IRequestProvider>> requestable = new HashMap<>();
+    private Map<IAEItemStack, Requestable> requestable = new HashMap<>();
     private Set<IRequestProvider> requestProviders = new HashSet<>();
 
     public RequestGridCache(IGrid grid) {
@@ -49,6 +46,7 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
     public void removeNode(IGridNode gridNode, IGridHost machine) {
         if (machine instanceof IRequestProvider) {
             requestProviders.remove(machine);
+            recalcRequestable();
         }
     }
 
@@ -56,6 +54,7 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
     public void addNode(IGridNode gridNode, IGridHost machine) {
         if (machine instanceof IRequestProvider) {
             requestProviders.add((IRequestProvider)machine);
+            recalcRequestable();
         }
     }
 
@@ -74,10 +73,33 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
         
     }
 
+    @MENetworkEventSubscribe
+    public void requestableChange(MENetworkRequestableChange event) {
+        recalcRequestable();
+    }
+
+    public void recalcRequestable() {
+        requestable.clear();
+        for (IRequestProvider provider : requestProviders) {
+            Set<IAEItemStack> stacks = provider.getRequestableItems();
+            for (IAEItemStack stack : stacks) {
+                if (requestable.containsKey(stack)) {
+                    Requestable r = requestable.get(stack);
+                    r.addProvider(provider);
+                    r.increaseAmount(stack.getStackSize());
+                } else {
+                    Requestable r = new Requestable(stack.getStackSize());
+                    r.addProvider(provider);
+                    requestable.put(stack, r);
+                }
+            }
+        }
+    }
+
     @Override
     public Set<IAEItemStack> getRequestableItems() {
         Set<IAEItemStack> list = new HashSet<>();
-        for(AEItemStack stack : requestable.keySet()) {
+        for(IAEItemStack stack : requestable.keySet()) {
             list.add(stack.copy());
         }
         return list;
@@ -85,8 +107,16 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
 
     @Override
     public IAEItemStack requestItems(IAEItemStack stack) {
-        // TODO: Implement request mechanism
-        return stack;
+        if (!requestable.containsKey(stack)) return stack;
+
+        Requestable r = requestable.get(stack);
+        IAEItemStack toRequest = stack;
+        for(IRequestProvider provider : r.providers) {
+            if (toRequest == null) break;
+            toRequest = provider.requestStack(toRequest, Actionable.MODULATE);
+        }
+
+        return toRequest;
     }
 
     @Override
@@ -101,11 +131,12 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
 
     @Override
     public IItemList<IAEItemStack> getAvailableItems(IItemList<IAEItemStack> out) {
-        Set<AEItemStack> items = requestable.keySet();
+        Set<IAEItemStack> items = requestable.keySet();
         for (IAEItemStack s : items) {
             IAEItemStack stack = s.copy();
             stack.reset();
-            stack.setCountRequestable(1); // TODO: use a value, that makes sense
+            Requestable r = requestable.get(s);
+            stack.setCountRequestable(r.amount);
             out.add(stack);
         }
         return out;
@@ -149,7 +180,6 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
     @MENetworkEventSubscribe
     public void afterCacheConstruction(final MENetworkPostCacheConstruction cacheConstruction) {
         this.storageGrid = this.grid.getCache(IStorageGrid.class);
-        this.controllerGrid = this.grid.getCache(IControllerCache.class);
         this.storageGrid.registerCellProvider(this);
     }
 
@@ -164,9 +194,24 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
         return list;
     }
 
-    public boolean useLegacyCrafting() {
-        ICraftingGrid craftingGrid = grid.getCache(ICraftingGrid.class);
-        return craftingGrid.getCpus().isEmpty() && controllerGrid.hasController();
+    static class Requestable {
+
+        public Set<IRequestProvider> providers;
+        public long amount;
+
+        public Requestable(long amount) {
+            this.providers = new HashSet<>();
+            this.amount = amount;
+        }
+
+        public void addProvider(IRequestProvider provider) {
+            this.providers.add(provider);
+        }
+
+        public void increaseAmount(long amount) {
+            this.amount += amount;
+        }
+
     }
     
 }

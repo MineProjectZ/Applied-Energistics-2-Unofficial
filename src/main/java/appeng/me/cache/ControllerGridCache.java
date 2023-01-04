@@ -3,11 +3,13 @@ package appeng.me.cache;
 import java.util.HashSet;
 import java.util.Set;
 
+import appeng.api.config.Actionable;
 import appeng.api.networking.IControllerCache;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridStorage;
+import appeng.api.storage.data.IAEItemStack;
 import appeng.core.AEConfig;
 import appeng.core.features.AEFeature;
 import appeng.tile.legacy.TileLegacyController;
@@ -85,6 +87,13 @@ public class ControllerGridCache implements IControllerCache {
             return c;
         }
         return null;
+    }
+
+    @Override
+    public boolean requestCrafting(IAEItemStack stack, Actionable actionable) {
+        //ICraftingGrid craftingGrid = grid.getCache(ICraftingGrid.class);
+        //return craftingGrid.getCpus().isEmpty() && this.hasController();
+        return false; // TODO: implement legacy crafting
     }
     
 }
