@@ -19,18 +19,23 @@
 package appeng.tile.misc;
 
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import appeng.api.config.Actionable;
+import appeng.api.config.PowerMultiplier;
 import appeng.api.config.Upgrades;
 import appeng.api.implementations.tiles.ITileStorageMonitorable;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.crafting.ICraftingLink;
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.networking.crafting.ICraftingProviderHelper;
+import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.networking.events.MENetworkChannelsChanged;
 import appeng.api.networking.events.MENetworkEventSubscribe;
 import appeng.api.networking.events.MENetworkPowerStatusChange;
+import appeng.api.networking.request.IRequestProvider;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
@@ -45,13 +50,19 @@ import appeng.api.util.IConfigManager;
 import appeng.helpers.DualityInterface;
 import appeng.helpers.IInterfaceHost;
 import appeng.helpers.IPriorityHost;
+import appeng.integration.IntegrationType;
+import appeng.me.GridAccessException;
 import appeng.tile.TileEvent;
 import appeng.tile.events.TileEventType;
 import appeng.tile.grid.AENetworkInvTile;
 import appeng.tile.inventory.InvOperation;
 import appeng.util.Platform;
 import appeng.util.inv.IInventoryDestination;
+import appeng.transformer.annotations.Integration.Interface;
+import logisticspipes.api.ILogisticsPowerProvider;
+
 import com.google.common.collect.ImmutableSet;
+
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
@@ -60,9 +71,10 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+@Interface(iname = IntegrationType.LogisticsPipes, iface = "logisticspipes.api.ILogisticsPowerProvider")
 public class TileInterface extends AENetworkInvTile
     implements IGridTickable, ITileStorageMonitorable, IStorageMonitorable,
-               IInventoryDestination, IInterfaceHost, IPriorityHost {
+               IInventoryDestination, IInterfaceHost, IPriorityHost, IRequestProvider, ILogisticsPowerProvider {
     private final DualityInterface duality = new DualityInterface(this.getProxy(), this);
     private ForgeDirection pointAt = ForgeDirection.UNKNOWN;
 
@@ -286,5 +298,80 @@ public class TileInterface extends AENetworkInvTile
     @Override
     public void setPriority(final int newValue) {
         this.duality.setPriority(newValue);
+    }
+
+    @Override
+    public Set<IAEItemStack> getRequestableItems() {
+        return new HashSet<>();
+    }
+
+    @Override
+    public IAEItemStack requestStack(IAEItemStack stack, Actionable actionable) {
+        return stack;
+    }
+
+    @Override
+    public boolean canUseEnergy(int arg0) {
+        return canUseEnergy(arg0, null);
+    }
+
+    @Override
+    public boolean canUseEnergy(int amount, List<Object> list) {
+        if (list != null && list.contains(this)) {
+            return false;
+        } else {
+            try {
+                IEnergyGrid energy = this.getProxy().getEnergy();
+                double extracted = energy.extractAEPower(amount, Actionable.SIMULATE, PowerMultiplier.ONE);
+                return extracted >= amount;
+            } catch (GridAccessException e) {
+                return false;
+            }
+        }
+    }
+
+    @Override
+    public int getX() {
+        return this.xCoord;
+    }
+
+    @Override
+    public int getY() {
+        return this.yCoord;
+    }
+
+    @Override
+    public int getZ() {
+        return this.zCoord;
+    }
+
+    @Override
+    public boolean useEnergy(int arg0) {
+        return useEnergy(arg0, null);
+    }
+
+    @Override
+    public boolean useEnergy(int amount, List<Object> list) {
+        if (list != null && list.contains(this)) {
+            return false;
+        } else if (canUseEnergy(amount, list)) {
+            try {
+                IEnergyGrid energy = this.getProxy().getEnergy();
+                energy.extractAEPower(amount, Actionable.MODULATE, PowerMultiplier.ONE);
+                return true;
+            } catch (GridAccessException e) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public int getPowerLevel() {
+        try {
+            return (int) Math.min(this.getProxy().getEnergy().getStoredPower(), 2000000);
+        } catch (GridAccessException e) {
+            return 0;
+        }
     }
 }
