@@ -94,6 +94,7 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
                 }
             }
         }
+        storageGrid.postAlterationOfStoredItems(StorageChannel.ITEMS, requestable.keySet(), new BaseActionSource());
     }
 
     @Override

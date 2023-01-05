@@ -35,6 +35,7 @@ import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.networking.events.MENetworkChannelsChanged;
 import appeng.api.networking.events.MENetworkEventSubscribe;
 import appeng.api.networking.events.MENetworkPowerStatusChange;
+import appeng.api.networking.events.MENetworkRequestableChange;
 import appeng.api.networking.request.IRequestProvider;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.ticking.IGridTickable;
@@ -50,7 +51,9 @@ import appeng.api.util.IConfigManager;
 import appeng.helpers.DualityInterface;
 import appeng.helpers.IInterfaceHost;
 import appeng.helpers.IPriorityHost;
+import appeng.integration.IntegrationRegistry;
 import appeng.integration.IntegrationType;
+import appeng.integration.abstraction.ILogisticsPipes;
 import appeng.me.GridAccessException;
 import appeng.tile.TileEvent;
 import appeng.tile.events.TileEventType;
@@ -77,6 +80,12 @@ public class TileInterface extends AENetworkInvTile
                IInventoryDestination, IInterfaceHost, IPriorityHost, IRequestProvider, ILogisticsPowerProvider {
     private final DualityInterface duality = new DualityInterface(this.getProxy(), this);
     private ForgeDirection pointAt = ForgeDirection.UNKNOWN;
+    private ILogisticsPipes logisticsPipes = null;
+    private TileEntity requestPipe = null;
+    private int ticksSinceRefresh = 0;
+    private Set<IAEItemStack> requestable = new HashSet<>();
+    private Set<IAEItemStack> prevRequestable = new HashSet<>();
+
 
     @MENetworkEventSubscribe
     public void stateChange(final MENetworkChannelsChanged c) {
@@ -139,6 +148,10 @@ public class TileInterface extends AENetworkInvTile
         this.getProxy().setValidSides(EnumSet.complementOf(EnumSet.of(this.pointAt)));
         super.onReady();
         this.duality.initialize();
+        if (IntegrationRegistry.INSTANCE.isEnabled(IntegrationType.LogisticsPipes)) {
+            logisticsPipes = (ILogisticsPipes) IntegrationRegistry.INSTANCE.getInstance(IntegrationType.LogisticsPipes);
+            refreshRequestPipe();
+        }
     }
 
     @TileEvent(TileEventType.WORLD_NBT_WRITE)
@@ -300,13 +313,59 @@ public class TileInterface extends AENetworkInvTile
         this.duality.setPriority(newValue);
     }
 
+    @TileEvent(TileEventType.TICK)
+    public void tickEvent() {
+        if (logisticsPipes == null) return;
+        if (ticksSinceRefresh >= 10) {
+            refreshRequestable();
+            ticksSinceRefresh = 0;
+        }
+        ticksSinceRefresh++;
+    }
+
+    public void refreshRequestPipe() {
+        if (logisticsPipes != null) {
+            for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+                TileEntity te = worldObj.getTileEntity(this.xCoord + dir.offsetX, this.yCoord + dir.offsetY, this.zCoord + dir.offsetZ);
+                if (logisticsPipes.isRequestPipe(te)) {
+                    if (requestPipe != te) {
+                        requestPipe = te;
+                        this.refreshRequestable();
+                    }
+                    return;
+                }
+            } 
+        }
+        requestPipe = null;
+        this.refreshRequestable();
+    }
+
+    public void refreshRequestable() {
+        requestable.clear();
+        if (logisticsPipes != null && requestPipe != null) {
+            requestable.addAll(logisticsPipes.getRequestableItems(requestPipe));
+        }
+        if (!requestable.equals(prevRequestable)) { // TODO: post event when amount changes
+            prevRequestable.clear();
+            prevRequestable.addAll(requestable);
+            try {
+                this.getProxy().getGrid().postEvent(new MENetworkRequestableChange());
+            } catch (GridAccessException e) {
+                // :P
+            }
+        }   
+    }
+
     @Override
     public Set<IAEItemStack> getRequestableItems() {
-        return new HashSet<>();
+        return requestable;
     }
 
     @Override
     public IAEItemStack requestStack(IAEItemStack stack, Actionable actionable) {
+        if (logisticsPipes != null && requestPipe != null) {
+            return logisticsPipes.requestStack(requestPipe, stack, actionable);
+        }
         return stack;
     }
 

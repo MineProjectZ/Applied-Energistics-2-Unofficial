@@ -18,18 +18,24 @@
 
 package appeng.integration.modules;
 
-import javax.annotation.Nonnull;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import appeng.api.AEApi;
+import appeng.api.config.Actionable;
+import appeng.api.storage.data.IAEItemStack;
 import appeng.helpers.Reflected;
 import appeng.integration.IIntegrationModule;
 import appeng.integration.IntegrationHelper;
 import appeng.integration.abstraction.ILogisticsPipes;
-import appeng.integration.modules.LPHelpers.LPPipeHandler;
-import buildcraft.api.transport.IInjectable;
+import appeng.util.item.AEItemStack;
+import logisticspipes.api.ILPPipeTile;
+import logisticspipes.api.IRequestAPI;
+import logisticspipes.api.IRequestAPI.SimulationResult;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraftforge.common.util.ForgeDirection;
 
 /**
  * @author Second_Fry
@@ -63,43 +69,61 @@ public class LogisticsPipes implements ILogisticsPipes, IIntegrationModule {
 
     @Override
     public void postInit() {
-        AEApi.instance().registries().externalStorage().addExternalStorageInterface(
-            new LPPipeHandler()
-        );
+
     }
 
     @Override
-    public boolean canAddItemsToPipe(
-        final TileEntity te, final ItemStack is, final ForgeDirection direction
-    ) {
-        if (is != null && te != null && te instanceof IInjectable) {
-            final IInjectable pt = (IInjectable) te;
-            if (pt.canInjectItems(direction)) {
-                final int amt = pt.injectItem(is, false, direction, null);
-                if (amt == is.stackSize) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+    public boolean isRequestPipe(TileEntity te) {
+        return te instanceof ILPPipeTile && ((ILPPipeTile)te).getLPPipe() instanceof IRequestAPI;
     }
 
     @Override
-    public boolean addItemsToPipe(
-        final TileEntity te, final ItemStack is, @Nonnull final ForgeDirection direction
-    ) {
-        if (is != null && te != null && te instanceof IInjectable) {
-            final IInjectable pt = (IInjectable) te;
-            if (pt.canInjectItems(direction)) {
-                final int amt = pt.injectItem(is, false, direction, null);
-                if (amt == is.stackSize) {
-                    pt.injectItem(is, true, direction, null);
-                    return true;
+    public Set<IAEItemStack> getRequestableItems(TileEntity te) {
+        if (isRequestPipe(te)) {
+            IRequestAPI api = (IRequestAPI) ((ILPPipeTile)te).getLPPipe();
+            Map<IAEItemStack, IAEItemStack> stacks = new HashMap<>();
+            for(ItemStack s : api.getProvidedItems()) {
+                IAEItemStack stack = AEItemStack.create(s);
+                if (stacks.containsKey(stack)) {
+                    stacks.get(stack).incStackSize(stack.getStackSize());
+                } else {
+                    stacks.put(stack, stack);
+                }
+            }
+            return stacks.keySet();
+        }
+        return new HashSet<>();
+    }
+
+    @Override
+    public IAEItemStack requestStack(TileEntity te, IAEItemStack request, Actionable actionable) {
+        if (isRequestPipe(te) && request.getStackSize() <= Integer.MAX_VALUE) {
+            IRequestAPI api = (IRequestAPI) ((ILPPipeTile)te).getLPPipe();
+            if (actionable == Actionable.SIMULATE) {
+                SimulationResult res = api.simulateRequest(request.getItemStack());
+                if (res.missing.isEmpty()) {
+                    return null;
+                } else {
+                    return AEItemStack.create(res.missing.get(0));
+                }
+            } else {
+                List<ItemStack> returned = api.performRequest(request.getItemStack());
+                if (returned.isEmpty()) {
+                    return null;
+                } else {
+                    int missing = returned.get(0).stackSize;
+                    if (missing > 0) {
+                        IAEItemStack newRequest = request.copy();
+                        newRequest.decStackSize(missing);
+                        // LP should still request the items, which are available
+                        api.performRequest(newRequest.getItemStack());
+                        IAEItemStack leftover = request.copy();
+                        leftover.setStackSize(missing);
+                        return leftover;
+                    }
                 }
             }
         }
-
-        return false;
+        return request;
     }
 }

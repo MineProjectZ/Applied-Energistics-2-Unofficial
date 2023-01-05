@@ -6,7 +6,6 @@ publishing {
 
             artifact devJar
             artifact sourceJar
-            artifact javadocJar
             artifact apiJar
         }
     }

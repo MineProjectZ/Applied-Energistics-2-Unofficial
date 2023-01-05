@@ -29,8 +29,10 @@ import appeng.tile.misc.TileInterface;
 import appeng.util.Platform;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
@@ -86,6 +88,15 @@ public class BlockInterface extends AEBaseTileBlock {
     customRotateBlock(final IOrientable rotatable, final ForgeDirection axis) {
         if (rotatable instanceof TileInterface) {
             ((TileInterface) rotatable).setSide(axis);
+        }
+    }
+
+    @Override
+    public void onNeighborBlockChange(World world, int x, int y, int z, Block block) {
+        super.onNeighborBlockChange(world, x, y, z, block);
+        TileEntity te = world.getTileEntity(x, y, z);
+        if (te instanceof TileInterface) {
+            ((TileInterface)te).refreshRequestPipe();
         }
     }
 }
