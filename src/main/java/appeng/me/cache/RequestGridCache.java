@@ -26,8 +26,8 @@ import appeng.api.storage.StorageChannel;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IItemList;
 
-public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEItemStack>, ICellProvider {
-
+public class RequestGridCache
+    implements IRequestGrid, IMEInventoryHandler<IAEItemStack>, ICellProvider {
     private IGrid grid;
     private IStorageGrid storageGrid;
     private Map<IAEItemStack, Requestable> requestable = new HashMap<>();
@@ -38,9 +38,7 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
     }
 
     @Override
-    public void onUpdateTick() {
-        
-    }
+    public void onUpdateTick() {}
 
     @Override
     public void removeNode(IGridNode gridNode, IGridHost machine) {
@@ -53,25 +51,19 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
     @Override
     public void addNode(IGridNode gridNode, IGridHost machine) {
         if (machine instanceof IRequestProvider) {
-            requestProviders.add((IRequestProvider)machine);
+            requestProviders.add((IRequestProvider) machine);
             recalcRequestable();
         }
     }
 
     @Override
-    public void onSplit(IGridStorage destinationStorage) {
-        
-    }
+    public void onSplit(IGridStorage destinationStorage) {}
 
     @Override
-    public void onJoin(IGridStorage sourceStorage) {
-        
-    }
+    public void onJoin(IGridStorage sourceStorage) {}
 
     @Override
-    public void populateGridStorage(IGridStorage destinationStorage) {
-        
-    }
+    public void populateGridStorage(IGridStorage destinationStorage) {}
 
     @MENetworkEventSubscribe
     public void requestableChange(MENetworkRequestableChange event) {
@@ -94,13 +86,15 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
                 }
             }
         }
-        storageGrid.postAlterationOfStoredItems(StorageChannel.ITEMS, requestable.keySet(), new BaseActionSource());
+        storageGrid.postAlterationOfStoredItems(
+            StorageChannel.ITEMS, requestable.keySet(), new BaseActionSource()
+        );
     }
 
     @Override
     public Set<IAEItemStack> getRequestableItems() {
         Set<IAEItemStack> list = new HashSet<>();
-        for(IAEItemStack stack : requestable.keySet()) {
+        for (IAEItemStack stack : requestable.keySet()) {
             list.add(stack.copy());
         }
         return list;
@@ -108,12 +102,14 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
 
     @Override
     public IAEItemStack requestItems(IAEItemStack stack) {
-        if (!requestable.containsKey(stack)) return stack;
+        if (!requestable.containsKey(stack))
+            return stack;
 
         Requestable r = requestable.get(stack);
         IAEItemStack toRequest = stack;
-        for(IRequestProvider provider : r.providers) {
-            if (toRequest == null) break;
+        for (IRequestProvider provider : r.providers) {
+            if (toRequest == null)
+                break;
             toRequest = provider.requestStack(toRequest, Actionable.MODULATE);
         }
 
@@ -121,12 +117,14 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
     }
 
     @Override
-    public IAEItemStack injectItems(IAEItemStack input, Actionable type, BaseActionSource src) {
+    public IAEItemStack
+    injectItems(IAEItemStack input, Actionable type, BaseActionSource src) {
         return input;
     }
 
     @Override
-    public IAEItemStack extractItems(IAEItemStack request, Actionable mode, BaseActionSource src) {
+    public IAEItemStack
+    extractItems(IAEItemStack request, Actionable mode, BaseActionSource src) {
         return null;
     }
 
@@ -179,7 +177,8 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
     }
 
     @MENetworkEventSubscribe
-    public void afterCacheConstruction(final MENetworkPostCacheConstruction cacheConstruction) {
+    public void
+    afterCacheConstruction(final MENetworkPostCacheConstruction cacheConstruction) {
         this.storageGrid = this.grid.getCache(IStorageGrid.class);
         this.storageGrid.registerCellProvider(this);
     }
@@ -196,7 +195,6 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
     }
 
     static class Requestable {
-
         public Set<IRequestProvider> providers;
         public long amount;
 
@@ -212,7 +210,5 @@ public class RequestGridCache implements IRequestGrid, IMEInventoryHandler<IAEIt
         public void increaseAmount(long amount) {
             this.amount += amount;
         }
-
     }
-    
 }

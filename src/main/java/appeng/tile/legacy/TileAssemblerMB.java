@@ -3,10 +3,13 @@ package appeng.tile.legacy;
 import java.util.List;
 
 import appeng.api.implementations.ICraftingPatternItem;
+import appeng.api.networking.GridFlags;
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.me.cluster.IAssemblerCluster;
 import appeng.me.cluster.IAssemblerMB;
 import appeng.me.cluster.implementations.AssemblerCluster;
+import appeng.me.helpers.AENetworkProxy;
+import appeng.me.helpers.AENetworkProxyMultiblock;
 import appeng.tile.TileEvent;
 import appeng.tile.events.TileEventType;
 import appeng.tile.grid.AENetworkTile;
@@ -29,11 +32,19 @@ public class TileAssemblerMB extends AENetworkTile implements IAssemblerMB, IInv
         // TODO: WTF
         //super.updatesOnPower = false;
         this.getProxy().setIdlePowerUsage(0.0);
+        this.getProxy().setFlags(GridFlags.REQUIRE_CHANNEL, GridFlags.MULTIBLOCK);
     }
 
     @Override
     public boolean canBeRotated() {
         return false;
+    }
+
+    @Override
+    protected AENetworkProxy createProxy() {
+        return new AENetworkProxyMultiblock(
+            this, "proxy", this.getItemFromTile(this), true
+        );
     }
 
     // TODO: WTF
@@ -402,4 +413,14 @@ public class TileAssemblerMB extends AENetworkTile implements IAssemblerMB, IInv
 
     @Override
     public void getDrops(World w, int x, int y, int z, List<ItemStack> drops) {}
+
+    @Override
+    public void disconnect(boolean b) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public boolean isValid() {
+        return this.isComplete();
+    }
 }

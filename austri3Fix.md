@@ -3,3 +3,4 @@
 - legacy blocks aren't colorable
 - BlockLegacyDisplays don't rotate their faces correctly on the top and bottom
 - pattern encoder can create pattern with no inputs
+- shift-clicking in the pattern encoder is less than ideal

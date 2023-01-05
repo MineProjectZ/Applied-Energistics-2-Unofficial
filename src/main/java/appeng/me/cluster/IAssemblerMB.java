@@ -2,7 +2,7 @@ package appeng.me.cluster;
 
 import appeng.api.util.WorldCoord;
 
-public interface IAssemblerMB {
+public interface IAssemblerMB extends IAEMultiBlock {
    WorldCoord getLocation();
 
    IAssemblerCluster getCluster();

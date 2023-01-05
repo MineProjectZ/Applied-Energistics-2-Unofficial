@@ -2,20 +2,29 @@ package appeng.tile.legacy;
 
 import java.util.ArrayList;
 
+import appeng.api.config.Actionable;
 import appeng.api.implementations.ICraftingPatternItem;
+import appeng.api.networking.GridFlags;
 import appeng.api.networking.IAssemblerCache;
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.networking.crafting.ICraftingProviderHelper;
 import appeng.api.networking.events.MENetworkCraftingPatternChange;
+import appeng.api.networking.security.MachineSource;
+import appeng.api.storage.IMEMonitor;
+import appeng.api.storage.data.IAEItemStack;
 import appeng.api.util.WorldCoord;
 import appeng.block.legacy.BlockAssemblerHeatVent;
 import appeng.block.legacy.BlockAssemblerWall;
+import appeng.container.ContainerNull;
+import appeng.items.misc.ItemEncodedPattern;
 import appeng.me.GridAccessException;
 import appeng.me.cache.AssemblerGridCache;
 import appeng.me.cluster.IAssemblerCluster;
 import appeng.me.cluster.IAssemblerMB;
 import appeng.me.cluster.implementations.AssemblerCluster;
+import appeng.me.helpers.AENetworkProxy;
+import appeng.me.helpers.AENetworkProxyMultiblock;
 import appeng.tile.TileEvent;
 import appeng.tile.events.TileEventType;
 import appeng.tile.grid.AENetworkTile;
@@ -26,12 +35,14 @@ import appeng.util.InventoryAdaptor;
 import appeng.util.Platform;
 import appeng.util.inv.AdaptorIInventory;
 import appeng.util.inv.IInventoryDestination;
+import appeng.util.item.AEItemStack;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
@@ -41,11 +52,20 @@ public class TileAssembler extends AENetworkTile
     implements IAssemblerMB, IAEAppEngInventory, IInventory, ICraftingProvider {
     AssemblerCluster ac = null;
     AppEngInternalInventory inv = new AppEngInternalInventory(this, 54);
+    public Job[] jobs;
 
     public TileAssembler() {
         super();
         // TODO: WTF
         //super.updatesOnPower = false;
+        this.getProxy().setFlags(GridFlags.REQUIRE_CHANNEL, GridFlags.MULTIBLOCK);
+    }
+
+    @Override
+    protected AENetworkProxy createProxy() {
+        return new AENetworkProxyMultiblock(
+            this, "proxy", this.getItemFromTile(this), true
+        );
     }
 
     @Override
@@ -128,6 +148,7 @@ public class TileAssembler extends AENetworkTile
 
         if (ac != null && lastMB != null) {
             lastMB.sendUpdate(true, null);
+            ac.initMaster();
             try {
                 IAssemblerCache cache
                     = lastMB.getProxy().getGrid().getCache(IAssemblerCache.class);
@@ -194,13 +215,19 @@ public class TileAssembler extends AENetworkTile
             }
         }
 
-        ac.jobs = new AssemblerCluster.Job[ac.accelerators];
-
         if (ac.assemblers.size() > 0) {
             return ac;
         } else {
             return null;
         }
+    }
+
+    public boolean canCraft() {
+        for (Job j : this.jobs)
+            if (j == null)
+                return true;
+
+        return false;
     }
 
     public static boolean verifyUnownedRegionInner(
@@ -489,9 +516,45 @@ public class TileAssembler extends AENetworkTile
             if (((ICraftingPatternItem) is.getItem())
                     .getPatternForItem(is, this.worldObj)
                     .equals(patternDetails)) {
-                return this.ac.addCraft(new AssemblerCluster.Job(patternDetails, table));
+                return this.ac.getMaster().addCraft(new Job(patternDetails, table));
             }
         }
+        return false;
+    }
+
+    public void onOperation() {
+        for (int i = 0; i < this.jobs.length; i++) {
+            if (this.jobs[i] == null)
+                continue;
+
+            ItemStack out = this.jobs[i].det.getOutput(this.jobs[i].inv, this.worldObj);
+
+            if (out != null) {
+                try {
+                    IMEMonitor<IAEItemStack> inv
+                        = this.getProxy().getStorage().getItemInventory();
+
+                    inv.injectItems(
+                        AEItemStack.create(out),
+                        Actionable.MODULATE,
+                        new MachineSource(this)
+                    );
+
+                } catch (GridAccessException kek) {}
+            }
+
+            this.jobs[i] = null;
+        }
+    }
+
+    public boolean addCraft(Job job) {
+        for (int i = 0; i < this.jobs.length; i++) {
+            if (this.jobs[i] == null) {
+                this.jobs[i] = job;
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -520,13 +583,102 @@ public class TileAssembler extends AENetworkTile
         }
     }
 
+    public boolean isMaster() {
+        return this.jobs != null;
+    }
+
     @TileEvent(TileEventType.WORLD_NBT_WRITE)
     public void writeToNbtTileAssembler(NBTTagCompound nbt) {
         this.inv.writeToNBT(nbt, "inv");
+
+        if (this.isMaster()) {
+            NBTTagList jobs = new NBTTagList();
+            for (Job j : this.jobs) {
+                if (j == null)
+                    continue;
+
+                jobs.appendTag(j.writeToNBT(new NBTTagCompound()));
+            }
+
+            nbt.setTag("jobs", jobs);
+            nbt.setInteger("jobc", this.jobs.length);
+        }
     }
 
     @TileEvent(TileEventType.WORLD_NBT_READ)
     public void readFromNbtTileAssembler(NBTTagCompound nbt) {
+        System.out.println("ALEC: " + nbt);
         this.inv.readFromNBT(nbt, "inv");
+
+        if (nbt.hasKey("jobs")) {
+            NBTTagList jobs = nbt.getTagList("jobs", 10);
+
+            this.jobs = new Job[nbt.getInteger("jobc")];
+
+            for (int i = 0; i < jobs.tagCount(); i++) {
+                this.jobs[i] = Job.readFromNBT(jobs.getCompoundTagAt(i), this.worldObj);
+            }
+        }
+    }
+
+    public static class Job {
+        public ICraftingPatternDetails det;
+        public InventoryCrafting inv;
+
+        public Job(ICraftingPatternDetails det, InventoryCrafting inv) {
+            this.det = det;
+            this.inv = inv;
+        }
+
+        public NBTTagCompound writeToNBT(NBTTagCompound nbt) {
+            nbt.setTag("pattern", this.det.getPattern().writeToNBT(new NBTTagCompound()));
+            NBTTagList input = new NBTTagList();
+
+            for (int i = 0; i < this.inv.getSizeInventory(); i++) {
+                if (this.inv.getStackInSlot(i) == null) {
+                    input.appendTag(new NBTTagCompound());
+                } else {
+                    input.appendTag(
+                        this.inv.getStackInSlot(i).writeToNBT(new NBTTagCompound())
+                    );
+                }
+            }
+
+            nbt.setTag("input", input);
+
+            return nbt;
+        }
+
+        public static Job readFromNBT(NBTTagCompound nbt, World w) {
+            ItemStack patternStack
+                = ItemStack.loadItemStackFromNBT(nbt.getCompoundTag("pattern"));
+            ICraftingPatternDetails det = ((ItemEncodedPattern) patternStack.getItem())
+                                              .getPatternForItem(patternStack, w);
+
+            NBTTagList input = nbt.getTagList("input", 10);
+            InventoryCrafting inv = new InventoryCrafting(new ContainerNull(), 3, 3);
+
+            for (int i = 0; i < input.tagCount(); i++) {
+                if (input.getCompoundTagAt(i).hasNoTags()) {
+                    inv.setInventorySlotContents(i, null);
+                } else {
+                    inv.setInventorySlotContents(
+                        i, ItemStack.loadItemStackFromNBT(input.getCompoundTagAt(i))
+                    );
+                }
+            }
+
+            return new Job(det, inv);
+        }
+    }
+
+    @Override
+    public void disconnect(boolean b) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public boolean isValid() {
+        return this.isComplete();
     }
 }
