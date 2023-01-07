@@ -72,6 +72,7 @@ public class GuiMEMonitorable
     private final int lowerTextureOffset = 0;
     private final IConfigManager configSrc;
     private final boolean viewCell;
+    private final boolean isNetwork;
     private final ItemStack[] myCurrentViewCells = new ItemStack[5];
     private final ContainerMEMonitorable monitorableContainer;
     private GuiTabButton craftingStatusBtn;
@@ -120,6 +121,7 @@ public class GuiMEMonitorable
             .setGui(this);
 
         this.viewCell = te instanceof IViewCellStorage;
+        this.isNetwork = this.viewCell || te instanceof TileTerminal;
 
         if (te instanceof TileSecurity) {
             this.myName = GuiText.Security;
@@ -275,7 +277,7 @@ public class GuiMEMonitorable
             offset += 20;
         }
 
-        if (this.viewCell || this instanceof GuiWirelessTerm) {
+        if (this.isNetwork || this instanceof GuiWirelessTerm) {
             this.buttonList.add(
                 this.ViewBox = new GuiImgButton(
                     this.guiLeft - 18,
