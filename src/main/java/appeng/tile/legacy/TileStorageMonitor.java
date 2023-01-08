@@ -56,23 +56,22 @@ public class TileStorageMonitor extends TileLegacyDisplay implements IStackWatch
     }
 
     @TileEvent(TileEventType.NETWORK_WRITE)
-    public boolean writeToStreamTileStorageMonitor(ByteBuf data) {
+    public void writeToStreamTileStorageMonitor(ByteBuf data) {
         try {
+            super.writeToStreamTileLegacyDisplay(data);
             int flags = (this.isLocked ? 1 : 0) | (this.upgraded ? 0b10 : 0)
                 | (this.myItem != null ? 0b100 : 0);
 
             data.writeByte(flags);
             if (this.myItem != null)
                 this.myItem.writeToPacket(data);
-
-            return true;
         } catch (IOException kek) {
             throw new RuntimeException(kek);
         }
     }
 
     @TileEvent(TileEventType.NETWORK_READ)
-    public boolean readFromStreamTileStorageMonitor(ByteBuf data) {
+    public void readFromStreamTileStorageMonitor(ByteBuf data) {
         try {
             super.readFromStreamTileLegacyDisplay(data);
             byte flags = data.readByte();
@@ -85,8 +84,6 @@ public class TileStorageMonitor extends TileLegacyDisplay implements IStackWatch
             }
 
             this.updateDisplayList = true;
-
-            return true;
         } catch (IOException kek) {
             throw new RuntimeException(kek);
         }
