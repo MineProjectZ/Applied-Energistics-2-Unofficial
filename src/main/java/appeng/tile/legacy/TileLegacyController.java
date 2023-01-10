@@ -11,6 +11,7 @@ import appeng.tile.grid.AENetworkPowerTile;
 import appeng.tile.inventory.AppEngInternalInventory;
 import appeng.tile.inventory.InvOperation;
 import appeng.util.Platform;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -18,12 +19,14 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.ForgeDirection;
 
 public class TileLegacyController extends AENetworkPowerTile implements ILocatable {
-    private static final IInventory NULL_INVENTORY = new AppEngInternalInventory(null, 0);
-    private static final int[] ACCESSIBLE_SLOTS_BY_SIDE = {};
-    private static int difference = 0;
-    private int ticksSinceRefresh = 0;
-    private long controllerKey;
-    
+    public static final IInventory NULL_INVENTORY = new AppEngInternalInventory(null, 0);
+    public static final int[] ACCESSIBLE_SLOTS_BY_SIDE = {};
+    public static int difference = 0;
+    public int ticksSinceRefresh = 0;
+    public long controllerKey;
+    public int powerLevel;
+    public int lastPowerLevel;
+
     public TileLegacyController() { //TODO Fix power storage
         this.setInternalMaxPower(10000);
         this.setInternalPublicPowerStorage(true);
@@ -41,7 +44,7 @@ public class TileLegacyController extends AENetworkPowerTile implements ILocatab
             ticksSinceRefresh++;
             if (ticksSinceRefresh % 20 == 0) {
                 ticksSinceRefresh = 0;
-                updateMeta();
+                updatePowerLevel();
             }
         }
     }
@@ -62,27 +65,20 @@ public class TileLegacyController extends AENetworkPowerTile implements ILocatab
     }
 
     @Override
-    protected double getFunnelPowerDemand( final double maxReceived )
-    {
-        try
-        {
-            return this.getProxy().getEnergy().getEnergyDemand( 10000 );
-        }
-        catch( final GridAccessException e )
-        {
+    protected double getFunnelPowerDemand(final double maxReceived) {
+        try {
+            return this.getProxy().getEnergy().getEnergyDemand(10000);
+        } catch (final GridAccessException e) {
             // no grid? use local...
             return super.getFunnelPowerDemand(maxReceived);
         }
     }
 
     @Override
-    protected double funnelPowerIntoStorage( final double power, final Actionable mode )
-    {
-        try
-        {
-            final double ret = this.getProxy().getEnergy().injectPower( power, mode );
-            if( mode == Actionable.SIMULATE )
-            {
+    protected double funnelPowerIntoStorage(final double power, final Actionable mode) {
+        try {
+            final double ret = this.getProxy().getEnergy().injectPower(power, mode);
+            if (mode == Actionable.SIMULATE) {
                 return ret;
             }
             return 0;
@@ -92,22 +88,24 @@ public class TileLegacyController extends AENetworkPowerTile implements ILocatab
         }
     }
 
-    public void updateMeta() {
-        int meta = (int
+    public void updatePowerLevel() {
+        this.powerLevel = (int
         ) Math.ceil((5.0 * this.getInternalCurrentPower() / this.getInternalMaxPower()));
-        if (meta < 0) {
-            meta = 0;
-        } else if (meta > 5) {
-            meta = 5;
+        if (this.powerLevel < 0) {
+            this.powerLevel = 0;
+        } else if (this.powerLevel > 5) {
+            this.powerLevel = 5;
         }
-        if (getProxy().isActive() && meta == 0) {
-            meta = 6;
+        if (getProxy().isActive() && this.powerLevel == 0) {
+            this.powerLevel = 6;
         } else if (!getProxy().isActive()) {
-            meta = 0;
+            this.powerLevel = 0;
         }
-        this.worldObj.setBlockMetadataWithNotify(
-            this.xCoord, this.yCoord, this.zCoord, meta, 2
-        );
+
+        if (this.powerLevel != this.lastPowerLevel) {
+            this.markForUpdate();
+            this.lastPowerLevel = this.powerLevel;
+        }
     }
 
     @Override
@@ -116,12 +114,12 @@ public class TileLegacyController extends AENetworkPowerTile implements ILocatab
     }
 
     @TileEvent(TileEventType.WORLD_NBT_WRITE)
-    public void writeNBT(final NBTTagCompound data) {
+    public void writeNBTTileLegacyController(final NBTTagCompound data) {
         data.setLong("controllerKey", this.controllerKey);
     }
 
     @TileEvent(TileEventType.WORLD_NBT_READ)
-    public void readNBT(final NBTTagCompound data) {
+    public void readNBTTileLegacyController(final NBTTagCompound data) {
         if (data.hasKey("controllerKey")) {
             this.controllerKey = data.getLong("controllerKey");
         }
@@ -150,6 +148,19 @@ public class TileLegacyController extends AENetworkPowerTile implements ILocatab
         super.onChunkUnload();
         MinecraftForge.EVENT_BUS.post(
             new LocatableEventAnnounce(this, LocatableEvent.Unregister)
+        );
+    }
+
+    @TileEvent(TileEventType.NETWORK_WRITE)
+    public void writeToStreamTileLegacyController(ByteBuf buf) {
+        buf.writeByte(this.powerLevel);
+    }
+
+    @TileEvent(TileEventType.NETWORK_READ)
+    public void readFromStreamTileLegacyController(ByteBuf buf) {
+        this.powerLevel = buf.readByte();
+        this.worldObj.markBlockRangeForRenderUpdate(
+            this.xCoord, this.yCoord, this.zCoord, this.xCoord, this.yCoord, this.zCoord
         );
     }
 }

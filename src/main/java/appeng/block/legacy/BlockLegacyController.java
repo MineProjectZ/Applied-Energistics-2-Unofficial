@@ -10,7 +10,9 @@ import appeng.tile.legacy.TileLegacyController;
 import appeng.util.Platform;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.IIcon;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
@@ -43,9 +45,19 @@ public class BlockLegacyController extends AEBaseTileBlock {
     }
 
     @Override
-    public IIcon getIcon(int direction, int metadata) {
-        if (direction == 3) {
-            switch (metadata) {
+    public IIcon getIcon(IBlockAccess w, int x, int y, int z, int s) {
+        TileEntity te = w.getTileEntity(x, y, z);
+        if (!(te instanceof TileLegacyController)) {
+            return super.getIcon(w, x, y, z, s);
+        }
+
+        TileLegacyController tlc = (TileLegacyController) te;
+
+        ForgeDirection direction
+            = this.mapRotation(tlc, ForgeDirection.getOrientation(s));
+
+        if (direction == ForgeDirection.SOUTH) {
+            switch (tlc.powerLevel) {
                 case 0:
                     return ExtraBlockTextures.Controller0.getIcon();
                 case 1:
@@ -62,6 +74,6 @@ public class BlockLegacyController extends AEBaseTileBlock {
                     return ExtraBlockTextures.ControllerLinked.getIcon();
             }
         }
-        return super.getIcon(direction, metadata);
+        return super.getIcon(direction.ordinal(), w.getBlockMetadata(x, y, z));
     }
 }
