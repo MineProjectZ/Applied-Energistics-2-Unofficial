@@ -1,5 +1,6 @@
 package appeng.tile.legacy;
 
+import appeng.api.config.AccessRestriction;
 import appeng.api.config.Actionable;
 import appeng.api.events.LocatableEventAnnounce;
 import appeng.api.events.LocatableEventAnnounce.LocatableEvent;
@@ -27,9 +28,10 @@ public class TileLegacyController extends AENetworkPowerTile implements ILocatab
     public int powerLevel;
     public int lastPowerLevel;
 
-    public TileLegacyController() { //TODO Fix power storage
+    public TileLegacyController() {
         this.setInternalMaxPower(10000);
         this.setInternalPublicPowerStorage(true);
+        this.setInternalPowerFlow(AccessRestriction.READ_WRITE);
         this.getProxy().setIdlePowerUsage(6.0);
         difference++;
         this.controllerKey = System.currentTimeMillis() * 10 + difference;
@@ -65,27 +67,32 @@ public class TileLegacyController extends AENetworkPowerTile implements ILocatab
     }
 
     @Override
-    protected double getFunnelPowerDemand(final double maxReceived) {
-        try {
-            return this.getProxy().getEnergy().getEnergyDemand(10000);
-        } catch (final GridAccessException e) {
+    protected double getFunnelPowerDemand( final double maxReceived )
+    {
+        try
+        {
+            return this.getProxy().getEnergy().getEnergyDemand( 10000 ) + super.getFunnelPowerDemand(maxReceived);
+        }
+        catch( final GridAccessException e )
+        {
             // no grid? use local...
             return super.getFunnelPowerDemand(maxReceived);
         }
     }
 
     @Override
-    protected double funnelPowerIntoStorage(final double power, final Actionable mode) {
-        try {
-            final double ret = this.getProxy().getEnergy().injectPower(power, mode);
-            if (mode == Actionable.SIMULATE) {
-                return ret;
+    protected double funnelPowerIntoStorage( final double power, final Actionable mode )
+    {
+        double ret = this.injectAEPower(power, mode);
+        if (ret > 0) {
+            try
+            {
+                ret = this.getProxy().getEnergy().injectPower( ret, mode );
+            } catch (final GridAccessException e) {
+                // :P
             }
-            return 0;
-        } catch (final GridAccessException e) {
-            // no grid? use local...
-            return super.funnelPowerIntoStorage(power, mode);
         }
+        return ret;
     }
 
     public void updatePowerLevel() {

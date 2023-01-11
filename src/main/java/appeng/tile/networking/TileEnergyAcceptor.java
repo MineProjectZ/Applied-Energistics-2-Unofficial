@@ -19,6 +19,9 @@
 package appeng.tile.networking;
 
 import appeng.api.config.Actionable;
+import appeng.api.networking.IControllerCache;
+import appeng.api.networking.IGridHost;
+import appeng.api.networking.energy.IAEPowerStorage;
 import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.util.AECableType;
 import appeng.me.GridAccessException;
@@ -73,7 +76,15 @@ public class TileEnergyAcceptor extends AENetworkPowerTile {
     protected double funnelPowerIntoStorage(final double power, final Actionable mode) {
         try {
             final IEnergyGrid grid = this.getProxy().getEnergy();
-            final double leftOver = grid.injectPower(power, mode);
+            final IControllerCache cgc = this.getProxy().getGrid().getCache(IControllerCache.class);
+            double leftOver = power;
+            if (cgc.hasController()) {
+                IGridHost controller = cgc.getController();
+                if (controller instanceof IAEPowerStorage) {
+                    leftOver = ((IAEPowerStorage)controller).injectAEPower(leftOver, mode);
+                }
+            }
+            leftOver = grid.injectPower(leftOver, mode);
             if (mode == Actionable.SIMULATE) {
                 return leftOver;
             }

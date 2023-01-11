@@ -24,6 +24,7 @@ import appeng.core.sync.packets.PacketMEInventoryUpdate;
 import appeng.tile.inventory.AppEngInternalInventory;
 import appeng.tile.inventory.IAEAppEngInventory;
 import appeng.tile.inventory.InvOperation;
+import appeng.tile.legacy.TileLegacyController;
 import appeng.util.Platform;
 import appeng.util.item.AEItemStack;
 import net.minecraft.entity.player.EntityPlayer;
@@ -92,7 +93,11 @@ public class ContainerController extends AEBaseContainer implements IAEAppEngInv
             if (eg != null) {
                 this.setAverageAddition((long) (100.0 * eg.getAvgPowerInjection()));
                 this.setPowerUsage((long) (100.0 * eg.getAvgPowerUsage()));
-                this.setCurrentPower((long) (100.0 * eg.getStoredPower()));
+                if (host instanceof TileLegacyController) {
+                    this.setCurrentPower((long)(100.0 * ((TileLegacyController)host).getAECurrentPower()));
+                } else {
+                    this.setCurrentPower((long) (100.0 * eg.getStoredPower()));
+                }
                 this.setMaxPower((long) (100.0 * eg.getMaxStoredPower()));
             }
 
