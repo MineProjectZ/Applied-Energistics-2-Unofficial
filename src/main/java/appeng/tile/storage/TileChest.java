@@ -68,23 +68,23 @@ import net.minecraftforge.fluids.IFluidHandler;
 public class TileChest extends AENetworkPowerTile
     implements IMEChest, IFluidHandler, ITerminalHost, IPriorityHost, IConfigManagerHost,
                IColorableTile {
-    private static final ChestNoHandler NO_HANDLER = new ChestNoHandler();
-    private static final int[] SIDES = { 0 };
-    private static final int[] FRONT = { 1 };
-    private static final int[] NO_SLOTS = {};
-    private final AppEngInternalInventory inv = new AppEngInternalInventory(this, 2);
-    private final BaseActionSource mySrc = new MachineSource(this);
-    private final IConfigManager config = new ConfigManager(this);
-    private ItemStack storageType;
-    private long lastStateChange = 0;
-    private int priority = 0;
-    private int state = 0;
-    private boolean wasActive = false;
-    private AEColor paintedColor = AEColor.Transparent;
-    private boolean isCached = false;
-    private ICellHandler cellHandler;
-    private MEMonitorHandler itemCell;
-    private MEMonitorHandler fluidCell;
+    protected static final ChestNoHandler NO_HANDLER = new ChestNoHandler();
+    protected static final int[] SIDES = { 0 };
+    protected static final int[] FRONT = { 1 };
+    protected static final int[] NO_SLOTS = {};
+    protected final AppEngInternalInventory inv = new AppEngInternalInventory(this, 2);
+    protected final BaseActionSource mySrc = new MachineSource(this);
+    protected final IConfigManager config = new ConfigManager(this);
+    protected ItemStack storageType;
+    protected long lastStateChange = 0;
+    protected int priority = 0;
+    protected int state = 0;
+    protected boolean wasActive = false;
+    protected AEColor paintedColor = AEColor.Transparent;
+    protected boolean isCached = false;
+    protected ICellHandler cellHandler;
+    protected MEMonitorHandler itemCell;
+    protected MEMonitorHandler fluidCell;
 
     public TileChest() {
         this.setInternalMaxPower(PowerMultiplier.CONFIG.multiply(40));
@@ -112,7 +112,7 @@ public class TileChest extends AENetworkPowerTile
         }
     }
 
-    private void recalculateDisplay() {
+    protected void recalculateDisplay() {
         final int oldState = this.state;
 
         for (int x = 0; x < this.getCellCount(); x++) {
@@ -145,7 +145,7 @@ public class TileChest extends AENetworkPowerTile
         return 1;
     }
 
-    private IMEInventoryHandler getHandler(final StorageChannel channel)
+    protected IMEInventoryHandler getHandler(final StorageChannel channel)
         throws ChestNoHandler {
         if (!this.isCached) {
             this.itemCell = null;
@@ -198,7 +198,7 @@ public class TileChest extends AENetworkPowerTile
         return null;
     }
 
-    private <StackType extends IAEStack> MEMonitorHandler<StackType>
+    protected <StackType extends IAEStack> MEMonitorHandler<StackType>
     wrap(final IMEInventoryHandler h) {
         if (h == null) {
             return null;
@@ -517,7 +517,7 @@ public class TileChest extends AENetworkPowerTile
         return NO_SLOTS;
     }
 
-    private void tryToStoreContents() {
+    protected void tryToStoreContents() {
         try {
             if (this.getStackInSlot(0) != null) {
                 final IMEInventory<IAEItemStack> cell
@@ -728,13 +728,13 @@ public class TileChest extends AENetworkPowerTile
         );
     }
 
-    private static class ChestNoHandler extends Exception {
-        private static final long serialVersionUID = 7995805326136526631L;
+    protected static class ChestNoHandler extends Exception {
+        protected static final long serialVersionUID = 7995805326136526631L;
     }
 
-    private class ChestNetNotifier<T extends IAEStack<T>>
+    protected class ChestNetNotifier<T extends IAEStack<T>>
         implements IMEMonitorHandlerReceiver<T> {
-        private final StorageChannel chan;
+        protected final StorageChannel chan;
 
         public ChestNetNotifier(final StorageChannel chan) {
             this.chan = chan;
@@ -782,12 +782,12 @@ public class TileChest extends AENetworkPowerTile
         }
     }
 
-    private class ChestMonitorHandler<T extends IAEStack> extends MEMonitorHandler<T> {
+    protected class ChestMonitorHandler<T extends IAEStack> extends MEMonitorHandler<T> {
         public ChestMonitorHandler(final IMEInventoryHandler<T> t) {
             super(t);
         }
 
-        private IMEInventoryHandler<T> getInternalHandler() {
+        protected IMEInventoryHandler<T> getInternalHandler() {
             final IMEInventoryHandler<T> h = this.getHandler();
             if (h instanceof MEInventoryHandler) {
                 return (IMEInventoryHandler<T>) ((MEInventoryHandler) h).getInternal();
@@ -807,7 +807,7 @@ public class TileChest extends AENetworkPowerTile
             return super.injectItems(input, mode, src);
         }
 
-        private boolean securityCheck(
+        protected boolean securityCheck(
             final EntityPlayer player, final SecurityPermissions requiredPermission
         ) {
             if (TileChest.this.getTile() instanceof IActionHost

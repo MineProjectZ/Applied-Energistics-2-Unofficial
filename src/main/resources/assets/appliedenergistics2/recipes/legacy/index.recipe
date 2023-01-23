@@ -47,3 +47,9 @@ shaped=
     oredictionary:ingotIron oredictionary:craftingTableWood oredictionary:ingotIron,
     oredictionary:ingotIron oredictionary:ingotIron oredictionary:ingotIron,
     -> ae2:BlockPatternEncoder
+
+shaped=
+    glass ae2:ItemMaterial.ConversionMatrix glass,
+    oredictionary:ingotIron oredictionary:chestWood oredictionary:ingotIron,
+    oredictionary:ingotIron oredictionary:ingotIron oredictionary:ingotIron,
+    -> ae2:BlockLegacyChest

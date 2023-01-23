@@ -35,6 +35,7 @@ import appeng.block.legacy.BlockAssemblerHeatVent;
 import appeng.block.legacy.BlockAssemblerWall;
 import appeng.block.legacy.BlockCraftMonitor;
 import appeng.block.legacy.BlockCraftTerminal;
+import appeng.block.legacy.BlockLegacyChest;
 import appeng.block.legacy.BlockLegacyController;
 import appeng.block.legacy.BlockPatternEncoder;
 import appeng.block.legacy.BlockStorageMonitor;
@@ -151,6 +152,7 @@ public final class ApiBlocks implements IBlocks {
     private final ITileDefinition assemblerWall;
     private final ITileDefinition assemblerHeatVent;
     private final ITileDefinition assemblerCraftingAccelerator;
+    private final ITileDefinition legacyChest;
 
     public ApiBlocks(final DefinitionConstructor constructor) {
         final BlockLightDetector lightDetector = new BlockLightDetector();
@@ -338,6 +340,7 @@ public final class ApiBlocks implements IBlocks {
             = constructor.registerTileDefinition(new BlockAssemblerHeatVent());
         this.assemblerCraftingAccelerator
             = constructor.registerTileDefinition(new BlockAssemblerCraftingAccelerator());
+        this.legacyChest = constructor.registerTileDefinition(new BlockLegacyChest());
     }
 
     @Override
