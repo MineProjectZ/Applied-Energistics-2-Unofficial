@@ -8,6 +8,7 @@ import appeng.block.AEBaseBlock;
 import appeng.block.AEBaseTileBlock;
 import appeng.client.render.BaseBlockRender;
 import appeng.client.render.blocks.RenderBlockLegacyChest;
+import appeng.client.texture.ExtraBlockTextures;
 import appeng.core.features.AEFeature;
 import appeng.core.localization.PlayerMessages;
 import appeng.core.sync.GuiBridge;
@@ -18,6 +19,9 @@ import appeng.util.Platform;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.IIcon;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
@@ -26,7 +30,7 @@ public class BlockLegacyChest extends AEBaseTileBlock {
     public BlockLegacyChest() {
         super(Material.iron);
         this.isFullSize = this.isOpaque = false;
-        this.setTileEntity(TileChest.class);
+        this.setTileEntity(TileLegacyChest.class);
         this.setFeature(EnumSet.of(AEFeature.Legacy));
     }
     
@@ -73,6 +77,24 @@ public class BlockLegacyChest extends AEBaseTileBlock {
         }
 
         return false;
+    }
+
+    @Override
+    public IIcon getIcon(IBlockAccess w, int x, int y, int z, int s) {
+        TileEntity te = w.getTileEntity(x, y, z);
+        if (!(te instanceof TileLegacyChest)) {
+            return super.getIcon(w, x, y, z, s);
+        }
+
+        TileLegacyChest tlc = (TileLegacyChest) te;
+
+        ForgeDirection direction
+            = this.mapRotation(tlc, ForgeDirection.getOrientation(s));
+
+        if (direction == ForgeDirection.UP) {
+            return ExtraBlockTextures.HDChestTop.getIcon();
+        }
+        return super.getIcon(direction.ordinal(), w.getBlockMetadata(x, y, z));
     }
 
 }

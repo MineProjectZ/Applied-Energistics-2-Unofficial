@@ -127,6 +127,9 @@ public enum ExtraBlockTextures {
     Controller5("BlockLegacyControllerFront"),
     ControllerLinked("ControllerLinked"),
 
+    HDChestTop("BlockHDChestTop"),
+    HDChestTopParts("BlockHDChestTopParts"),
+
     BlockStorageMonitorFrontMatrix("BlockStorageMonitorFront_Matrix"),
 
     BlockAssemblerWallMerged("BlockAssemblerWallMerged"),
