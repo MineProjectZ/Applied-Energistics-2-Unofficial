@@ -35,7 +35,7 @@ import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.networking.events.MENetworkChannelsChanged;
 import appeng.api.networking.events.MENetworkEventSubscribe;
 import appeng.api.networking.events.MENetworkPowerStatusChange;
-import appeng.api.networking.events.MENetworkRequestableChange;
+import appeng.api.networking.events.MENetworkRequestProviderChange;
 import appeng.api.networking.request.IRequestProvider;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.ticking.IGridTickable;
@@ -82,9 +82,6 @@ public class TileInterface extends AENetworkInvTile
     private ForgeDirection pointAt = ForgeDirection.UNKNOWN;
     private ILogisticsPipes logisticsPipes = null;
     private TileEntity requestPipe = null;
-    private int ticksSinceRefresh = 0;
-    private Set<IAEItemStack> requestable = new HashSet<>();
-    private Set<IAEItemStack> prevRequestable = new HashSet<>();
 
 
     @MENetworkEventSubscribe
@@ -313,16 +310,6 @@ public class TileInterface extends AENetworkInvTile
         this.duality.setPriority(newValue);
     }
 
-    @TileEvent(TileEventType.TICK)
-    public void tickEvent() {
-        if (logisticsPipes == null) return;
-        if (ticksSinceRefresh >= 10) {
-            refreshRequestable();
-            ticksSinceRefresh = 0;
-        }
-        ticksSinceRefresh++;
-    }
-
     public void refreshRequestPipe() {
         if (logisticsPipes != null) {
             for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
@@ -330,35 +317,29 @@ public class TileInterface extends AENetworkInvTile
                 if (logisticsPipes.isRequestPipe(te)) {
                     if (requestPipe != te) {
                         requestPipe = te;
-                        this.refreshRequestable();
+                        try {
+                            this.getProxy().getGrid().postEvent(new MENetworkRequestProviderChange(this));
+                        } catch (GridAccessException e) {
+                            // :P
+                        }
                     }
                     return;
                 }
-            } 
-        }
-        requestPipe = null;
-        this.refreshRequestable();
-    }
-
-    public void refreshRequestable() {
-        requestable.clear();
-        if (logisticsPipes != null && requestPipe != null) {
-            requestable.addAll(logisticsPipes.getRequestableItems(requestPipe));
-        }
-        if (!requestable.equals(prevRequestable)) { // TODO: post event when amount changes
-            prevRequestable.clear();
-            prevRequestable.addAll(requestable);
-            try {
-                this.getProxy().getGrid().postEvent(new MENetworkRequestableChange());
-            } catch (GridAccessException e) {
-                // :P
             }
-        }   
+            if (requestPipe != null) {
+                requestPipe = null;
+                try {
+                    this.getProxy().getGrid().postEvent(new MENetworkRequestProviderChange(this));
+                } catch (GridAccessException e) {
+                    // :P
+                }
+            }
+        }
     }
 
     @Override
     public Set<IAEItemStack> getRequestableItems() {
-        return requestable;
+        return logisticsPipes.getRequestableItems(requestPipe);
     }
 
     @Override
@@ -432,5 +413,10 @@ public class TileInterface extends AENetworkInvTile
         } catch (GridAccessException e) {
             return 0;
         }
+    }
+
+    @Override
+    public boolean isActive() {
+        return this.requestPipe != null;
     }
 }

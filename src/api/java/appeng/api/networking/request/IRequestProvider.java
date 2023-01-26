@@ -11,4 +11,6 @@ public interface IRequestProvider {
 
     IAEItemStack requestStack(IAEItemStack stack, Actionable actionable);
 
+    boolean isActive();
+
 }

@@ -15,7 +15,7 @@ import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridStorage;
 import appeng.api.networking.events.MENetworkEventSubscribe;
 import appeng.api.networking.events.MENetworkPostCacheConstruction;
-import appeng.api.networking.events.MENetworkRequestableChange;
+import appeng.api.networking.events.MENetworkRequestProviderChange;
 import appeng.api.networking.request.IRequestGrid;
 import appeng.api.networking.request.IRequestProvider;
 import appeng.api.networking.security.BaseActionSource;
@@ -32,13 +32,21 @@ public class RequestGridCache
     private IStorageGrid storageGrid;
     private Map<IAEItemStack, Requestable> requestable = new HashMap<>();
     private Set<IRequestProvider> requestProviders = new HashSet<>();
+    private int tickSinceRefresh = 0;
 
     public RequestGridCache(IGrid grid) {
         this.grid = grid;
     }
 
     @Override
-    public void onUpdateTick() {}
+    public void onUpdateTick() {
+        if (requestProviders.isEmpty()) return;
+        if (tickSinceRefresh % 10 == 0) {
+            tickSinceRefresh = 0;
+            recalcRequestable();
+        }
+        tickSinceRefresh++;
+    }
 
     @Override
     public void removeNode(IGridNode gridNode, IGridHost machine) {
@@ -51,8 +59,10 @@ public class RequestGridCache
     @Override
     public void addNode(IGridNode gridNode, IGridHost machine) {
         if (machine instanceof IRequestProvider) {
-            requestProviders.add((IRequestProvider) machine);
-            recalcRequestable();
+            if (((IRequestProvider)machine).isActive()) {
+                requestProviders.add((IRequestProvider) machine);
+                recalcRequestable();
+            }
         }
     }
 
@@ -66,7 +76,12 @@ public class RequestGridCache
     public void populateGridStorage(IGridStorage destinationStorage) {}
 
     @MENetworkEventSubscribe
-    public void requestableChange(MENetworkRequestableChange event) {
+    public void requestProviderChange(MENetworkRequestProviderChange event) {
+        if (event.provider.isActive()) {
+            requestProviders.add(event.provider);
+        } else {
+            requestProviders.remove(event.provider);
+        }
         recalcRequestable();
     }
 
