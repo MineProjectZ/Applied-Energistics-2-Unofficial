@@ -17,6 +17,7 @@ public class RenderBlockLegacyDisplay
     public boolean renderInWorld(
         AEBaseTileBlock b, IBlockAccess world, int x, int y, int z, RenderBlocks renderer
     ) {
+        this.preRenderInWorld(b, world, x, y, z, renderer);
         TileLegacyDisplay tile = (TileLegacyDisplay) world.getTileEntity(x, y, z);
         renderer.setRenderBounds(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
         if (tile.isDisplayPowered()) {
@@ -39,7 +40,7 @@ public class RenderBlockLegacyDisplay
         } else {
             renderer.renderStandardBlock(b, x, y, z);
         }
-
+        this.postRenderInWorld(renderer);
         return true;
     }
 }
