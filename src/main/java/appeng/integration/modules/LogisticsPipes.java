@@ -84,9 +84,22 @@ public class LogisticsPipes implements ILogisticsPipes, IIntegrationModule {
             Map<IAEItemStack, IAEItemStack> stacks = new HashMap<>();
             for(ItemStack s : api.getProvidedItems()) {
                 IAEItemStack stack = AEItemStack.create(s);
+                int stacksize = s.stackSize;
+                stack.reset();
+                stack.setCountRequestable(stacksize);
                 if (stacks.containsKey(stack)) {
-                    stacks.get(stack).incStackSize(stack.getStackSize());
+                    stacks.get(stack).incCountRequestable(stack.getCountRequestable());
                 } else {
+                    stacks.put(stack, stack);
+                }
+            }
+            for(ItemStack s : api.getCraftedItems()) {
+                IAEItemStack stack = AEItemStack.create(s);
+                stack.reset();
+                if (stacks.containsKey(stack)) {
+                    stacks.get(stack).setCraftable(true);
+                } else {
+                    stack.setCraftable(true);
                     stacks.put(stack, stack);
                 }
             }
@@ -104,15 +117,21 @@ public class LogisticsPipes implements ILogisticsPipes, IIntegrationModule {
                 if (res.missing.isEmpty()) {
                     return null;
                 } else {
-                    return AEItemStack.create(res.missing.get(0));
+                    ItemStack m = res.missing.get(0);
+                    if (request.equals(m)) {
+                        return AEItemStack.create(res.missing.get(0));
+                    } else {
+                        return request;
+                    }
                 }
             } else {
                 List<ItemStack> returned = api.performRequest(request.getItemStack());
                 if (returned.isEmpty()) {
                     return null;
                 } else {
-                    int missing = returned.get(0).stackSize;
-                    if (missing > 0) {
+                    ItemStack m = returned.get(0);
+                    int missing = m.stackSize;
+                    if (missing > 0 && request.equals(m)) {
                         IAEItemStack newRequest = request.copy();
                         newRequest.decStackSize(missing);
                         // LP should still request the items, which are available

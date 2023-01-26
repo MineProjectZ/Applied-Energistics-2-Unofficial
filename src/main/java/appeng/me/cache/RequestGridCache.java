@@ -93,9 +93,12 @@ public class RequestGridCache
                 if (requestable.containsKey(stack)) {
                     Requestable r = requestable.get(stack);
                     r.addProvider(provider);
-                    r.increaseAmount(stack.getStackSize());
+                    r.increaseAmount(stack.getCountRequestable());
+                    if (stack.isCraftable()) {
+                        r.setCraftable();
+                    }
                 } else {
-                    Requestable r = new Requestable(stack.getStackSize());
+                    Requestable r = new Requestable(stack);
                     r.addProvider(provider);
                     requestable.put(stack, r);
                 }
@@ -151,6 +154,7 @@ public class RequestGridCache
             stack.reset();
             Requestable r = requestable.get(s);
             stack.setCountRequestable(r.amount);
+            stack.setCraftable(r.craftable);
             out.add(stack);
         }
         return out;
@@ -212,10 +216,12 @@ public class RequestGridCache
     static class Requestable {
         public Set<IRequestProvider> providers;
         public long amount;
+        public boolean craftable;
 
-        public Requestable(long amount) {
+        public Requestable(IAEItemStack stack) {
             this.providers = new HashSet<>();
-            this.amount = amount;
+            this.amount = stack.getCountRequestable();
+            this.craftable = stack.isCraftable();
         }
 
         public void addProvider(IRequestProvider provider) {
@@ -224,6 +230,10 @@ public class RequestGridCache
 
         public void increaseAmount(long amount) {
             this.amount += amount;
+        }
+
+        public void setCraftable() {
+            this.craftable = true;
         }
     }
 }
