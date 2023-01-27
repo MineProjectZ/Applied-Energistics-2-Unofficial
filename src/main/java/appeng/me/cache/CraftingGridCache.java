@@ -49,7 +49,6 @@ import appeng.crafting.CraftingJob;
 import appeng.crafting.CraftingLink;
 import appeng.crafting.CraftingLinkNexus;
 import appeng.crafting.CraftingWatcher;
-import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.helpers.GenericInterestManager;
 import appeng.tile.crafting.TileCraftingStorageTile;
 import appeng.tile.crafting.TileCraftingTile;
@@ -82,8 +81,8 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
         CRAFTING_POOL = Executors.newCachedThreadPool(factory);
     }
 
-    private final Set<CraftingCPUCluster> craftingCPUClusters
-        = new HashSet<CraftingCPUCluster>();
+    private final Set<ICraftingCPU> ICraftingCPUs
+        = new HashSet<ICraftingCPU>();
     private final Set<ICraftingProvider> craftingProviders
         = new HashSet<ICraftingProvider>();
     private final Map<IGridNode, ICraftingWatcher> craftingWatchers
@@ -131,7 +130,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
             }
         }
 
-        for (final CraftingCPUCluster cpu : this.craftingCPUClusters) {
+        for (final ICraftingCPU cpu : this.ICraftingCPUs) {
             cpu.updateCraftingLogic(this.grid, this.energyGrid, this);
         }
     }
@@ -259,14 +258,14 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
     }
 
     private void updateCPUClusters() {
-        this.craftingCPUClusters.clear();
+        this.ICraftingCPUs.clear();
 
         for (final IGridNode cst : this.grid.getMachines(TileCraftingStorageTile.class)) {
             final TileCraftingStorageTile tile
                 = (TileCraftingStorageTile) cst.getMachine();
-            final CraftingCPUCluster cluster = (CraftingCPUCluster) tile.getCluster();
+            final ICraftingCPU cluster = (ICraftingCPU) tile.getCluster();
             if (cluster != null) {
-                this.craftingCPUClusters.add(cluster);
+                this.ICraftingCPUs.add(cluster);
 
                 if (cluster.getLastCraftingLink() != null) {
                     this.addLink((CraftingLink) cluster.getLastCraftingLink());
@@ -346,7 +345,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
 
     @Override
     public boolean canAccept(final IAEStack input) {
-        for (final CraftingCPUCluster cpu : this.craftingCPUClusters) {
+        for (final ICraftingCPU cpu : this.ICraftingCPUs) {
             if (cpu.canAccept(input)) {
                 return true;
             }
@@ -368,7 +367,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
     @Override
     public IAEStack
     injectItems(IAEStack input, final Actionable type, final BaseActionSource src) {
-        for (final CraftingCPUCluster cpu : this.craftingCPUClusters) {
+        for (final ICraftingCPU cpu : this.ICraftingCPUs) {
             input = cpu.injectItems(input, type, src);
         }
 
@@ -461,27 +460,27 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
             return null;
         }
 
-        CraftingCPUCluster cpuCluster = null;
+        ICraftingCPU cpuCluster = null;
 
-        if (target instanceof CraftingCPUCluster) {
-            cpuCluster = (CraftingCPUCluster) target;
+        if (target instanceof ICraftingCPU) {
+            cpuCluster = (ICraftingCPU) target;
         }
 
         if (target == null) {
-            final List<CraftingCPUCluster> validCpusClusters
-                = new ArrayList<CraftingCPUCluster>();
-            for (final CraftingCPUCluster cpu : this.craftingCPUClusters) {
+            final List<ICraftingCPU> validCpusClusters
+                = new ArrayList<ICraftingCPU>();
+            for (final ICraftingCPU cpu : this.ICraftingCPUs) {
                 if (cpu.isActive() && !cpu.isBusy()
                     && cpu.getAvailableStorage() >= job.getByteTotal()) {
                     validCpusClusters.add(cpu);
                 }
             }
 
-            Collections.sort(validCpusClusters, new Comparator<CraftingCPUCluster>() {
+            Collections.sort(validCpusClusters, new Comparator<ICraftingCPU>() {
                 @Override
                 public int compare(
-                    final CraftingCPUCluster firstCluster,
-                    final CraftingCPUCluster nextCluster
+                    final ICraftingCPU firstCluster,
+                    final ICraftingCPU nextCluster
                 ) {
                     if (prioritizePower) {
                         final int comparison = ItemSorters.compareLong(
@@ -523,7 +522,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
 
     @Override
     public ImmutableSet<ICraftingCPU> getCpus() {
-        return ImmutableSet.copyOf(new ActiveCpuIterator(this.craftingCPUClusters));
+        return ImmutableSet.copyOf(new ActiveCpuIterator(this.ICraftingCPUs));
     }
 
     @Override
@@ -533,7 +532,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
 
     @Override
     public boolean isRequesting(final IAEItemStack what) {
-        for (final CraftingCPUCluster cluster : this.craftingCPUClusters) {
+        for (final ICraftingCPU cluster : this.ICraftingCPUs) {
             if (cluster.isMaking(what)) {
                 return true;
             }
@@ -553,7 +552,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
     }
 
     public boolean hasCpu(final ICraftingCPU cpu) {
-        return this.craftingCPUClusters.contains(cpu);
+        return this.ICraftingCPUs.contains(cpu);
     }
 
     public GenericInterestManager<CraftingWatcher> getInterestManager() {
@@ -561,10 +560,10 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
     }
 
     private static class ActiveCpuIterator implements Iterator<ICraftingCPU> {
-        private final Iterator<CraftingCPUCluster> iterator;
-        private CraftingCPUCluster cpuCluster;
+        private final Iterator<ICraftingCPU> iterator;
+        private ICraftingCPU cpuCluster;
 
-        public ActiveCpuIterator(final Collection<CraftingCPUCluster> o) {
+        public ActiveCpuIterator(final Collection<ICraftingCPU> o) {
             this.iterator = o.iterator();
             this.cpuCluster = null;
         }

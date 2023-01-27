@@ -39,7 +39,6 @@ import appeng.core.sync.packets.PacketMEInventoryUpdate;
 import appeng.core.sync.packets.PacketValueConfig;
 import appeng.helpers.ICustomNameObject;
 import appeng.me.cluster.IAEMultiBlock;
-import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.tile.crafting.TileCraftingTile;
 import appeng.util.Platform;
 import net.minecraft.entity.player.EntityPlayer;
@@ -53,7 +52,7 @@ public class ContainerCraftingCPU extends AEBaseContainer
     private final IItemList<IAEItemStack> list
         = AEApi.instance().storage().createItemList();
     private IGrid network;
-    private CraftingCPUCluster monitor = null;
+    private ICraftingCPU monitor = null;
     private String cpuName = null;
 
     @GuiSync(0)
@@ -110,9 +109,9 @@ public class ContainerCraftingCPU extends AEBaseContainer
             }
         }
 
-        if (c instanceof CraftingCPUCluster) {
+        if (c instanceof ICraftingCPU) {
             this.cpuName = c.getName();
-            this.setMonitor((CraftingCPUCluster) c);
+            this.setMonitor((ICraftingCPU) c);
             this.list.resetStatus();
             this.getMonitor().getListOfItem(this.list, CraftingItemList.ALL);
             this.getMonitor().addListener(this, null);
@@ -242,11 +241,11 @@ public class ContainerCraftingCPU extends AEBaseContainer
         this.eta = eta;
     }
 
-    CraftingCPUCluster getMonitor() {
+    ICraftingCPU getMonitor() {
         return this.monitor;
     }
 
-    private void setMonitor(final CraftingCPUCluster monitor) {
+    private void setMonitor(final ICraftingCPU monitor) {
         this.monitor = monitor;
     }
 

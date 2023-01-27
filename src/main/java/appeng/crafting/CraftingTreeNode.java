@@ -26,12 +26,12 @@ import java.util.List;
 import appeng.api.AEApi;
 import appeng.api.config.Actionable;
 import appeng.api.config.FuzzyMode;
+import appeng.api.networking.crafting.ICraftingCPU;
 import appeng.api.networking.crafting.ICraftingGrid;
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IItemList;
-import appeng.me.cluster.implementations.CraftingCPUCluster;
 import com.google.common.collect.Lists;
 import net.minecraft.world.World;
 
@@ -313,7 +313,7 @@ public class CraftingTreeNode {
 
     public void setJob(
         final MECraftingInventory storage,
-        final CraftingCPUCluster craftingCPUCluster,
+        final ICraftingCPU ICraftingCPU,
         final BaseActionSource src
     ) throws CraftBranchFailure {
         for (final IAEItemStack i : this.used) {
@@ -323,17 +323,17 @@ public class CraftingTreeNode {
                 throw new CraftBranchFailure(i, i.getStackSize());
             }
 
-            craftingCPUCluster.addStorage(ex);
+            ICraftingCPU.addStorage(ex);
         }
 
         if (this.howManyEmitted > 0) {
             final IAEItemStack i = this.what.copy();
             i.setStackSize(this.howManyEmitted);
-            craftingCPUCluster.addEmitable(i);
+            ICraftingCPU.addEmitable(i);
         }
 
         for (final CraftingTreeProcess pro : this.nodes) {
-            pro.setJob(storage, craftingCPUCluster, src);
+            pro.setJob(storage, ICraftingCPU, src);
         }
     }
 

@@ -23,9 +23,14 @@
 
 package appeng.api.networking.crafting;
 
+import appeng.api.config.Actionable;
+import appeng.api.networking.IGrid;
+import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.storage.IBaseMonitor;
 import appeng.api.storage.data.IAEItemStack;
+import appeng.api.storage.data.IAEStack;
+import appeng.api.storage.data.IItemList;
 
 public interface ICraftingCPU extends IBaseMonitor<IAEItemStack> {
     /**
@@ -52,4 +57,38 @@ public interface ICraftingCPU extends IBaseMonitor<IAEItemStack> {
      * @return an empty string or the name of the cpu.
      */
     String getName();
+
+    void getListOfItem(final IItemList<IAEItemStack> list, final CraftingItemList whichList);
+
+    void cancel();
+
+    IAEItemStack getItemStack(final IAEItemStack what, final CraftingItemList storage2);
+
+    long getElapsedTime();
+
+    long getRemainingItemCount();
+
+    long getStartItemCount();
+
+    void addCrafting(final ICraftingPatternDetails details, final long crafts);
+
+    void addStorage(final IAEItemStack extractItems);
+
+    void addEmitable(final IAEItemStack i);
+
+    void updateCraftingLogic(final IGrid grid, final IEnergyGrid eg, final ICraftingGrid cc);
+
+    ICraftingLink getLastCraftingLink();
+
+    boolean canAccept(final IAEStack<?> input);
+
+    IAEStack<?> injectItems(final IAEStack<?> input, final Actionable type, final BaseActionSource src);
+
+    ICraftingLink submitJob(final IGrid g, final ICraftingJob job, final BaseActionSource src, final ICraftingRequester requestingMachine);
+
+    boolean isMaking(final IAEItemStack what);
+
+    boolean isActive();
+
+    boolean isDestroyed();
 }

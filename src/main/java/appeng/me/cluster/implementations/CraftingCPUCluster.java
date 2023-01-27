@@ -104,10 +104,12 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         this.max = max;
     }
 
+    @Override
     public boolean isDestroyed() {
         return this.isDestroyed;
     }
 
+    @Override
     public ICraftingLink getLastCraftingLink() {
         return this.myLastLink;
     }
@@ -189,6 +191,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         }
     }
 
+    @Override
     public boolean canAccept(final IAEStack input) {
         if (input instanceof IAEItemStack) {
             final IAEItemStack is = this.waitingFor.findPrecise((IAEItemStack) input);
@@ -199,6 +202,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         return false;
     }
 
+    @Override
     public IAEStack
     injectItems(final IAEStack input, final Actionable type, final BaseActionSource src) {
         if (!(input instanceof IAEItemStack)) {
@@ -456,6 +460,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         return true;
     }
 
+    @Override
     public void cancel() {
         if (this.myLastLink != null) {
             this.myLastLink.cancel();
@@ -487,8 +492,9 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         this.storeItems(); // marks dirty
     }
 
+    @Override
     public void updateCraftingLogic(
-        final IGrid grid, final IEnergyGrid eg, final CraftingGridCache cc
+        final IGrid grid, final IEnergyGrid eg, final ICraftingGrid cc
     ) {
         if (!this.getCore().isActive()) {
             return;
@@ -523,7 +529,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         if (this.remainingOperations > 0) {
             do {
                 this.somethingChanged = false;
-                this.executeCrafting(eg, cc);
+                this.executeCrafting(eg, (CraftingGridCache)cc);
             } while (this.somethingChanged && this.remainingOperations > 0);
         }
         this.usedOps[2] = this.usedOps[1];
@@ -754,6 +760,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         this.markDirty();
     }
 
+    @Override
     public ICraftingLink submitJob(
         final IGrid g,
         final ICraftingJob job,
@@ -862,6 +869,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         return this.myName;
     }
 
+    @Override
     public boolean isActive() {
         final TileCraftingTile core = this.getCore();
 
@@ -908,6 +916,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         }
     }
 
+    @Override
     public void
     getListOfItem(final IItemList<IAEItemStack> list, final CraftingItemList whichList) {
         switch (whichList) {
@@ -949,15 +958,18 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         }
     }
 
+    @Override
     public void addStorage(final IAEItemStack extractItems) {
         this.inventory.injectItems(extractItems, Actionable.MODULATE, null);
     }
 
+    @Override
     public void addEmitable(final IAEItemStack i) {
         this.waitingFor.add(i);
         this.postCraftingStatusChange(i);
     }
 
+    @Override
     public void addCrafting(final ICraftingPatternDetails details, final long crafts) {
         TaskProgress i = this.tasks.get(details);
 
@@ -968,6 +980,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         i.value += crafts;
     }
 
+    @Override
     public IAEItemStack
     getItemStack(final IAEItemStack what, final CraftingItemList storage2) {
         IAEItemStack is;
@@ -1153,6 +1166,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         return this.getCore().getWorldObj();
     }
 
+    @Override
     public boolean isMaking(final IAEItemStack what) {
         final IAEItemStack wat = this.waitingFor.findPrecise(what);
         return wat != null && wat.getStackSize() > 0;
@@ -1191,14 +1205,17 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU {
         this.remainingItemCount = this.getRemainingItemCount() - is.getStackSize();
     }
 
+    @Override
     public long getElapsedTime() {
         return this.elapsedTime;
     }
 
+    @Override
     public long getRemainingItemCount() {
         return this.remainingItemCount;
     }
 
+    @Override
     public long getStartItemCount() {
         return this.startItemCount;
     }

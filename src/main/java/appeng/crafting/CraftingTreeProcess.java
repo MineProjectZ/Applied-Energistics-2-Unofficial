@@ -24,13 +24,13 @@ import java.util.Map.Entry;
 
 import appeng.api.AEApi;
 import appeng.api.config.Actionable;
+import appeng.api.networking.crafting.ICraftingCPU;
 import appeng.api.networking.crafting.ICraftingGrid;
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IItemList;
 import appeng.container.ContainerNull;
-import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.util.Platform;
 import cpw.mods.fml.common.FMLCommonHandler;
 import net.minecraft.inventory.InventoryCrafting;
@@ -287,13 +287,13 @@ public class CraftingTreeProcess {
 
     void setJob(
         final MECraftingInventory storage,
-        final CraftingCPUCluster craftingCPUCluster,
+        final ICraftingCPU ICraftingCPU,
         final BaseActionSource src
     ) throws CraftBranchFailure {
-        craftingCPUCluster.addCrafting(this.details, this.crafts);
+        ICraftingCPU.addCrafting(this.details, this.crafts);
 
         for (final CraftingTreeNode pro : this.nodes.keySet()) {
-            pro.setJob(storage, craftingCPUCluster, src);
+            pro.setJob(storage, ICraftingCPU, src);
         }
     }
 
