@@ -81,7 +81,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
         CRAFTING_POOL = Executors.newCachedThreadPool(factory);
     }
 
-    private final Set<ICraftingCPU> ICraftingCPUs
+    private final Set<ICraftingCPU> craftingCPUs
         = new HashSet<ICraftingCPU>();
     private final Set<ICraftingProvider> craftingProviders
         = new HashSet<ICraftingProvider>();
@@ -130,7 +130,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
             }
         }
 
-        for (final ICraftingCPU cpu : this.ICraftingCPUs) {
+        for (final ICraftingCPU cpu : this.craftingCPUs) {
             cpu.updateCraftingLogic(this.grid, this.energyGrid, this);
         }
     }
@@ -258,14 +258,14 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
     }
 
     private void updateCPUClusters() {
-        this.ICraftingCPUs.clear();
+        this.craftingCPUs.clear();
 
         for (final IGridNode cst : this.grid.getMachines(TileCraftingStorageTile.class)) {
             final TileCraftingStorageTile tile
                 = (TileCraftingStorageTile) cst.getMachine();
             final ICraftingCPU cluster = (ICraftingCPU) tile.getCluster();
             if (cluster != null) {
-                this.ICraftingCPUs.add(cluster);
+                this.craftingCPUs.add(cluster);
 
                 if (cluster.getLastCraftingLink() != null) {
                     this.addLink((CraftingLink) cluster.getLastCraftingLink());
@@ -345,7 +345,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
 
     @Override
     public boolean canAccept(final IAEStack input) {
-        for (final ICraftingCPU cpu : this.ICraftingCPUs) {
+        for (final ICraftingCPU cpu : this.craftingCPUs) {
             if (cpu.canAccept(input)) {
                 return true;
             }
@@ -367,7 +367,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
     @Override
     public IAEStack
     injectItems(IAEStack input, final Actionable type, final BaseActionSource src) {
-        for (final ICraftingCPU cpu : this.ICraftingCPUs) {
+        for (final ICraftingCPU cpu : this.craftingCPUs) {
             input = cpu.injectItems(input, type, src);
         }
 
@@ -469,7 +469,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
         if (target == null) {
             final List<ICraftingCPU> validCpusClusters
                 = new ArrayList<ICraftingCPU>();
-            for (final ICraftingCPU cpu : this.ICraftingCPUs) {
+            for (final ICraftingCPU cpu : this.craftingCPUs) {
                 if (cpu.isActive() && !cpu.isBusy()
                     && cpu.getAvailableStorage() >= job.getByteTotal()) {
                     validCpusClusters.add(cpu);
@@ -522,7 +522,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
 
     @Override
     public ImmutableSet<ICraftingCPU> getCpus() {
-        return ImmutableSet.copyOf(new ActiveCpuIterator(this.ICraftingCPUs));
+        return ImmutableSet.copyOf(new ActiveCpuIterator(this.craftingCPUs));
     }
 
     @Override
@@ -532,7 +532,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
 
     @Override
     public boolean isRequesting(final IAEItemStack what) {
-        for (final ICraftingCPU cluster : this.ICraftingCPUs) {
+        for (final ICraftingCPU cluster : this.craftingCPUs) {
             if (cluster.isMaking(what)) {
                 return true;
             }
@@ -552,7 +552,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
     }
 
     public boolean hasCpu(final ICraftingCPU cpu) {
-        return this.ICraftingCPUs.contains(cpu);
+        return this.craftingCPUs.contains(cpu);
     }
 
     public GenericInterestManager<CraftingWatcher> getInterestManager() {
