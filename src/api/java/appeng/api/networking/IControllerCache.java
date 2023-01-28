@@ -1,7 +1,8 @@
 package appeng.api.networking;
 
-import appeng.api.config.Actionable;
-import appeng.api.storage.data.IAEItemStack;
+import java.util.Set;
+
+import appeng.api.networking.crafting.ICraftingCPU;
 
 public interface IControllerCache extends IGridCache {
 
@@ -15,6 +16,6 @@ public interface IControllerCache extends IGridCache {
 
     IGridHost getController();
 
-    boolean requestCrafting(IAEItemStack stack, Actionable actionable);
+    Set<ICraftingCPU> getCPUs();
     
 }

@@ -227,7 +227,7 @@ public class GuiCraftConfirm extends AEBaseGui {
             dsp = GuiText.Simulation.getLocal();
         } else {
             dsp = this.ccc.getCpuAvailableBytes() > 0
-                ? (GuiText.Bytes.getLocal() + ": " + this.ccc.getCpuAvailableBytes()
+                ? (GuiText.Bytes.getLocal() + ": " + (this.ccc.getCpuAvailableBytes() == Long.MAX_VALUE ? "Infinite" : this.ccc.getCpuAvailableBytes())
                    + " : " + GuiText.CoProcessors.getLocal() + ": "
                    + this.ccc.getCpuCoProcessors())
                 : GuiText.Bytes.getLocal() + ": N/A : " + GuiText.CoProcessors.getLocal()

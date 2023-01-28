@@ -8,6 +8,7 @@ import appeng.core.features.AEFeature;
 import appeng.core.sync.GuiBridge;
 import appeng.tile.legacy.TileLegacyController;
 import appeng.util.Platform;
+import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
@@ -42,6 +43,13 @@ public class BlockLegacyController extends AEBaseTileBlock {
             GuiBridge.GUI_NETWORK_STATUS_BLOCK
         );
         return true;
+    }
+
+    @Override
+    public void breakBlock(World w, int x, int y, int z, Block a, int b) {
+        TileLegacyController tile = this.getTileEntity(w, x, y, z);
+        tile.breakBlock();
+        super.breakBlock(w, x, y, z, a, b);
     }
 
     @Override

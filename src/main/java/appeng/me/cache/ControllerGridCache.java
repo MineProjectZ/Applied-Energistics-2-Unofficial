@@ -1,6 +1,7 @@
 package appeng.me.cache;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import appeng.api.config.Actionable;
@@ -9,9 +10,11 @@ import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridStorage;
+import appeng.api.networking.crafting.ICraftingCPU;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.core.AEConfig;
 import appeng.core.features.AEFeature;
+import appeng.me.cluster.implementations.InternalCraftingCPU;
 import appeng.tile.legacy.TileLegacyController;
 import appeng.tile.networking.TileController;
 
@@ -90,10 +93,16 @@ public class ControllerGridCache implements IControllerCache {
     }
 
     @Override
-    public boolean requestCrafting(IAEItemStack stack, Actionable actionable) {
-        //ICraftingGrid craftingGrid = grid.getCache(ICraftingGrid.class);
-        //return craftingGrid.getCpus().isEmpty() && this.hasController();
-        return false; // TODO: implement legacy crafting
+    public Set<ICraftingCPU> getCPUs() {
+        Set<ICraftingCPU> cpus = new HashSet<>();
+        IGridHost h = getController();
+        if (h instanceof TileLegacyController) {
+            TileLegacyController controller = (TileLegacyController) h;
+            for (InternalCraftingCPU cpu : controller.cpus) {
+                cpus.add(cpu);
+            }
+        }
+        return cpus;
     }
     
 }

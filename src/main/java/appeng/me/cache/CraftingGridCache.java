@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadFactory;
 
 import appeng.api.config.AccessRestriction;
 import appeng.api.config.Actionable;
+import appeng.api.networking.IControllerCache;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
@@ -52,6 +53,7 @@ import appeng.crafting.CraftingWatcher;
 import appeng.me.helpers.GenericInterestManager;
 import appeng.tile.crafting.TileCraftingStorageTile;
 import appeng.tile.crafting.TileCraftingTile;
+import appeng.tile.legacy.TileLegacyController;
 import appeng.util.ItemSorters;
 import com.google.common.collect.*;
 import net.minecraft.world.World;
@@ -181,7 +183,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
             }
         }
 
-        if (machine instanceof TileCraftingTile) {
+        if (machine instanceof TileCraftingTile || machine instanceof TileLegacyController) {
             this.updateList = true;
         }
 
@@ -259,6 +261,8 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
 
     private void updateCPUClusters() {
         this.craftingCPUs.clear();
+        IControllerCache cc = this.grid.getCache(IControllerCache.class);
+        craftingCPUs.addAll(cc.getCPUs());
 
         for (final IGridNode cst : this.grid.getMachines(TileCraftingStorageTile.class)) {
             final TileCraftingStorageTile tile
