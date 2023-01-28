@@ -38,6 +38,7 @@ import appeng.block.legacy.BlockCraftTerminal;
 import appeng.block.legacy.BlockLegacyChest;
 import appeng.block.legacy.BlockLegacyController;
 import appeng.block.legacy.BlockPatternEncoder;
+import appeng.block.legacy.BlockPowerRelay;
 import appeng.block.legacy.BlockStorageMonitor;
 import appeng.block.legacy.BlockTerminal;
 import appeng.block.legacy.BlockTransitionPlane;
@@ -153,6 +154,7 @@ public final class ApiBlocks implements IBlocks {
     private final ITileDefinition assemblerHeatVent;
     private final ITileDefinition assemblerCraftingAccelerator;
     private final ITileDefinition legacyChest;
+    private final ITileDefinition powerRelay;
 
     public ApiBlocks(final DefinitionConstructor constructor) {
         final BlockLightDetector lightDetector = new BlockLightDetector();
@@ -341,6 +343,7 @@ public final class ApiBlocks implements IBlocks {
         this.assemblerCraftingAccelerator
             = constructor.registerTileDefinition(new BlockAssemblerCraftingAccelerator());
         this.legacyChest = constructor.registerTileDefinition(new BlockLegacyChest());
+        this.powerRelay = constructor.registerTileDefinition(new BlockPowerRelay());
     }
 
     @Override

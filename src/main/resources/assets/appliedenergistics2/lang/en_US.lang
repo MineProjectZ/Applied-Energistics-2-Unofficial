@@ -60,6 +60,7 @@ tile.appliedenergistics2.BlockStorageMonitor.name=ME Storage Monitor
 tile.appliedenergistics2.BlockTerminal.name=ME Access Terminal
 tile.appliedenergistics2.BlockWirelessAccessPoint.name=Wireless Access Point
 tile.appliedenergistics2.BlockLegacyChest.name=ME Chest
+tile.appliedenergistics2.BlockPowerRelay.name=ME Power Relay
 
 item.appliedenergistics2.ItemMaterial.ConversionMatrix.name=Conversion Matrix
 
