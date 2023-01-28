@@ -7,7 +7,10 @@ import java.util.Set;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.GridFlags;
+import appeng.api.networking.IControllerCache;
+import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
+import appeng.api.networking.energy.IAEPowerStorage;
 import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.networking.energy.IEnergyGridProvider;
 import appeng.api.util.AECableType;
@@ -42,6 +45,36 @@ public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable,
             proxy.setIdlePowerUsage(0);
             proxies.put(dir, proxy);
         }
+        this.setInternalMaxPower(8000.0);
+    }
+
+    @TileEvent(TileEventType.TICK)
+    public void onTick() {
+        if (this.getAECurrentPower() > 0.01) {
+            this.onUpdatePower();
+        }
+    }
+
+    public void onUpdatePower() {
+        final double split = this.getAECurrentPower() / 6; // TODO: only care for sides, which demand energy
+        double current = 0.0;
+        for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+            double leftover = split;
+            try {
+                IEnergyGrid eg = this.getProxyForSide(dir).getEnergy();
+                IControllerCache cg = this.getProxyForSide(dir).getGrid().getCache(IControllerCache.class);
+                IGridHost controller = cg.getController();
+                if (controller instanceof IAEPowerStorage) {
+                    leftover = ((IAEPowerStorage)controller).injectAEPower(leftover, Actionable.MODULATE);
+                }
+                double demand = eg.getEnergyDemand(leftover);
+                leftover = eg.injectPower(Math.min(leftover, demand), Actionable.MODULATE);
+                current += leftover;
+            } catch (GridAccessException e) {
+                // :P
+            }
+        }
+        this.setInternalCurrentPower(current);
     }
 
     @TileEvent(TileEventType.WORLD_NBT_READ)
