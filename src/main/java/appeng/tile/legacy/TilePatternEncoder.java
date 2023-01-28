@@ -22,6 +22,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 public class TilePatternEncoder extends AEBaseInvTile {
@@ -292,5 +293,21 @@ public class TilePatternEncoder extends AEBaseInvTile {
     @Override
     public int[] getAccessibleSlotsBySide(ForgeDirection side) {
         return new int[] { side == ForgeDirection.DOWN ? 11 : 10 };
+    }
+
+    @Override
+    public void getDrops(
+        final World w, final int x, final int y, final int z, final List<ItemStack> drops
+    ) {
+        if (this instanceof IInventory) {
+            final IInventory inv = (IInventory) this;
+
+            for (int l = 10; l < inv.getSizeInventory(); l++) {
+                final ItemStack is = inv.getStackInSlot(l);
+                if (is != null) {
+                    drops.add(is);
+                }
+            }
+        }
     }
 }
