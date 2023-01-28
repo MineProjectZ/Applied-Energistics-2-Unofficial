@@ -3,11 +3,16 @@ package appeng.tile.legacy;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
+import appeng.api.config.Actionable;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
+import appeng.api.networking.energy.IEnergyGrid;
+import appeng.api.networking.energy.IEnergyGridProvider;
 import appeng.api.util.AECableType;
 import appeng.api.util.DimensionalCoord;
+import appeng.me.GridAccessException;
 import appeng.me.helpers.AENetworkProxy;
 import appeng.me.helpers.IGridProxyable;
 import appeng.tile.TileEvent;
@@ -20,7 +25,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable {
+public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable, IEnergyGridProvider {
     public static final IInventory NULL_INVENTORY = new AppEngInternalInventory(null, 0);
     public static final int[] ACCESSIBLE_SLOTS_BY_SIDE = {};
     private Map<ForgeDirection, AENetworkProxy> proxies = new HashMap<>();
@@ -34,6 +39,7 @@ public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable 
             } else {
                 proxy.setValidSides(EnumSet.of(dir));
             }
+            proxy.setIdlePowerUsage(0);
             proxies.put(dir, proxy);
         }
     }
@@ -126,6 +132,30 @@ public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable 
         for(ForgeDirection dir : ForgeDirection.values()) {
             proxies.get(dir).validate();
         }
+    }
+
+    @Override
+    public double extractAEPower(double amt, Actionable mode, Set<IEnergyGrid> seen) {
+        double acquiredPower = 0;
+        for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+            try {
+                final IEnergyGrid eg = this.getProxyForSide(dir).getEnergy();
+                acquiredPower += eg.extractAEPower(amt - acquiredPower, mode, seen);
+            } catch (final GridAccessException e) {
+                // :P
+            }
+        }
+        return acquiredPower;
+    }
+
+    @Override
+    public double injectAEPower(double amt, Actionable mode, Set<IEnergyGrid> seen) {
+        return amt;
+    }
+
+    @Override
+    public double getEnergyDemand(double amt, Set<IEnergyGrid> seen) {
+        return 0;
     }
     
 }
