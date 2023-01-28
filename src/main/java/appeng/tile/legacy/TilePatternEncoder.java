@@ -65,6 +65,8 @@ public class TilePatternEncoder extends AEBaseInvTile {
                 ItemStack is = Platform.findMatchingRecipeOutput(ci, this.worldObj);
                 if (is != null) {
                     this.storage.setInventorySlotContents(9, is);
+                } else {
+                    this.storage.setInventorySlotContents(9, null);
                 }
             }
 
@@ -74,7 +76,7 @@ public class TilePatternEncoder extends AEBaseInvTile {
 
     public void encodePattern() {
         ItemStack fish = this.storage.getStackInSlot(11);
-        if (this.storage.getStackInSlot(9) != null) {
+        if (this.storage.getStackInSlot(9) != null && !this.craftingGridEmpty()) {
             if (fish == null) {
                 fish = this.storage.decrStackSize(10, 1);
             }
@@ -309,5 +311,15 @@ public class TilePatternEncoder extends AEBaseInvTile {
                 }
             }
         }
+    }
+
+    public boolean craftingGridEmpty() {
+        for(int i = 0; i < 9; i++) {
+            ItemStack stack = this.storage.getStackInSlot(i);
+            if (stack != null) {
+                return false;
+            }
+        }
+        return true;
     }
 }
