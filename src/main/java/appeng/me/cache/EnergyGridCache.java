@@ -269,10 +269,13 @@ public class EnergyGridCache implements IEnergyGrid {
             return 0;
         }
 
+        IControllerCache cg = this.myGrid.getCache(IControllerCache.class);
+
         final double ignore = this.extra;
         amt += this.extra;
 
         if (mode == Actionable.SIMULATE) {
+            amt = cg.injectPower(amt, mode);
             final Iterator<IAEPowerStorage> it = this.requesters.iterator();
             while (amt > 0 && it.hasNext()) {
                 final IAEPowerStorage node = it.next();
@@ -287,6 +290,7 @@ public class EnergyGridCache implements IEnergyGrid {
             this.tickInjectionPerTick += amt - ignore;
             // totalInjectionPastTicks[0] += i;
 
+            amt = cg.injectPower(amt, mode);
             while (amt > 0 && !this.requesters.isEmpty()) {
                 final IAEPowerStorage node = this.getFirstRequester();
 

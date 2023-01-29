@@ -1,16 +1,15 @@
 package appeng.tile.legacy;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.GridFlags;
-import appeng.api.networking.IControllerCache;
-import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
-import appeng.api.networking.energy.IAEPowerStorage;
 import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.networking.energy.IEnergyGridProvider;
 import appeng.api.util.AECableType;
@@ -56,17 +55,24 @@ public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable,
     }
 
     public void onUpdatePower() {
-        final double split = this.getAECurrentPower() / 6; // TODO: only care for sides, which demand energy
-        double current = 0.0;
+        List<ForgeDirection> demanding = new ArrayList<>();
         for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+            try {
+                IEnergyGrid eg = this.getProxyForSide(dir).getEnergy();
+                if (eg.getEnergyDemand(1000.0) > 1.0) {
+                    demanding.add(dir);
+                }
+            } catch (GridAccessException e) {
+                // :P
+            }
+        }
+        if (demanding.isEmpty()) return;
+        final double split = this.getAECurrentPower() / demanding.size();
+        double current = 0.0;
+        for (ForgeDirection dir : demanding) {
             double leftover = split;
             try {
                 IEnergyGrid eg = this.getProxyForSide(dir).getEnergy();
-                IControllerCache cg = this.getProxyForSide(dir).getGrid().getCache(IControllerCache.class);
-                IGridHost controller = cg.getController();
-                if (controller instanceof IAEPowerStorage) {
-                    leftover = ((IAEPowerStorage)controller).injectAEPower(leftover, Actionable.MODULATE);
-                }
                 double demand = eg.getEnergyDemand(leftover);
                 leftover = eg.injectPower(Math.min(leftover, demand), Actionable.MODULATE);
                 current += leftover;

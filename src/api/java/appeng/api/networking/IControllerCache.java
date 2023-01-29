@@ -2,6 +2,7 @@ package appeng.api.networking;
 
 import java.util.Set;
 
+import appeng.api.config.Actionable;
 import appeng.api.networking.crafting.ICraftingCPU;
 
 public interface IControllerCache extends IGridCache {
@@ -17,5 +18,9 @@ public interface IControllerCache extends IGridCache {
     IGridHost getController();
 
     Set<ICraftingCPU> getCPUs();
+
+    double injectPower(double amt, Actionable mode);
+
+    double getEnergyDemand();
     
 }

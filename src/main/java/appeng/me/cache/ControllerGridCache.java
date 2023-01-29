@@ -1,7 +1,6 @@
 package appeng.me.cache;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import appeng.api.config.Actionable;
@@ -11,7 +10,7 @@ import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridStorage;
 import appeng.api.networking.crafting.ICraftingCPU;
-import appeng.api.storage.data.IAEItemStack;
+import appeng.api.networking.energy.IAEPowerStorage;
 import appeng.core.AEConfig;
 import appeng.core.features.AEFeature;
 import appeng.me.cluster.implementations.InternalCraftingCPU;
@@ -103,6 +102,24 @@ public class ControllerGridCache implements IControllerCache {
             }
         }
         return cpus;
+    }
+
+    @Override
+    public double injectPower(double amt, Actionable mode) {
+        IGridHost controller = getController();
+        if (controller instanceof IAEPowerStorage) {
+            return ((IAEPowerStorage)controller).injectAEPower(amt, mode);
+        }
+        return amt;
+    }
+
+    @Override
+    public double getEnergyDemand() {
+        IGridHost controller = getController();
+        if (controller instanceof IAEPowerStorage) {
+            return ((IAEPowerStorage)controller).getAEMaxPower() - ((IAEPowerStorage)controller).getAECurrentPower();
+        }
+        return 0;
     }
     
 }

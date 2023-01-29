@@ -9,6 +9,8 @@ import appeng.api.events.LocatableEventAnnounce;
 import appeng.api.events.LocatableEventAnnounce.LocatableEvent;
 import appeng.api.features.ILocatable;
 import appeng.api.networking.events.MENetworkCraftingCpuChange;
+import appeng.api.networking.events.MENetworkPowerStorage;
+import appeng.api.networking.events.MENetworkPowerStorage.PowerEventType;
 import appeng.me.GridAccessException;
 import appeng.me.cluster.implementations.InternalCraftingCPU;
 import appeng.tile.TileEvent;
@@ -58,6 +60,7 @@ public class TileLegacyController extends AENetworkPowerTile implements ILocatab
             if (ticksSinceRefresh % 10 == 0) {
                 ticksSinceRefresh = 0;
                 updatePowerLevel();
+                updatePower();
                 updateCPUs();
             }
         }
@@ -105,6 +108,16 @@ public class TileLegacyController extends AENetworkPowerTile implements ILocatab
             }
         }
         return ret;
+    }
+
+    public void updatePower() {
+        if (this.getAECurrentPower() > 10.0) {
+            try {
+                this.getProxy().getGrid().postEvent(new MENetworkPowerStorage(this, PowerEventType.PROVIDE_POWER));
+            } catch (GridAccessException e) {
+                // :P
+            }
+        }
     }
 
     public void updatePowerLevel() {
