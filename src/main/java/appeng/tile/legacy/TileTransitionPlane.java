@@ -15,14 +15,22 @@ import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.security.MachineSource;
 import appeng.api.networking.storage.IStorageGrid;
 import appeng.api.storage.data.IAEItemStack;
+import appeng.api.util.WorldCoord;
 import appeng.core.sync.packets.PacketTransitionEffect;
 import appeng.me.GridAccessException;
+import appeng.me.cluster.IAECluster;
+import appeng.me.cluster.IAEMultiBlock;
+import appeng.me.cluster.implementations.TransitionPlaneCalculator;
+import appeng.me.cluster.implementations.TransitionPlaneCluster;
+import appeng.me.helpers.AENetworkProxy;
+import appeng.me.helpers.AENetworkProxyMultiblock;
 import appeng.server.ServerHelper;
 import appeng.tile.TileEvent;
 import appeng.tile.events.TileEventType;
 import appeng.tile.grid.AENetworkTile;
 import appeng.util.Platform;
 import appeng.util.item.AEItemStack;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.init.Blocks;
@@ -33,7 +41,7 @@ import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileTransitionPlane extends AENetworkTile {
+public class TileTransitionPlane extends AENetworkTile implements IAEMultiBlock {
     List<IAEItemStack> buffer = new ArrayList<>();
     int delay = 0;
     int trys = 0;
@@ -41,12 +49,56 @@ public class TileTransitionPlane extends AENetworkTile {
     static Set<Block> unbreakables = new HashSet<>();
     private final BaseActionSource mySrc = new MachineSource(this);
 
+    public RenderMode renderMode = RenderMode.INVALID;
+
+    public TransitionPlaneCluster cluster;
+    public TransitionPlaneCalculator calc = new TransitionPlaneCalculator(this);
+
     public TileTransitionPlane() {
         // TODO: WTF
         //super.hasPower = false;
         this.getProxy().setValidSides(EnumSet.allOf(ForgeDirection.class));
-        this.getProxy().setFlags(GridFlags.REQUIRE_CHANNEL);
+        this.getProxy().setFlags(GridFlags.REQUIRE_CHANNEL, GridFlags.MULTIBLOCK);
         this.getProxy().setIdlePowerUsage(1.0);
+    }
+
+    @Override
+    protected AENetworkProxy createProxy() {
+        return new AENetworkProxyMultiblock(
+            this, "proxy", this.getItemFromTile(this), true
+        );
+    }
+
+    @Override
+    public boolean requiresTESR() {
+        return true;
+    }
+
+    @Override
+    public void invalidate() {
+        this.disconnect(false);
+        super.invalidate();
+    }
+
+    @Override
+    public void onChunkUnload() {
+        this.disconnect(false);
+        super.onChunkUnload();
+    }
+
+    @Override
+    public void onReady() {
+        super.onReady();
+        this.calc.calculateMultiblock(this.worldObj, this.getLocation());
+    }
+
+    public void updateStatus(TransitionPlaneCluster c) {
+        this.cluster = c;
+        this.getProxy().setValidSides(
+            c == null ? EnumSet.noneOf(ForgeDirection.class)
+                      : EnumSet.allOf(ForgeDirection.class)
+        );
+        this.markForUpdate();
     }
 
     // TODO: WTF
@@ -317,16 +369,6 @@ public class TileTransitionPlane extends AENetworkTile {
     //    this.reqEat();
     //}
 
-    // TODO: multiblock
-    //boolean linesUp(int x, int y, int z) {
-    //    TileEntity te = this.worldObj.getTileEntity(x, y, z);
-    //    if (te instanceof TileTransitionPlane) {
-    //        return ((TileTransitionPlane) te).getForward() == this.getForward();
-    //    } else {
-    //        return false;
-    //    }
-    //}
-
     // TODO: WTF
     //public void placedBy(EntityLivingBase entityliving) {
     //    byte rotation = (byte
@@ -364,9 +406,8 @@ public class TileTransitionPlane extends AENetworkTile {
     //    return this.getForward() == side ? frontFace : this.defTextures(side);
     //}
 
-    @Override
-    public void writeToNBT(NBTTagCompound par1nbtTagCompound) {
-        super.writeToNBT(par1nbtTagCompound);
+    @TileEvent(TileEventType.WORLD_NBT_WRITE)
+    public void worldNbtWriteTileTransitionPlane(NBTTagCompound nbt) {
         NBTTagList items = new NBTTagList();
 
         for (int x = 0; x < this.buffer.size(); ++x) {
@@ -375,374 +416,54 @@ public class TileTransitionPlane extends AENetworkTile {
             items.appendTag(item);
         }
 
-        par1nbtTagCompound.setTag("items", items);
+        nbt.setTag("items", items);
     }
 
-    @Override
-    public void readFromNBT(NBTTagCompound par1nbtTagCompound) {
-        super.readFromNBT(par1nbtTagCompound);
-        NBTTagList items = par1nbtTagCompound.getTagList("items", 10);
+    @TileEvent(TileEventType.WORLD_NBT_READ)
+    public void worldNbtReadTileTransitionPlane(NBTTagCompound nbt) {
+        NBTTagList items = nbt.getTagList("items", 10);
 
         for (int x = 0; x < items.tagCount(); ++x) {
             this.buffer.add(AEItemStack.loadItemStackFromNBT(items.getCompoundTagAt(x)));
         }
     }
 
-    // TODO: WTF
-    //@SideOnly(Side.CLIENT)
-    //public void renderTexturedPlate(
-    //    float[] offset,
-    //    float[] Left,
-    //    float[] Up,
-    //    float[] texOffset,
-    //    float[] texDiff,
-    //    Icon icon,
-    //    int lightX,
-    //    int lightY,
-    //    int lightZ,
-    //    boolean rev
-    //) {
-    //    Tessellator tess = Tessellator.instance;
-    //    float[] p1 = new float[5];
-    //    float[] p2 = new float[5];
-    //    float[] p3 = new float[5];
-    //    float[] p4 = new float[5];
-    //    p1[0] = offset[0];
-    //    p1[1] = offset[1];
-    //    p1[2] = offset[2];
-    //    p1[3] = icon.getInterpolatedU((double) texOffset[0]);
-    //    p1[4] = icon.getInterpolatedV((double) texOffset[1]);
-    //    p2[0] = offset[0] + Left[0];
-    //    p2[1] = offset[1] + Left[1];
-    //    p2[2] = offset[2] + Left[2];
-    //    p2[3] = icon.getInterpolatedU((double) (texOffset[0] + texDiff[0]));
-    //    p2[4] = icon.getInterpolatedV((double) texOffset[1]);
-    //    p3[0] = offset[0] + Left[0] + Up[0];
-    //    p3[1] = offset[1] + Left[1] + Up[1];
-    //    p3[2] = offset[2] + Left[2] + Up[2];
-    //    p3[3] = icon.getInterpolatedU((double) (texOffset[0] + texDiff[0]));
-    //    p3[4] = icon.getInterpolatedV((double) (texOffset[1] + texDiff[1]));
-    //    p4[0] = offset[0] + Up[0];
-    //    p4[1] = offset[1] + Up[1];
-    //    p4[2] = offset[2] + Up[2];
-    //    p4[3] = icon.getInterpolatedU((double) texOffset[0]);
-    //    p4[4] = icon.getInterpolatedV((double) (texOffset[1] + texDiff[1]));
-    //    tess.setBrightness(
-    //        this.getBlockType().getMixedBrightnessForBlock(this.worldObj, lightX,
-    //        lightY, lightZ)
-    //    );
-    //    if (rev) {
-    //        tess.addVertexWithUV(
-    //            (double) p4[0],
-    //            (double) p4[1],
-    //            (double) p4[2],
-    //            (double) p4[3],
-    //            (double) p4[4]
-    //        );
-    //        tess.addVertexWithUV(
-    //            (double) p3[0],
-    //            (double) p3[1],
-    //            (double) p3[2],
-    //            (double) p3[3],
-    //            (double) p3[4]
-    //        );
-    //        tess.addVertexWithUV(
-    //            (double) p2[0],
-    //            (double) p2[1],
-    //            (double) p2[2],
-    //            (double) p2[3],
-    //            (double) p2[4]
-    //        );
-    //        tess.addVertexWithUV(
-    //            (double) p1[0],
-    //            (double) p1[1],
-    //            (double) p1[2],
-    //            (double) p1[3],
-    //            (double) p1[4]
-    //        );
-    //    } else {
-    //        tess.addVertexWithUV(
-    //            (double) p1[0],
-    //            (double) p1[1],
-    //            (double) p1[2],
-    //            (double) p1[3],
-    //            (double) p1[4]
-    //        );
-    //        tess.addVertexWithUV(
-    //            (double) p2[0],
-    //            (double) p2[1],
-    //            (double) p2[2],
-    //            (double) p2[3],
-    //            (double) p2[4]
-    //        );
-    //        tess.addVertexWithUV(
-    //            (double) p3[0],
-    //            (double) p3[1],
-    //            (double) p3[2],
-    //            (double) p3[3],
-    //            (double) p3[4]
-    //        );
-    //        tess.addVertexWithUV(
-    //            (double) p4[0],
-    //            (double) p4[1],
-    //            (double) p4[2],
-    //            (double) p4[3],
-    //            (double) p4[4]
-    //        );
-    //    }
-    //}
+    @TileEvent(TileEventType.NETWORK_WRITE)
+    public void writeToStreamTileTransitionPlane(ByteBuf buf) {
+        if (this.cluster == null) {
+            buf.writeByte(RenderMode.INVALID.ordinal());
+        } else if (this.cluster.tiles.size() == 1) {
+            buf.writeByte(RenderMode.SINGLE.ordinal());
+        } else {
+            buf.writeByte(RenderMode.MULTI.ordinal());
+        }
+    }
 
-    // TODO: WTF
-    //public float[] p(float a, float b, float c) {
-    //    float[] t = new float[] { a, b, c };
-    //    return t;
-    //}
+    @TileEvent(TileEventType.NETWORK_READ)
+    public void readFromStreamTileTransitionPlane(ByteBuf buf) {
+        this.renderMode = RenderMode.values()[buf.readByte()];
 
-    //public float[] t(float a, float b) {
-    //    float[] t = new float[] { a, b };
-    //    return t;
-    //}
+        this.worldObj.markBlockRangeForRenderUpdate(
+            this.xCoord, this.yCoord, this.zCoord, this.xCoord, this.yCoord, this.zCoord
+        );
+    }
 
-    // TODO: WTF
-    //@SideOnly(Side.CLIENT)
-    //public boolean renderWorldBlock(
-    //    IBlockAccess world,
-    //    int x,
-    //    int y,
-    //    int z,
-    //    Block block,
-    //    int modelId,
-    //    RenderBlocks renderer
-    //) {
-    //    renderer.setRenderBounds(
-    //        this.getForward() == ForgeDirection.WEST ? 9.999999747378752E-5 : 0.0,
-    //        this.getForward() == ForgeDirection.DOWN ? 9.999999747378752E-5 : 0.0,
-    //        this.getForward() == ForgeDirection.NORTH ? 9.999999747378752E-5 : 0.0,
-    //        this.getForward() == ForgeDirection.EAST ? 0.9998999834060669 : 1.0,
-    //        this.getForward() == ForgeDirection.UP ? 0.9998999834060669 : 1.0,
-    //        this.getForward() == ForgeDirection.SOUTH ? 0.9998999834060669 : 1.0
-    //    );
-    //    renderer.uvRotateTop = 0;
-    //    renderer.uvRotateBottom = 3;
-    //    renderer.uvRotateEast = 1;
-    //    renderer.uvRotateNorth = 2;
-    //    renderer.uvRotateSouth = 1;
-    //    renderer.uvRotateWest = 2;
-    //    renderer.renderStandardBlock(block, x, y, z);
-    //    renderer.uvRotateBottom = renderer.uvRotateEast = renderer.uvRotateNorth
-    //        = renderer.uvRotateSouth = renderer.uvRotateTop = renderer.uvRotateWest
-    //        = 0;
-    //    renderer.setRenderBounds(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
-    //    IIcon icon = AppEngTextureRegistry.Blocks.BlockFrame.get();
-    //    float offsetPerPixel = 0.0625F;
-    //    boolean rev;
-    //    float zX;
-    //    if (this.getForward() == ForgeDirection.NORTH
-    //        || this.getForward() == ForgeDirection.SOUTH) {
-    //        rev = this.getForward() == ForgeDirection.NORTH;
-    //        zX = 1.0F;
-    //        if (rev) {
-    //            zX = 0.0F;
-    //        }
+    @Override
+    public void disconnect(boolean b) {
+        if (this.cluster != null)
+            this.cluster.destroy();
+        this.updateStatus(null);
+    }
 
-    //        if (!this.linesUp(x - 1, y, z)) {
-    //            this.renderTexturedPlate(
-    //                this.p((float) x, (float) y, (float) z + zX),
-    //                this.p(offsetPerPixel, 0.0F, 0.0F),
-    //                this.p(0.0F, 1.0F, 0.0F),
-    //                this.t(0.0F, 0.0F),
-    //                this.t(1.0F, 16.0F),
-    //                icon,
-    //                x,
-    //                y,
-    //                z + (rev ? -1 : 1),
-    //                rev
-    //            );
-    //        }
+    @Override
+    public IAECluster getCluster() {
+        return this.cluster;
+    }
 
-    //        if (!this.linesUp(x + 1, y, z)) {
-    //            this.renderTexturedPlate(
-    //                this.p((float) x + 15.0F * offsetPerPixel, (float) y, (float) z +
-    //                zX), this.p(offsetPerPixel, 0.0F, 0.0F), this.p(0.0F, 1.0F, 0.0F),
-    //                this.t(15.0F, 0.0F),
-    //                this.t(1.0F, 16.0F),
-    //                icon,
-    //                x,
-    //                y,
-    //                z + (rev ? -1 : 1),
-    //                rev
-    //            );
-    //        }
-
-    //        if (!this.linesUp(x, y - 1, z)) {
-    //            this.renderTexturedPlate(
-    //                this.p((float) x, (float) y, (float) z + zX),
-    //                this.p(1.0F, 0.0F, 0.0F),
-    //                this.p(0.0F, offsetPerPixel, 0.0F),
-    //                this.t(0.0F, 0.0F),
-    //                this.t(16.0F, 1.0F),
-    //                icon,
-    //                x,
-    //                y,
-    //                z + (rev ? -1 : 1),
-    //                rev
-    //            );
-    //        }
-
-    //        if (!this.linesUp(x, y + 1, z)) {
-    //            this.renderTexturedPlate(
-    //                this.p((float) x, (float) y + 15.0F * offsetPerPixel, (float) z +
-    //                zX), this.p(1.0F, 0.0F, 0.0F), this.p(0.0F, offsetPerPixel, 0.0F),
-    //                this.t(0.0F, 15.0F),
-    //                this.t(16.0F, 1.0F),
-    //                icon,
-    //                x,
-    //                y,
-    //                z + (rev ? -1 : 1),
-    //                rev
-    //            );
-    //        }
-    //    }
-
-    //    if (this.getForward() == ForgeDirection.EAST
-    //        || this.getForward() == ForgeDirection.WEST) {
-    //        rev = this.getForward() == ForgeDirection.EAST;
-    //        zX = 0.0F;
-    //        if (rev) {
-    //            zX = 1.0F;
-    //        }
-
-    //        if (!this.linesUp(x, y, z - 1)) {
-    //            this.renderTexturedPlate(
-    //                this.p((float) x + zX, (float) y, (float) z),
-    //                this.p(0.0F, 0.0F, offsetPerPixel),
-    //                this.p(0.0F, 1.0F, 0.0F),
-    //                this.t(0.0F, 0.0F),
-    //                this.t(1.0F, 16.0F),
-    //                icon,
-    //                x + (rev ? 1 : -1),
-    //                y,
-    //                z,
-    //                rev
-    //            );
-    //        }
-
-    //        if (!this.linesUp(x, y, z + 1)) {
-    //            this.renderTexturedPlate(
-    //                this.p((float) x + zX, (float) y, (float) z + 15.0F *
-    //                offsetPerPixel), this.p(0.0F, 0.0F, offsetPerPixel),
-    //                this.p(0.0F, 1.0F, 0.0F),
-    //                this.t(15.0F, 0.0F),
-    //                this.t(1.0F, 16.0F),
-    //                icon,
-    //                x + (rev ? 1 : -1),
-    //                y,
-    //                z,
-    //                rev
-    //            );
-    //        }
-
-    //        if (!this.linesUp(x, y - 1, z)) {
-    //            this.renderTexturedPlate(
-    //                this.p((float) x + zX, (float) y, (float) z),
-    //                this.p(0.0F, 0.0F, 1.0F),
-    //                this.p(0.0F, offsetPerPixel, 0.0F),
-    //                this.t(0.0F, 0.0F),
-    //                this.t(16.0F, 1.0F),
-    //                icon,
-    //                x + (rev ? 1 : -1),
-    //                y,
-    //                z,
-    //                rev
-    //            );
-    //        }
-
-    //        if (!this.linesUp(x, y + 1, z)) {
-    //            this.renderTexturedPlate(
-    //                this.p((float) x + zX, (float) y + 15.0F * offsetPerPixel, (float)
-    //                z), this.p(0.0F, 0.0F, 1.0F), this.p(0.0F, offsetPerPixel, 0.0F),
-    //                this.t(0.0F, 15.0F),
-    //                this.t(16.0F, 1.0F),
-    //                icon,
-    //                x + (rev ? 1 : -1),
-    //                y,
-    //                z,
-    //                rev
-    //            );
-    //        }
-    //    }
-
-    //    if (this.getForward() == ForgeDirection.UP
-    //        || this.getForward() == ForgeDirection.DOWN) {
-    //        rev = this.getForward() == ForgeDirection.UP;
-    //        zX = 1.0F;
-    //        if (!rev) {
-    //            zX = 0.0F;
-    //        }
-
-    //        if (!this.linesUp(x - 1, y, z)) {
-    //            this.renderTexturedPlate(
-    //                this.p((float) x, (float) y + zX, (float) z),
-    //                this.p(offsetPerPixel, 0.0F, 0.0F),
-    //                this.p(0.0F, 0.0F, 1.0F),
-    //                this.t(0.0F, 0.0F),
-    //                this.t(1.0F, 16.0F),
-    //                icon,
-    //                x,
-    //                y + (rev ? 1 : -1),
-    //                z,
-    //                rev
-    //            );
-    //        }
-
-    //        if (!this.linesUp(x + 1, y, z)) {
-    //            this.renderTexturedPlate(
-    //                this.p((float) x + 15.0F * offsetPerPixel, (float) y + zX, (float)
-    //                z), this.p(offsetPerPixel, 0.0F, 0.0F), this.p(0.0F, 0.0F, 1.0F),
-    //                this.t(15.0F, 0.0F),
-    //                this.t(1.0F, 16.0F),
-    //                icon,
-    //                x,
-    //                y + (rev ? 1 : -1),
-    //                z,
-    //                rev
-    //            );
-    //        }
-
-    //        if (!this.linesUp(x, y, z - 1)) {
-    //            this.renderTexturedPlate(
-    //                this.p((float) x, (float) y + zX, (float) z),
-    //                this.p(1.0F, 0.0F, 0.0F),
-    //                this.p(0.0F, 0.0F, offsetPerPixel),
-    //                this.t(0.0F, 0.0F),
-    //                this.t(16.0F, 1.0F),
-    //                icon,
-    //                x,
-    //                y + (rev ? 1 : -1),
-    //                z,
-    //                rev
-    //            );
-    //        }
-
-    //        if (!this.linesUp(x, y, z + 1)) {
-    //            this.renderTexturedPlate(
-    //                this.p((float) x, (float) y + zX, (float) z + 15.0F *
-    //                offsetPerPixel), this.p(1.0F, 0.0F, 0.0F), this.p(0.0F, 0.0F,
-    //                offsetPerPixel), this.t(0.0F, 15.0F), this.t(16.0F, 1.0F), icon, x,
-    //                y + (rev ? 1 : -1),
-    //                z,
-    //                rev
-    //            );
-    //        }
-    //    }
-
-    //    return true;
-    //}
-
-    // TODO: WTF
-    //public boolean isBlockNormalCube() {
-    //    return true;
-    //}
+    @Override
+    public boolean isValid() {
+        return this.cluster != null;
+    }
 
     //public boolean handleTilePacket(DataInputStream stream) throws IOException {
     //    ForgeDirection oldOrientation = this.getForward();
@@ -824,4 +545,10 @@ public class TileTransitionPlane extends AENetworkTile {
     //        new GridTileConnectivityEvent(this, this.getWorld(), this.getLocation())
     //    );
     //}
+
+    public static enum RenderMode {
+        INVALID,
+        SINGLE,
+        MULTI;
+    }
 }

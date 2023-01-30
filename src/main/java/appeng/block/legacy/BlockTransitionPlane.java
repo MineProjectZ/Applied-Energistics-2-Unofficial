@@ -2,13 +2,20 @@ package appeng.block.legacy;
 
 import java.util.EnumSet;
 
+import appeng.api.util.WorldCoord;
+import appeng.block.AEBaseBlock;
 import appeng.block.AEBaseTileBlock;
+import appeng.client.render.BaseBlockRender;
+import appeng.client.render.blocks.RenderBlockTransitionPlane;
 import appeng.core.features.AEFeature;
+import appeng.tile.AEBaseTile;
 import appeng.tile.legacy.TileTransitionPlane;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
+import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
@@ -18,6 +25,11 @@ public class BlockTransitionPlane extends AEBaseTileBlock {
         this.isOpaque = true;
         this.setTileEntity(TileTransitionPlane.class);
         this.setFeature(EnumSet.of(AEFeature.Legacy));
+    }
+
+    @Override
+    protected BaseBlockRender<? extends AEBaseBlock, ? extends AEBaseTile> getRenderer() {
+        return new RenderBlockTransitionPlane();
     }
 
     @Override
@@ -32,28 +44,28 @@ public class BlockTransitionPlane extends AEBaseTileBlock {
     }
 
     @Override
-    public void onNeighborBlockChange(
-        World world,
-        int x,
-        int y,
-        int z,
-        Block neighbor
-    ) {
-        TileEntity te = world.getTileEntity(x, y, z);
-        if (te instanceof TileTransitionPlane) {
-            ((TileTransitionPlane)te).reqEat();
-        }
+    public void onBlockPlacedBy(World w, int x, int y, int z, EntityLivingBase player, ItemStack is) {
+        super.onBlockPlacedBy(w, x, y, z, player, is);
+        this.calcMB(w, x, y, z);
     }
 
-    //@Override
-    //public IIcon getIcon(int side, int meta) {
-    //    if (side == 0) {
-    //        return AppEngTextureRegistry.Blocks.GenericBottom.get();
-    //    } else if (side == 1) {
-    //        return AppEngTextureRegistry.Blocks.GenericTop.get();
-    //    } else {
-    //        return side == 2 ? AppEngTextureRegistry.Blocks.BlockTransPlane.get()
-    //                         : AppEngTextureRegistry.Blocks.GenericSide.get();
-    //    }
-    //}
+    @Override
+    public void onPostBlockPlaced(World world, int x, int y, int z, int md) {
+        super.onPostBlockPlaced(world, x, y, z, md);
+        this.calcMB(world, x, y, z);
+    }
+
+    @Override
+    public void onNeighborBlockChange(World world, int x, int y, int z, Block neighbor) {
+        this.calcMB(world, x, y, z);
+        ((TileTransitionPlane) world.getTileEntity(x, y, z)).reqEat();
+    }
+
+    private void calcMB(World world, int x, int y, int z) {
+        TileEntity te = world.getTileEntity(x, y, z);
+        if (te instanceof TileTransitionPlane) {
+            ((TileTransitionPlane) te)
+                .calc.calculateMultiblock(world, new WorldCoord(x, y, z));
+        }
+    }
 }

@@ -133,7 +133,11 @@ public enum ExtraBlockTextures {
     BlockStorageMonitorFrontMatrix("BlockStorageMonitorFront_Matrix"),
 
     BlockAssemblerWallMerged("BlockAssemblerWallMerged"),
-    BlockAssemblerHeatVentMerged("BlockAssemblerHeatVentMerged");
+    BlockAssemblerHeatVentMerged("BlockAssemblerHeatVentMerged"),
+
+    BlockTransitionPlaneNoPower("BlockTransitionPlaneNoPower"),
+    BlockTransitionPlaneNormal("BlockTransitionPlaneNormal"),
+    BlockTransitionPlaneOff("BlockTransitionPlaneOff");
 
     private final String name;
     private IIcon IIcon;
