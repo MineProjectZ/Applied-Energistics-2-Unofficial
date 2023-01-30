@@ -53,3 +53,9 @@ shaped=
     oredictionary:ingotIron oredictionary:chestWood oredictionary:ingotIron,
     oredictionary:ingotIron oredictionary:ingotIron oredictionary:ingotIron,
     -> ae2:BlockLegacyChest
+
+shaped=
+    oredictionary:ingotIron ae2:CableGlass.Fluix oredictionary:ingotIron,
+    ae2:CableGlass.Fluix ae2:BlockEnergyCell ae2:CableGlass.Fluix,
+    oredictionary:ingotIron ae2:CableGlass.Fluix oredictionary:ingotIron,
+    -> ae2:BlockPowerRelay
