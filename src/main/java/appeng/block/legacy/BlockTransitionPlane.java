@@ -10,6 +10,8 @@ import appeng.client.render.blocks.RenderBlockTransitionPlane;
 import appeng.core.features.AEFeature;
 import appeng.tile.AEBaseTile;
 import appeng.tile.legacy.TileTransitionPlane;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
@@ -27,6 +29,7 @@ public class BlockTransitionPlane extends AEBaseTileBlock {
         this.setFeature(EnumSet.of(AEFeature.Legacy));
     }
 
+    @SideOnly(Side.CLIENT)
     @Override
     protected BaseBlockRender<? extends AEBaseBlock, ? extends AEBaseTile> getRenderer() {
         return new RenderBlockTransitionPlane();
