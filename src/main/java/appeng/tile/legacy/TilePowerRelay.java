@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Set;
 
 import appeng.api.config.Actionable;
+import appeng.api.config.PowerMultiplier;
+import appeng.api.implementations.items.IAEItemPowerStorage;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.energy.IEnergyGrid;
@@ -27,14 +29,18 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable, IEnergyGridProvider {
-    public static final IInventory NULL_INVENTORY = new AppEngInternalInventory(null, 0);
+public class TilePowerRelay
+    extends AEBasePoweredTile implements IGridProxyable, IEnergyGridProvider {
     public static final int[] ACCESSIBLE_SLOTS_BY_SIDE = {};
+
     private Map<ForgeDirection, AENetworkProxy> proxies = new HashMap<>();
+    private AppEngInternalInventory inv = new AppEngInternalInventory(this, 2);
 
     public TilePowerRelay() {
-        for(ForgeDirection dir : ForgeDirection.values()) {
-            AENetworkProxy proxy = new AENetworkProxy(this, "proxy" + dir.name().toLowerCase(), this.getItemFromTile(this), true);
+        for (ForgeDirection dir : ForgeDirection.values()) {
+            AENetworkProxy proxy = new AENetworkProxy(
+                this, "proxy" + dir.name().toLowerCase(), this.getItemFromTile(this), true
+            );
             proxy.setFlags(GridFlags.CANNOT_CARRY);
             if (dir == ForgeDirection.UNKNOWN) {
                 proxy.setValidSides(EnumSet.noneOf(ForgeDirection.class));
@@ -49,6 +55,39 @@ public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable,
 
     @TileEvent(TileEventType.TICK)
     public void onTick() {
+        ItemStack stack = this.inv.getStackInSlot(0);
+        if (stack != null && stack.getItem() instanceof IAEItemPowerStorage) {
+            if (this.getAECurrentPower() < 5.0) {
+                for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+                    try {
+                        this.setInternalCurrentPower(
+                            this.getAECurrentPower()
+                            + this.getProxyForSide(dir).getEnergy().extractAEPower(
+                                this.getAEMaxPower() - this.getAECurrentPower(),
+                                Actionable.MODULATE,
+                                PowerMultiplier.ONE
+                            )
+                        );
+                    } catch (GridAccessException e) {
+                        // :P
+                    }
+                }
+            }
+
+            IAEItemPowerStorage iaeips = (IAEItemPowerStorage) stack.getItem();
+
+            if (this.inv.getStackInSlot(1) == null
+                && iaeips.getAEMaxPower(stack) - iaeips.getAECurrentPower(stack)
+                    < 0.001) {
+                this.inv.setInventorySlotContents(1, stack);
+                this.inv.setInventorySlotContents(0, null);
+            } else {
+                this.setInternalCurrentPower(
+                    iaeips.injectAEPower(stack, this.getAECurrentPower())
+                );
+            }
+        }
+
         if (this.getAECurrentPower() > 0.01) {
             this.onUpdatePower();
         }
@@ -66,7 +105,8 @@ public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable,
                 // :P
             }
         }
-        if (demanding.isEmpty()) return;
+        if (demanding.isEmpty())
+            return;
         final double split = this.getAECurrentPower() / demanding.size();
         double current = 0.0;
         for (ForgeDirection dir : demanding) {
@@ -74,7 +114,8 @@ public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable,
             try {
                 IEnergyGrid eg = this.getProxyForSide(dir).getEnergy();
                 double demand = eg.getEnergyDemand(leftover);
-                leftover = eg.injectPower(Math.min(leftover, demand), Actionable.MODULATE);
+                leftover
+                    = eg.injectPower(Math.min(leftover, demand), Actionable.MODULATE);
                 current += leftover;
             } catch (GridAccessException e) {
                 // :P
@@ -85,27 +126,27 @@ public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable,
 
     @TileEvent(TileEventType.WORLD_NBT_READ)
     public void readFromNBT_PowerRelay(final NBTTagCompound data) {
-        for(ForgeDirection dir : ForgeDirection.values()) {
+        for (ForgeDirection dir : ForgeDirection.values()) {
             proxies.get(dir).readFromNBT(data);
         }
     }
 
     @TileEvent(TileEventType.WORLD_NBT_WRITE)
     public void writeToNBT_PowerRelay(final NBTTagCompound data) {
-        for(ForgeDirection dir : ForgeDirection.values()) {
+        for (ForgeDirection dir : ForgeDirection.values()) {
             proxies.get(dir).writeToNBT(data);
         }
     }
 
     @Override
     public IInventory getInternalInventory() {
-        return NULL_INVENTORY;
+        return this.inv;
     }
 
     @Override
-    public void onChangeInventory(IInventory inv, int slot, InvOperation mc, ItemStack removed, ItemStack added) {
-        
-    }
+    public void onChangeInventory(
+        IInventory inv, int slot, InvOperation mc, ItemStack removed, ItemStack added
+    ) {}
 
     @Override
     public int[] getAccessibleSlotsBySide(ForgeDirection whichSide) {
@@ -137,14 +178,12 @@ public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable,
     }
 
     @Override
-    public void gridChanged() {
-        
-    }
+    public void gridChanged() {}
 
     @Override
     public void onChunkUnload() {
         super.onChunkUnload();
-        for(ForgeDirection dir : ForgeDirection.values()) {
+        for (ForgeDirection dir : ForgeDirection.values()) {
             proxies.get(dir).onChunkUnload();
         }
     }
@@ -152,7 +191,7 @@ public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable,
     @Override
     public void onReady() {
         super.onReady();
-        for(ForgeDirection dir : ForgeDirection.values()) {
+        for (ForgeDirection dir : ForgeDirection.values()) {
             proxies.get(dir).onReady();
         }
     }
@@ -160,7 +199,7 @@ public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable,
     @Override
     public void invalidate() {
         super.invalidate();
-        for(ForgeDirection dir : ForgeDirection.values()) {
+        for (ForgeDirection dir : ForgeDirection.values()) {
             proxies.get(dir).invalidate();
         }
     }
@@ -168,7 +207,7 @@ public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable,
     @Override
     public void validate() {
         super.validate();
-        for(ForgeDirection dir : ForgeDirection.values()) {
+        for (ForgeDirection dir : ForgeDirection.values()) {
             proxies.get(dir).validate();
         }
     }
@@ -176,7 +215,7 @@ public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable,
     @Override
     public double extractAEPower(double amt, Actionable mode, Set<IEnergyGrid> seen) {
         double acquiredPower = 0;
-        for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+        for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
             try {
                 final IEnergyGrid eg = this.getProxyForSide(dir).getEnergy();
                 acquiredPower += eg.extractAEPower(amt - acquiredPower, mode, seen);
@@ -196,5 +235,4 @@ public class TilePowerRelay extends AEBasePoweredTile implements IGridProxyable,
     public double getEnergyDemand(double amt, Set<IEnergyGrid> seen) {
         return 0;
     }
-    
 }

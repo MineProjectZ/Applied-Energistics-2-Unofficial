@@ -75,6 +75,7 @@ gui.appliedenergistics2.PatternEncoder.encode=Encode
 gui.appliedenergistics2.PatternEncoder=Pattern Encoder
 gui.appliedenergistics2.Assembler=ME Pattern Provider
 gui.appliedenergistics2.MAC=ME Molecular Assembler Chamber
+gui.appliedenergistics2.PowerRelay=ME Power Relay
 
 # Stairs
 tile.appliedenergistics2.ChiseledQuartzStairBlock.name=Chiseled Certus Quartz Stairs
