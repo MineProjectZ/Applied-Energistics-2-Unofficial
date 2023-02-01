@@ -50,6 +50,7 @@ public final class CreativeTab extends CreativeTabs {
 
         return this.findFirst(
             blocks.controller(),
+            blocks.legacyController(),
             blocks.chest(),
             blocks.cellWorkbench(),
             blocks.fluix(),

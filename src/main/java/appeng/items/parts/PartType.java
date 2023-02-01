@@ -109,28 +109,28 @@ public enum PartType {
 
     QuartzFiber(
         140,
-        EnumSet.of(AEFeature.Core),
+        EnumSet.of(AEFeature.QuartzFiber),
         EnumSet.noneOf(IntegrationType.class),
         PartQuartzFiber.class
     ),
 
     Monitor(
         160,
-        EnumSet.of(AEFeature.Core),
+        EnumSet.of(AEFeature.PartMonitor),
         EnumSet.noneOf(IntegrationType.class),
         PartPanel.class
     ),
 
     SemiDarkMonitor(
         180,
-        EnumSet.of(AEFeature.Core),
+        EnumSet.of(AEFeature.PartMonitor),
         EnumSet.noneOf(IntegrationType.class),
         PartSemiDarkPanel.class
     ),
 
     DarkMonitor(
         200,
-        EnumSet.of(AEFeature.Core),
+        EnumSet.of(AEFeature.PartMonitor),
         EnumSet.noneOf(IntegrationType.class),
         PartDarkPanel.class
     ),
@@ -186,7 +186,7 @@ public enum PartType {
 
     PatternTerminal(
         340,
-        EnumSet.of(AEFeature.Patterns),
+        EnumSet.of(AEFeature.Patterns, AEFeature.PartPatternTerminal),
         EnumSet.noneOf(IntegrationType.class),
         PartPatternTerminal.class
     ),
@@ -200,7 +200,7 @@ public enum PartType {
 
     Terminal(
         380,
-        EnumSet.of(AEFeature.Core),
+        EnumSet.of(AEFeature.PartTerminal),
         EnumSet.noneOf(IntegrationType.class),
         PartTerminal.class
     ),

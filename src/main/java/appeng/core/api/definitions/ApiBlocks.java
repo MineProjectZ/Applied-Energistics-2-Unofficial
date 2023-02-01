@@ -685,4 +685,9 @@ public final class ApiBlocks implements IBlocks {
     public Set<IOrientableBlock> orientables() {
         return this.orientables;
     }
+
+    @Override
+    public ITileDefinition legacyController() {
+        return this.legacyController;
+    }
 }

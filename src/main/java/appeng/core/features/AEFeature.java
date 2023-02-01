@@ -66,6 +66,7 @@ public enum AEFeature {
     QuantumNetworkBridge(Constants.CATEGORY_NETWORK_FEATURES),
     Channels(Constants.CATEGORY_NETWORK_FEATURES),
     Legacy(Constants.CATEGORY_NETWORK_FEATURES),
+    Controller(Constants.CATEGORY_NETWORK_FEATURES),
 
     LevelEmitter(Constants.CATEGORY_NETWORK_BUSES),
     CraftingTerminal(Constants.CATEGORY_NETWORK_BUSES),
@@ -78,6 +79,10 @@ public enum AEFeature {
     ExportBus(Constants.CATEGORY_NETWORK_BUSES),
     StorageBus(Constants.CATEGORY_NETWORK_BUSES),
     PartConversionMonitor(Constants.CATEGORY_NETWORK_BUSES),
+    PartPatternTerminal(Constants.CATEGORY_NETWORK_BUSES),
+    PartTerminal(Constants.CATEGORY_NETWORK_BUSES),
+    PartMonitor(Constants.CATEGORY_NETWORK_BUSES),
+    QuartzFiber(Constants.CATEGORY_NETWORK_BUSES),
 
     PortableCell(Constants.CATEGORY_PORTABLE_CELL),
 
@@ -119,6 +124,7 @@ public enum AEFeature {
     CraftingLog(Constants.CATEGORY_MISC, false),
     LightDetector(Constants.CATEGORY_MISC),
     DebugLogging(Constants.CATEGORY_MISC, false),
+    Experimental(Constants.CATEGORY_MISC, false),
 
     EnableFacadeCrafting(Constants.CATEGORY_CRAFTING),
     InWorldSingularity(Constants.CATEGORY_CRAFTING),

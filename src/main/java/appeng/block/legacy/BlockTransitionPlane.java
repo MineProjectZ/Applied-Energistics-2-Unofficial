@@ -26,7 +26,7 @@ public class BlockTransitionPlane extends AEBaseTileBlock {
         super(Material.iron);
         this.isOpaque = true;
         this.setTileEntity(TileTransitionPlane.class);
-        this.setFeature(EnumSet.of(AEFeature.Legacy));
+        this.setFeature(EnumSet.of(AEFeature.Legacy, AEFeature.Experimental));
     }
 
     @SideOnly(Side.CLIENT)

@@ -35,7 +35,7 @@ public class BlockController extends AEBaseTileBlock {
         super(Material.iron);
         this.setTileEntity(TileController.class);
         this.setHardness(6);
-        this.setFeature(EnumSet.of(AEFeature.Core));
+        this.setFeature(EnumSet.of(AEFeature.Controller));
     }
 
     @Override

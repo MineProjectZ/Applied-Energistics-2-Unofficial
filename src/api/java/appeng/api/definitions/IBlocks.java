@@ -156,6 +156,11 @@ public interface IBlocks {
 
     ITileDefinition energyCellCreative();
 
+    /*
+     * legacy
+     */
+    ITileDefinition legacyController();
+
     // rv1
     ITileDefinition craftingUnit();
 
