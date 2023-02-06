@@ -52,6 +52,7 @@ import appeng.util.Platform;
 import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.client.registry.RenderingRegistry;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import dev.tilera.capes.Capes;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
@@ -96,6 +97,7 @@ public class ClientHelper extends ServerHelper {
     @Override
     public void init() {
         MinecraftForge.EVENT_BUS.register(this);
+        Capes.initCapes();
     }
 
     @Override

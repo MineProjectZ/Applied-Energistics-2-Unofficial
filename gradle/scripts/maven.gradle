@@ -2,8 +2,9 @@ publishing {
     tasks.publish.dependsOn 'build'
     publications {
         mavenJava(MavenPublication) {
-            artifactId = project.archivesBaseName
+            artifactId = "appliedenergistics2"
 
+            artifact jar
             artifact devJar
             artifact sourceJar
             artifact apiJar
