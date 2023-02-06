@@ -55,6 +55,8 @@ jar {
 
     // specify which files are really included, can control which APIs should be in
     include "appeng/**"
+    include "dev/**"
+    include "com/**"
     include "assets/**"
     include "mcmod.info"
     include "pack.mcmeta"

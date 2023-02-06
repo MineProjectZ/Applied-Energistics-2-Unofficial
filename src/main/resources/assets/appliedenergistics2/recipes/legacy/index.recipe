@@ -59,3 +59,9 @@ shaped=
     ae2:CableGlass.Fluix ae2:BlockEnergyCell ae2:CableGlass.Fluix,
     oredictionary:ingotIron ae2:CableGlass.Fluix oredictionary:ingotIron,
     -> ae2:BlockPowerRelay
+
+shaped=
+    oredictionary:ingotIron oredictionary:ingotIron glass,
+    ae2:CableGlass.Fluix ae2:ItemPart.LevelEmitter glass,
+    oredictionary:ingotIron oredictionary:ingotIron glass,
+    -> ae2:BlockStorageMonitor
