@@ -639,7 +639,7 @@ public enum GuiBridge implements IGuiHandler {
     ) {
         final World w = player.getEntityWorld();
 
-        if (Platform.hasPermissions(
+        if (this == GUI_ASSEMBLER_MB || Platform.hasPermissions(
                 te != null ? new DimensionalCoord(te)
                            : new DimensionalCoord(player.worldObj, x, y, z),
                 player
