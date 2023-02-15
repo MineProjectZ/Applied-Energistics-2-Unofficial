@@ -11,6 +11,7 @@ import appeng.api.features.ILocatable;
 import appeng.api.networking.events.MENetworkCraftingCpuChange;
 import appeng.api.networking.events.MENetworkPowerStorage;
 import appeng.api.networking.events.MENetworkPowerStorage.PowerEventType;
+import appeng.api.networking.pathing.ControllerState;
 import appeng.me.GridAccessException;
 import appeng.me.cluster.implementations.InternalCraftingCPU;
 import appeng.tile.TileEvent;
@@ -132,6 +133,13 @@ public class TileLegacyController extends AENetworkPowerTile implements ILocatab
             this.powerLevel = 6;
         } else if (!getProxy().isActive()) {
             this.powerLevel = 0;
+        }
+        try {
+            if (getProxy().getPath().getControllerState() == ControllerState.CONTROLLER_CONFLICT) {
+                this.powerLevel = 7;
+            }
+        } catch (GridAccessException e) {
+            // :P
         }
 
         if (this.powerLevel != this.lastPowerLevel) {

@@ -126,6 +126,7 @@ public enum ExtraBlockTextures {
     Controller4("Controller4"),
     Controller5("BlockLegacyControllerFront"),
     ControllerLinked("ControllerLinked"),
+    ControllerConflict("ControllerConflict"),
 
     HDChestTop("BlockHDChestTop"),
     HDChestTopParts("BlockHDChestTopParts"),

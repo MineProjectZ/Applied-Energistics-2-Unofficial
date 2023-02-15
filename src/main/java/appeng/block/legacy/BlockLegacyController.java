@@ -80,6 +80,8 @@ public class BlockLegacyController extends AEBaseTileBlock {
                     return ExtraBlockTextures.Controller5.getIcon();
                 case 6:
                     return ExtraBlockTextures.ControllerLinked.getIcon();
+                case 7:
+                    return ExtraBlockTextures.ControllerConflict.getIcon();
             }
         }
         return super.getIcon(direction.ordinal(), w.getBlockMetadata(x, y, z));
