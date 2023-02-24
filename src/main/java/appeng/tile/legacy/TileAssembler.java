@@ -607,7 +607,6 @@ public class TileAssembler extends AENetworkTile
 
     @TileEvent(TileEventType.WORLD_NBT_READ)
     public void readFromNbtTileAssembler(NBTTagCompound nbt) {
-        System.out.println("ALEC: " + nbt);
         this.inv.readFromNBT(nbt, "inv");
 
         if (nbt.hasKey("jobs")) {
