@@ -27,7 +27,7 @@ public class AssemblerGridCache implements IAssemblerCache {
     public void onUpdateTick() {
         if (--this.cooldown > 0)
             return;
-        this.cooldown = 20;
+        this.cooldown = 15;
 
         for (AssemblerCluster ac : assemblers.keySet()) {
             if (ac.isDestroyed) {
