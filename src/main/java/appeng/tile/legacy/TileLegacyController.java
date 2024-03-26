@@ -267,7 +267,11 @@ public class TileLegacyController extends AENetworkPowerTile implements ILocatab
     public void removeCPUs() {
         boolean changed = false;
         while (this.inactiveCPUs > MIN_INACTIVE) {
-            changed = changed || removeLastIfNotBusy();
+            if (removeLastIfNotBusy()) {
+                changed = true;
+            } else {
+                break;
+            }
         }
         if (changed) {
             try {
